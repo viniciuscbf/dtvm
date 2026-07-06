@@ -100,6 +100,7 @@ require_once __DIR__ . '/includes/auth.php';
 
   <div class="container pb-4 text-secondary" style="font-size:.72rem">
     Ambiente de demonstração local (XAMPP) · nenhum dado real · a cota do dia só é publicada após aprovação do gestor e liberação da administradora.
+    &nbsp;·&nbsp; <a href="simulador/index.php" style="color:#64748b"><i class="bi bi-joystick"></i> Simulador Master</a>
   </div>
 </div>
 </body>

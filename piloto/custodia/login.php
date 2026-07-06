@@ -6,10 +6,13 @@ require_once __DIR__ . '/../includes/auth.php';
 
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'custodia')) {
+    if (!csrf_validar()) {
+        $erro = 'Sessão expirada. Recarregue a página e tente novamente.';
+    } elseif (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'custodia')) {
         header('Location: index.php'); exit;
+    } else {
+        $erro = 'Credenciais inválidas.';
     }
-    $erro = 'Credenciais inválidas.';
 }
 if (usuario()) {
     $dest = ['admin' => '../admin/index.php', 'custodia' => 'index.php'][usuario()['perfil']] ?? '../gestor/index.php';
@@ -45,6 +48,7 @@ if (usuario()) {
       <p class="text-muted" style="font-size:.85rem">Acesso da retaguarda de custódia (Res. CVM 32).</p>
       <?php if ($erro): ?><div class="alert alert-danger py-2" style="font-size:.85rem"><?= $erro ?></div><?php endif; ?>
       <form method="post">
+        <?= csrf_campo() ?>
         <div class="mb-2">
           <label class="form-label" style="font-size:.8rem">E-mail corporativo</label>
           <input type="email" name="email" class="form-control" required autofocus>

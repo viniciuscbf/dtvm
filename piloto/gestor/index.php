@@ -6,7 +6,7 @@ require_once __DIR__ . '/../includes/layout.php';
 
 $u = exigir_perfil('gestor', 'admin');
 $fundo = fundo_do_usuario($pdo, $u);
-if (!$fundo) die('Sem fundo vinculado.');
+if (!$fundo) { header('Location: equipe.php'); exit; }   // conta sem fundo: convites / criar 1º fundo
 exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
 

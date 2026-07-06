@@ -7,6 +7,12 @@ require_once __DIR__ . '/../includes/layout.php';
 
 $u = exigir_perfil('custodia');
 $msg = '';
+$erroSeg = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = [];
+    $erroSeg = 'Requisição inválida (proteção CSRF). Recarregue a página e tente novamente.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['processar'])) {
     $st = $pdo->prepare("SELECT * FROM mensagens_spb WHERE id = ? AND status IN ('Recebida','Erro')");
@@ -19,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['processar'])) {
                 ->execute([$m['fundo_id'], date('Y-m-d'), 'Posição', 'INFO',
                            "Mensagem {$m['codigo']} ({$m['central']}) processada pela custódia — " . mb_substr($m['descricao'], 0, 120)]);
         }
+        registrar_auditoria($pdo, 'mensagem_processada', ['entidade' => 'mensagem_spb', 'entidade_id' => $m['id'], 'fundo_id' => $m['fundo_id'], 'detalhe' => "{$m['central']} {$m['codigo']} processada"]);
         $msg = "Mensagem {$m['codigo']} processada.";
     }
 }
@@ -37,6 +44,7 @@ page_start('Mensageria SPB', 'Mensageria SPB', $u,
 ?>
 
 <?php if ($msg): ?><div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i><?= e_html($msg) ?></div><?php endif; ?>
+<?php if ($erroSeg): ?><div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle me-1"></i><?= e_html($erroSeg) ?></div><?php endif; ?>
 
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
@@ -68,7 +76,7 @@ page_start('Mensageria SPB', 'Mensageria SPB', $u,
             <?= $m['processada_por'] ? '<br><span class="text-muted" style="font-size:.68rem">' . e_html($m['processada_por']) . '</span>' : '' ?></td>
           <td class="text-end">
             <?php if ($m['status'] !== 'Processada'): ?>
-              <form method="post"><input type="hidden" name="processar" value="<?= (int)$m['id'] ?>">
+              <form method="post"><?= csrf_campo() ?><input type="hidden" name="processar" value="<?= (int)$m['id'] ?>">
                 <button class="btn btn-sm <?= $m['status'] === 'Erro' ? 'btn-danger' : 'btn-dark' ?>">
                   <i class="bi bi-arrow-repeat me-1"></i><?= $m['status'] === 'Erro' ? 'Reprocessar' : 'Processar' ?></button></form>
             <?php endif; ?>

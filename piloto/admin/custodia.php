@@ -9,25 +9,30 @@ require_once __DIR__ . '/../includes/layout.php';
 $u = exigir_perfil('admin');
 $msg = ''; $msgTipo = 'success';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = []; $msg = 'Requisição inválida (proteção CSRF). Recarregue a página.'; $msgTipo = 'danger';
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // confirmar liquidação física/financeira → movimenta o caixa do fundo
+    // confirmar liquidação física/financeira → movimenta o caixa do fundo (atômico)
     if (!empty($_POST['liquidar'])) {
         $st = $pdo->prepare("SELECT * FROM liquidacoes WHERE id = ? AND status = 'Pendente'");
         $st->execute([(int)$_POST['liquidar']]);
         if ($l = $st->fetch()) {
             $sinal = $l['operacao'] === 'Compra' ? -1 : 1;   // compra sai caixa; venda entra
-            $pdo->prepare("UPDATE liquidacoes SET status='Liquidada', confirmado_por=?, confirmado_em=NOW() WHERE id=?")
-                ->execute([$u['nome'], $l['id']]);
-            $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-                ->execute([$l['fundo_id'], $l['data_liquidacao'],
-                           $l['operacao'] === 'Compra' ? 'Liquidação Compra' : 'Liquidação Venda',
-                           "Liquidação {$l['operacao']} {$l['ativo_codigo']} (confirmada pela custódia)",
-                           $sinal * (float)$l['valor']]);
-            $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual + ? WHERE id = ?')
-                ->execute([$sinal * (float)$l['valor'], $l['fundo_id']]);
-            $pdo->prepare("INSERT INTO log_processamento (fundo_id, data_ref, etapa, nivel, mensagem) VALUES (?,?,?,?,?)")
-                ->execute([$l['fundo_id'], date('Y-m-d'), 'Caixa', 'INFO',
-                           "Liquidação de {$l['operacao']} de {$l['ativo_codigo']} confirmada por " . $u['nome']]);
+            com_transacao($pdo, function () use ($pdo, $l, $u, $sinal) {
+                $pdo->prepare("UPDATE liquidacoes SET status='Liquidada', confirmado_por=?, confirmado_em=NOW() WHERE id=?")
+                    ->execute([$u['nome'], $l['id']]);
+                $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
+                    ->execute([$l['fundo_id'], $l['data_liquidacao'],
+                               $l['operacao'] === 'Compra' ? 'Liquidação Compra' : 'Liquidação Venda',
+                               "Liquidação {$l['operacao']} {$l['ativo_codigo']} (confirmada pela custódia)",
+                               $sinal * (float)$l['valor']]);
+                $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual + ? WHERE id = ?')
+                    ->execute([$sinal * (float)$l['valor'], $l['fundo_id']]);
+                $pdo->prepare("INSERT INTO log_processamento (fundo_id, data_ref, etapa, nivel, mensagem) VALUES (?,?,?,?,?)")
+                    ->execute([$l['fundo_id'], date('Y-m-d'), 'Caixa', 'INFO',
+                               "Liquidação de {$l['operacao']} de {$l['ativo_codigo']} confirmada por " . $u['nome']]);
+            });
             $msg = "Liquidação confirmada — caixa do fundo movimentado em " . moeda(($sinal) * (float)$l['valor']) . '.';
         }
     }
@@ -35,19 +40,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     elseif (!empty($_POST['provisionar_evento'])) {
         $pdo->prepare("UPDATE eventos_corporativos SET status='Provisionado', processado_por=?, processado_em=NOW()
                        WHERE id=? AND status='Anunciado'")->execute([$u['nome'], (int)$_POST['provisionar_evento']]);
-        $msg = 'Evento provisionado — o valor passa a compor o PL como direito a receber.';
+        $msg = 'Evento provisionado — passa a compor o PL como direito a receber.';
     } elseif (!empty($_POST['liquidar_evento'])) {
         $st = $pdo->prepare("SELECT * FROM eventos_corporativos WHERE id = ? AND status = 'Provisionado'");
         $st->execute([(int)$_POST['liquidar_evento']]);
         if ($ev = $st->fetch()) {
-            $pdo->prepare("UPDATE eventos_corporativos SET status='Liquidado', processado_por=?, processado_em=NOW() WHERE id=?")
-                ->execute([$u['nome'], $ev['id']]);
-            $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-                ->execute([$ev['fundo_id'], date('Y-m-d'), 'Provento',
-                           "{$ev['tipo']} de {$ev['ativo_codigo']} creditado em conta", (float)$ev['valor_total']]);
-            $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual + ? WHERE id = ?')
-                ->execute([(float)$ev['valor_total'], $ev['fundo_id']]);
-            $msg = "{$ev['tipo']} de {$ev['ativo_codigo']} liquidado — " . moeda($ev['valor_total']) . ' creditado no caixa.';
+            creditar_evento_corporativo($pdo, $ev);   // amortização baixa principal; bonificação ajusta qtd; provento credita
+            $msg = "{$ev['tipo']} de {$ev['ativo_codigo']} processado" .
+                   ($ev['tipo'] === 'Amortização' ? ' — principal devolvido e PU do ativo reduzido'
+                   : (in_array($ev['tipo'], ['Bonificação', 'Desdobramento'], true) ? ' — quantidade ajustada (sem caixa)'
+                   : ' — ' . moeda($ev['valor_total']) . ' creditado no caixa')) . '.';
         }
     }
 }
@@ -68,10 +70,23 @@ foreach ($fundos as $f) if ((int)$f['id'] === $fidSel) $fundoSel = $f;
 if (!$fundoSel && $fundos) { $fundoSel = $fundos[0]; $fidSel = (int)$fundoSel['id']; }
 $posicao = $fundoSel ? carteira($pdo, $fidSel) : [];
 
-// divergência conhecida (conciliação aberta Posição × Custodiante do fundo)
-$st = $pdo->prepare("SELECT * FROM conciliacao WHERE fundo_id = ? AND origem = 'Posição × Custodiante' AND situacao = 'Divergente' LIMIT 1");
-$st->execute([$fidSel]);
-$divPosicao = $st->fetch();
+// posição do custodiante — fonte INDEPENDENTE (gerada no avanço de dia do simulador)
+ensure_posicao_custodiante($pdo);
+$pcData = $pdo->prepare("SELECT MAX(data_ref) FROM posicao_custodiante WHERE fundo_id=?");
+$pcData->execute([$fidSel]);
+$pcData = $pcData->fetchColumn();
+$posCust = [];
+if ($pcData) {
+    $st = $pdo->prepare("SELECT codigo, quantidade FROM posicao_custodiante WHERE fundo_id=? AND data_ref=?");
+    $st->execute([$fidSel, $pcData]);
+    foreach ($st->fetchAll() as $r) $posCust[$r['codigo']] = (float)$r['quantidade'];
+}
+// divergências reais do fundo (carteira × posição do custodiante)
+$nDivPosicao = 0;
+foreach ($posicao as $a) {
+    $qc = array_key_exists($a['codigo'], $posCust) ? $posCust[$a['codigo']] : (float)$a['quantidade'];
+    if (abs($qc - (float)$a['quantidade']) > 0.0001) $nDivPosicao++;
+}
 
 $totCustodiado = 0.0;
 foreach ($fundos as $f) {
@@ -89,7 +104,7 @@ page_start('Custódia & Liquidação', 'Custódia & Liquidação', $u,
   <?= kpi('Liquidações pendentes', (string)count($pendLiq), 'bi-arrow-left-right',
           count($pendLiq) ? moeda_compacta(array_sum(array_map(fn($l) => (float)$l['valor'], $pendLiq))) . ' a liquidar' : 'fila limpa') ?>
   <?= kpi('Eventos corporativos', count($pendEv) . ' a processar', 'bi-calendar-event') ?>
-  <?= kpi('Divergências de posição', $divPosicao ? '1 no fundo selecionado' : 'nenhuma no fundo', 'bi-exclamation-diamond') ?>
+  <?= kpi('Divergências de posição', $nDivPosicao > 0 ? $nDivPosicao . ' no fundo selecionado' : 'nenhuma no fundo', 'bi-exclamation-diamond') ?>
 </div>
 
 <div class="row g-3 mb-4">
@@ -114,7 +129,7 @@ page_start('Custódia & Liquidação', 'Custódia & Liquidação', $u,
               <td class="text-end">
                 <?php if ($l['status'] === 'Pendente'): ?>
                   <form method="post" onsubmit="return confirm('Confirmar a liquidação? O caixa do fundo será movimentado.')">
-                    <input type="hidden" name="liquidar" value="<?= (int)$l['id'] ?>">
+                    <?= csrf_campo() ?><input type="hidden" name="liquidar" value="<?= (int)$l['id'] ?>">
                     <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Confirmar</button>
                   </form>
                 <?php endif; ?>
@@ -147,11 +162,11 @@ page_start('Custódia & Liquidação', 'Custódia & Liquidação', $u,
               <td><?= badge($ev['status'], $ev['status'] === 'Liquidado' ? 'success' : ($ev['status'] === 'Provisionado' ? 'info' : 'warning')) ?></td>
               <td class="text-end">
                 <?php if ($ev['status'] === 'Anunciado'): ?>
-                  <form method="post"><input type="hidden" name="provisionar_evento" value="<?= (int)$ev['id'] ?>">
+                  <form method="post"><?= csrf_campo() ?><input type="hidden" name="provisionar_evento" value="<?= (int)$ev['id'] ?>">
                     <button class="btn btn-sm btn-outline-primary" title="Reconhece o direito no PL"><i class="bi bi-journal-plus"></i> Provisionar</button></form>
                 <?php elseif ($ev['status'] === 'Provisionado'): ?>
                   <form method="post" onsubmit="return confirm('Liquidar o evento? O valor será creditado no caixa.')">
-                    <input type="hidden" name="liquidar_evento" value="<?= (int)$ev['id'] ?>">
+                    <?= csrf_campo() ?><input type="hidden" name="liquidar_evento" value="<?= (int)$ev['id'] ?>">
                     <button class="btn btn-sm btn-success"><i class="bi bi-cash-coin"></i> Liquidar</button></form>
                 <?php endif; ?>
               </td>
@@ -183,8 +198,8 @@ page_start('Custódia & Liquidação', 'Custódia & Liquidação', $u,
         <th class="text-end">Qtde custodiada</th><th class="text-center">Batimento</th></tr></thead>
       <tbody>
       <?php foreach ($posicao as $a):
-          $divergente = $divPosicao && str_contains($divPosicao['detalhe'] ?? '', $a['codigo']);
-          $qtdCust = $divergente ? (int)((float)$a['quantidade'] * 0.83) : (float)$a['quantidade'];
+          $qtdCust = array_key_exists($a['codigo'], $posCust) ? $posCust[$a['codigo']] : (float)$a['quantidade'];
+          $divergente = abs($qtdCust - (float)$a['quantidade']) > 0.0001;   // batimento real contra a posição do custodiante
           $local = in_array($a['tipo'], ['Título Público'], true) ? 'SELIC'
                  : (in_array($a['tipo'], ['Debênture', 'CDB', 'CRI/CRA'], true) ? 'B3/Cetip' : 'B3 (Central Depositária)'); ?>
         <tr class="<?= $divergente ? 'table-danger' : '' ?>">

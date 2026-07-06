@@ -6,6 +6,12 @@ require_once __DIR__ . '/../includes/layout.php';
 
 $u = exigir_perfil('admin');
 $msg = '';
+$erroSeg = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = [];
+    $erroSeg = 'Requisição inválida (proteção CSRF). Recarregue a página e tente novamente.';
+}
 
 // AÇÕES REAIS: tratar alerta
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['alerta_id'])) {
@@ -69,6 +75,7 @@ page_start('Monitoramento de fraude · IA', 'IA · Fraude', $u,
 ?>
 
 <?php if ($msg): ?><div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i><?= e_html($msg) ?></div><?php endif; ?>
+<?php if ($erroSeg): ?><div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle me-1"></i><?= e_html($erroSeg) ?></div><?php endif; ?>
 
 <div class="row row-cols-3 g-3 mb-4">
   <?= kpi('Alertas em aberto', (string)count($abertos), 'bi-shield-exclamation',
@@ -103,6 +110,7 @@ page_start('Monitoramento de fraude · IA', 'IA · Fraude', $u,
           <?php endif; ?>
           <?php if (in_array($a['status'], ['Aberto', 'Em revisão'], true)): ?>
             <form method="post" class="d-flex gap-2 flex-wrap align-items-center">
+              <?= csrf_campo() ?>
               <input type="hidden" name="alerta_id" value="<?= (int)$a['id'] ?>">
               <input class="form-control form-control-sm" style="max-width:340px" name="justificativa" placeholder="Justificativa / observação…">
               <button class="btn btn-sm btn-outline-primary" name="acao" value="revisar"><i class="bi bi-search me-1"></i>Em revisão</button>

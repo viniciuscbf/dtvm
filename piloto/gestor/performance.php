@@ -9,6 +9,7 @@ $fundo = fundo_do_usuario($pdo, $u);
 if (!$fundo) die('Sem fundo vinculado.');
 exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
+exigir_permissao($pdo, $u, $fid, 'ver_performance');
 
 // relatório retroativo: performance "como estava" em qualquer data de fechamento
 $datas = datas_carteira($pdo, $fid);

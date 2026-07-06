@@ -9,6 +9,7 @@ $fundo = fundo_do_usuario($pdo, $u);
 if (!$fundo) die('Sem fundo vinculado.');
 exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
+exigir_permissao($pdo, $u, $fid, 'ver_cotistas');
 
 $st = $pdo->prepare('SELECT * FROM cotistas WHERE fundo_id = ? ORDER BY cotas DESC');
 $st->execute([$fid]);

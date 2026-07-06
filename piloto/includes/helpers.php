@@ -34,9 +34,9 @@ function badge(string $texto, string $cor): string {
 
 function badge_status(string $s): string {
     $map = [
-        'OK' => 'success', 'Ativo' => 'success', 'Conciliado' => 'success', 'Concluída' => 'success',
+        'OK' => 'success', 'Ativo' => 'success', 'Ativa' => 'success', 'Conciliado' => 'success', 'Concluída' => 'success',
         'Pago' => 'success', 'Aprovado' => 'success', 'Respondido' => 'success', 'Reenquadrado' => 'success',
-        'Resolvido' => 'success', 'Encerrado' => 'secondary', 'Falso positivo' => 'secondary',
+        'Resolvido' => 'success', 'Encerrado' => 'secondary', 'Encerrada' => 'secondary', 'Falso positivo' => 'secondary',
         'Pendente' => 'warning', 'Em andamento' => 'warning', 'Em abertura' => 'warning',
         'Em análise' => 'warning', 'Em revisão' => 'warning', 'Apurado' => 'warning', 'Rodando' => 'info',
         'Instruído' => 'info', 'Aberto' => 'info', 'Em aberto' => 'warning',
@@ -273,9 +273,19 @@ function total_cotas(PDO $pdo, int $fid): float {
  * Retorna [cota, pl] ou null se não houver snapshot/cotas.
  */
 function calcular_cota(PDO $pdo, array $fundo, string $data): ?array {
-    $ativos = carteira($pdo, (int)$fundo['id'], $data);
-    $totCotas = total_cotas($pdo, (int)$fundo['id']);
-    if (!$ativos || $totCotas <= 0) return null;
-    $pl = array_sum(array_column($ativos, 'valor_mercado')) + (float)$fundo['caixa_atual'];
+    $fid = (int)$fundo['id'];
+    $totCotas = total_cotas_na_data($pdo, $fid, $data);   // cotas DA data
+    if ($totCotas <= 0) return null;
+    $prov = (float)($fundo['provisao_despesas'] ?? 0);
+    if (($fundo['tipo_fundo'] ?? 'FIF') === 'FIP') {
+        // FIP: PL = caixa + valor justo das participações (marcadas por laudo/nível 3)
+        $pl = caixa_na_data($pdo, $fid, $data) + valor_participacoes_fip($pdo, $fid) - $prov;
+        return $pl > 0 ? [$pl / $totCotas, $pl] : null;
+    }
+    $ativos = carteira($pdo, $fid, $data);
+    if (!$ativos) return null;
+    $pl = array_sum(array_column($ativos, 'valor_mercado')) + caixa_na_data($pdo, $fid, $data) - $prov;
     return [$pl / $totCotas, $pl];
 }
+
+require_once __DIR__ . '/dominio.php';   // calendário, transações, catálogo, tickets, posição custodiante, provisão

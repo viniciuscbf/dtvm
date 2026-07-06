@@ -5,12 +5,14 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS onboarding_etapas, comentarios, documentos, chamados, comunicados,
+DROP TABLE IF EXISTS fip_distribuicoes, fip_avaliacoes, fip_participacoes, fip_chamada_lp, fip_chamadas, fip_lps,
+  derivativos_ajustes, derivativos, subclasses, precos_mercado, posicao_custodiante, ticket_mensagens, tickets, solicitacoes_cadastro_ativo, ativos_catalogo, sim_estado,
+  eventos_fiscais, auditoria, onboarding_etapas, comentarios, documentos, chamados, comunicados,
   enquadramento_eventos, enquadramento_regras, repasses, partes_relacionadas, alertas_fraude,
   conciliacao, log_processamento, processamento, previsao_caixa, movimentacoes, mov_cotistas,
   documentos_abertura, lancamentos, fechamentos, tokens_acesso,
   envios_regulatorios, oficios_cvm, assembleias, eventos_corporativos, liquidacoes,
-  mensagens_spb, contas_centrais, boletas, usuario_fundos,
+  mensagens_spb, contas_centrais, boletas, usuario_fundos, fundo_membros, senha_resets,
   cotistas, cdi_historico, cotas_historico, ativos_carteira, usuarios, fundos;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -26,6 +28,10 @@ CREATE TABLE fundos (
   status VARCHAR(30) DEFAULT 'Ativo', -- 'Em abertura','Ativo','Encerrado'
   gestora VARCHAR(120),
   benchmark VARCHAR(30) DEFAULT 'CDI',
+  tributacao VARCHAR(20) DEFAULT 'Longo Prazo',   -- 'Longo Prazo'/'Curto Prazo'/'Ações' (regra de come-cotas)
+  provisao_despesas DECIMAL(18,2) DEFAULT 0,      -- accrual de taxas (adm+gestão+custódia) que reduz o PL/cota
+  tipo_fundo VARCHAR(10) DEFAULT 'FIF',           -- FIF / FIC / FIP
+  master_id INT DEFAULT NULL,                     -- FIC → fundo master
   taxa_adm DECIMAL(8,6) DEFAULT 0.0008,      -- a.a. (0,08%)
   taxa_gestao DECIMAL(8,6) DEFAULT 0.007,
   taxa_performance DECIMAL(8,6) DEFAULT 0,   -- sobre o que exceder o benchmark
@@ -293,6 +299,12 @@ CREATE TABLE cotistas (
   documento VARCHAR(20),
   tipo_pessoa VARCHAR(2) DEFAULT 'PF',
   cotas DECIMAL(18,6) NOT NULL,
+  custo_total DECIMAL(18,2) DEFAULT NULL,   -- base de custo p/ apuração de ganho (NULL = PM 1,00)
+  suitability VARCHAR(20) DEFAULT NULL,     -- Conservador/Moderado/Arrojado
+  kyc_status VARCHAR(20) DEFAULT 'Pendente',
+  pld_status VARCHAR(20) DEFAULT 'Pendente',
+  fatca_crs VARCHAR(30) DEFAULT NULL,
+  termo_aceite DATETIME NULL,
   data_entrada DATE,
   FOREIGN KEY (fundo_id) REFERENCES fundos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -485,5 +497,43 @@ CREATE TABLE onboarding_etapas (
   status VARCHAR(20) NOT NULL,        -- 'Concluída','Em andamento','Pendente'
   data_conclusao DATE NULL,
   responsavel VARCHAR(100),
+  FOREIGN KEY (fundo_id) REFERENCES fundos(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------- Segurança: trilha de auditoria (append-only) ----------
+-- Registro de acessos e ações — evidência do art. 13, V da Res. CVM 32.
+-- Sem FK em fundo_id de propósito: a trilha é independente e nunca deve
+-- ser bloqueada/cascateada por operações nas demais tabelas.
+CREATE TABLE auditoria (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  criado_em   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ator        VARCHAR(120),
+  perfil      VARCHAR(20),
+  acao        VARCHAR(60) NOT NULL,
+  entidade    VARCHAR(40),
+  entidade_id VARCHAR(40),
+  fundo_id    INT NULL,
+  detalhe     VARCHAR(400),
+  ip          VARCHAR(45),
+  user_agent  VARCHAR(255),
+  INDEX idx_aud_data (criado_em),
+  INDEX idx_aud_acao (acao)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------- Passivo: eventos fiscais (come-cotas, IR e IOF no resgate) ----------
+CREATE TABLE eventos_fiscais (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  fundo_id    INT NOT NULL,
+  cotista_id  INT NULL,
+  tipo        ENUM('Come-cotas','IR Resgate','IOF Resgate') NOT NULL,
+  competencia VARCHAR(10),
+  data_ref    DATE NOT NULL,
+  base_calculo    DECIMAL(18,2) DEFAULT 0,
+  aliquota        DECIMAL(6,2)  DEFAULT 0,
+  valor_tributo   DECIMAL(18,2) NOT NULL,
+  cotas_reduzidas DECIMAL(18,6) DEFAULT 0,
+  detalhe     VARCHAR(300),
+  criado_em   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ef_fundo (fundo_id, tipo),
   FOREIGN KEY (fundo_id) REFERENCES fundos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -75,6 +75,7 @@ if ($dataCart) {
   </div>
   <div class="d-flex align-items-center gap-3">
     <span class="text-secondary" style="font-size:.75rem"><i class="bi bi-key me-1"></i>acesso: <?= $nivelRotulo ?></span>
+    <a class="btn btn-sm btn-outline-light" href="tickets.php" style="font-size:.75rem"><i class="bi bi-chat-dots me-1"></i>Dúvidas</a>
     <a class="btn btn-sm btn-outline-light" href="sair.php" style="font-size:.75rem">Sair</a>
   </div>
 </nav>

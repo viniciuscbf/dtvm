@@ -1,5 +1,6 @@
 <?php
-// Boletagem de operações — o gestor informa o que comprou/vendeu; a custódia aceita e liquida (DVP)
+// Boletagem de operações — o gestor boleta a partir do CATÁLOGO de ativos, com
+// enquadramento PRÉ-TRADE (art. 89) antes do envio; a custódia aceita e liquida (DVP).
 define('BASE_URL', '../');
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
@@ -10,18 +11,36 @@ $fundo = fundo_do_usuario($pdo, $u);
 if (!$fundo) die('Sem fundo vinculado.');
 exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
+exigir_permissao($pdo, $u, $fid, 'boletar');
+ensure_catalogo($pdo);
 
 $msg = ''; $msgTipo = 'success';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = []; $msg = 'Requisição inválida (proteção CSRF). Recarregue a página.'; $msgTipo = 'danger';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar']) && !nonce_valido()) {
+    $_POST = []; $msg = 'Boleta já enviada — envio duplicado ignorado.'; $msgTipo = 'warning';
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
     $qtd = (float)str_replace(['.', ','], ['', '.'], $_POST['quantidade'] ?? '0');
     $preco = (float)str_replace(['.', ','], ['', '.'], $_POST['preco'] ?? '0');
     $codigo = strtoupper(trim($_POST['ativo_codigo'] ?? ''));
-    $tipo = $_POST['tipo_ativo'] ?? 'CDB';
-    $operacao = $_POST['operacao'] === 'Venda' ? 'Venda' : 'Compra';
+    $operacao = ($_POST['operacao'] ?? 'Compra') === 'Venda' ? 'Venda' : 'Compra';
+
+    // 1) o ativo PRECISA estar no catálogo (não se boleta ativo fora da lista)
+    $st = $pdo->prepare("SELECT * FROM ativos_catalogo WHERE codigo = ? AND status = 'Ativo'");
+    $st->execute([$codigo]);
+    $cat = $st->fetch();
+
     if ($qtd <= 0 || $preco <= 0 || $codigo === '') {
         $msg = 'Informe ativo, quantidade e preço válidos.'; $msgTipo = 'danger';
+    } elseif (!$cat) {
+        $msg = "O ativo \"$codigo\" não está no catálogo. Solicite o cadastro em Catálogo de ativos antes de boletar.";
+        $msgTipo = 'danger';
     } else {
-        // venda: precisa ter posição suficiente no snapshot mais recente
+        $tipo = $cat['tipo'];
+        $valor = $qtd * $preco;
+
+        // 2) venda: precisa ter posição suficiente
         if ($operacao === 'Venda') {
             $st = $pdo->prepare('SELECT quantidade FROM ativos_carteira WHERE fundo_id = ? AND codigo = ? AND data_ref = ?');
             $st->execute([$fid, $codigo, ultima_data_carteira($pdo, $fid)]);
@@ -31,25 +50,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
                 $msgTipo = 'danger';
             }
         }
+
+        // 3) enquadramento PRÉ-TRADE (barra a boleta se violar o mandato)
         if ($msgTipo !== 'danger') {
-            $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, criado_por)
-                           VALUES (?,?,?,?,?,?,?,?,?,?)")
-                ->execute([$fid, $_POST['data_operacao'] ?: date('Y-m-d'), $operacao, $codigo, $tipo,
-                           $qtd, $preco, $qtd * $preco, trim($_POST['contraparte'] ?? ''), $u['nome']]);
-            $msg = "Boleta de $operacao de $codigo enviada à mesa de custódia — ela valida, liquida (DVP) e a posição entra na carteira.";
+            $pt = checar_pre_trade($pdo, $fundo, $tipo, $operacao, $valor);
+            if (!$pt['ok']) {
+                $msg = 'Boleta barrada no pré-trade (enquadramento): ' . implode(' · ', $pt['violacoes']);
+                $msgTipo = 'danger';
+            }
+        }
+
+        if ($msgTipo !== 'danger') {
+            com_transacao($pdo, function () use ($pdo, $fid, $operacao, $codigo, $tipo, $qtd, $preco, $valor, $u) {
+                $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, criado_por)
+                               VALUES (?,?,?,?,?,?,?,?,?,?)")
+                    ->execute([$fid, ($_POST['data_operacao'] ?? '') ?: date('Y-m-d'), $operacao, $codigo, $tipo,
+                               $qtd, $preco, $valor, trim($_POST['contraparte'] ?? ''), $u['nome']]);
+            });
+            registrar_auditoria($pdo, 'boleta_enviada', ['entidade' => 'boleta', 'fundo_id' => $fid,
+                'detalhe' => "$operacao de $codigo — " . moeda($valor) . ' (pré-trade OK)']);
+            $msg = "Boleta de $operacao de $codigo enviada à mesa de custódia (pré-trade OK) — ela valida, liquida (DVP) e a posição entra na carteira.";
         }
     }
 }
 
+$catalogo = $pdo->query("SELECT * FROM ativos_catalogo WHERE status='Ativo' ORDER BY tipo, codigo")->fetchAll();
+
 $st = $pdo->prepare('SELECT * FROM boletas WHERE fundo_id = ? ORDER BY criado_em DESC LIMIT 30');
 $st->execute([$fid]);
 $boletas = $st->fetchAll();
-
-// posição atual (para o gestor conferir antes de vender)
 $posicao = carteira($pdo, $fid);
 
 page_start('Boletar operação', 'Boletar operação', $u,
-    e_html($fundo['nome']) . ' · a boleta segue para a custódia, que liquida DVP e reflete na carteira e no caixa');
+    e_html($fundo['nome']) . ' · boleta a partir do catálogo, com enquadramento pré-trade, segue para a custódia (DVP)');
 ?>
 
 <?php if ($msg): ?><div class="alert alert-<?= $msgTipo ?> py-2"><i class="bi bi-info-circle me-1"></i><?= e_html($msg) ?></div><?php endif; ?>
@@ -60,19 +93,22 @@ page_start('Boletar operação', 'Boletar operação', $u,
       <div class="card-header"><i class="bi bi-receipt-cutoff me-1"></i> Nova boleta</div>
       <div class="card-body">
         <form method="post">
+          <?= csrf_campo() ?><?= nonce_campo() ?>
           <input type="hidden" name="boletar" value="1">
           <div class="row g-2">
             <div class="col-6"><label class="form-label" style="font-size:.78rem">Operação</label>
               <select class="form-select form-select-sm" name="operacao"><option>Compra</option><option>Venda</option></select></div>
             <div class="col-6"><label class="form-label" style="font-size:.78rem">Data da operação</label>
               <input type="date" class="form-control form-control-sm" name="data_operacao" value="<?= date('Y-m-d') ?>"></div>
-            <div class="col-6"><label class="form-label" style="font-size:.78rem">Código do ativo *</label>
-              <input class="form-control form-control-sm" name="ativo_codigo" required placeholder="Ex.: CDB BCO MÉTRICA, PETR4"></div>
-            <div class="col-6"><label class="form-label" style="font-size:.78rem">Tipo</label>
-              <select class="form-select form-select-sm" name="tipo_ativo">
-                <option>CDB</option><option>Debênture</option><option>Título Público</option>
-                <option>CRI/CRA</option><option>Ação</option><option>Cota de Fundo</option>
-              </select></div>
+            <div class="col-12"><label class="form-label" style="font-size:.78rem">Ativo (do catálogo) *</label>
+              <select class="form-select form-select-sm" name="ativo_codigo" required>
+                <option value="">— selecione um instrumento cadastrado —</option>
+                <?php $tipoAtual = ''; foreach ($catalogo as $c):
+                    if ($c['tipo'] !== $tipoAtual) { if ($tipoAtual !== '') echo '</optgroup>'; echo '<optgroup label="' . e_html($c['tipo']) . '">'; $tipoAtual = $c['tipo']; } ?>
+                  <option value="<?= e_html($c['codigo']) ?>"><?= e_html($c['codigo'] . ' · ' . $c['nome']) ?></option>
+                <?php endforeach; if ($tipoAtual !== '') echo '</optgroup>'; ?>
+              </select>
+              <span class="text-muted" style="font-size:.7rem">Não achou o ativo? <a href="ativos.php">Solicite o cadastro no catálogo</a> — não se boleta ativo fora da lista.</span></div>
             <div class="col-6"><label class="form-label" style="font-size:.78rem">Quantidade *</label>
               <input class="form-control form-control-sm" name="quantidade" required placeholder="500"></div>
             <div class="col-6"><label class="form-label" style="font-size:.78rem">Preço unitário (R$) *</label>
@@ -80,11 +116,11 @@ page_start('Boletar operação', 'Boletar operação', $u,
             <div class="col-12"><label class="form-label" style="font-size:.78rem">Contraparte</label>
               <input class="form-control form-control-sm" name="contraparte" placeholder="Ex.: XP CTVM, Banco Métrica (emissor)"></div>
           </div>
-          <button class="btn btn-dark btn-sm w-100 mt-3"><i class="bi bi-send me-1"></i>Enviar boleta à custódia</button>
+          <button class="btn btn-dark btn-sm w-100 mt-3"><i class="bi bi-send me-1"></i>Validar (pré-trade) e enviar à custódia</button>
         </form>
         <p class="text-muted mb-0 mt-2" style="font-size:.72rem">
-          Ciclo real reproduzido: boleta → aceite da mesa de custódia (instrução de liquidação D+1/D+2) →
-          liquidação DVP (caixa sai/entra) → ativo entra na carteira pelo preço médio → cota do dia reflete a posição.</p>
+          Ciclo real: seleção no catálogo → <b>enquadramento pré-trade</b> (art. 89) → boleta → aceite da mesa de custódia
+          (instrução D+1/D+2) → liquidação DVP → ativo entra na carteira pelo preço médio → a cota do dia reflete.</p>
       </div>
     </div>
   </div>
@@ -128,7 +164,7 @@ page_start('Boletar operação', 'Boletar operação', $u,
           <td class="text-end"><?= number_format((float)$b['quantidade'], 0, ',', '.') ?> × <?= number_format((float)$b['preco'], 4, ',', '.') ?></td>
           <td class="text-end"><b><?= moeda($b['valor']) ?></b></td>
           <td style="font-size:.8rem"><?= e_html($b['contraparte']) ?></td>
-          <td><?= badge($b['status'], ['Enviada' => 'warning', 'Aceita' => 'info', 'Liquidada' => 'success', 'Rejeitada' => 'danger'][$b['status']]) ?>
+          <td><?= badge($b['status'], ['Enviada' => 'warning', 'Aceita' => 'info', 'Liquidada' => 'success', 'Rejeitada' => 'danger'][$b['status']] ?? 'secondary') ?>
             <?= $b['status'] === 'Rejeitada' && $b['motivo'] ? '<br><span class="text-danger" style="font-size:.72rem">' . e_html($b['motivo']) . '</span>' : '' ?>
             <?= $b['status'] === 'Enviada' ? '<br><span class="text-muted" style="font-size:.7rem">aguardando aceite da custódia</span>' : '' ?></td>
         </tr>

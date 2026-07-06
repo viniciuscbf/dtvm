@@ -2,7 +2,8 @@
 // Sessão e controle de acesso — senhas com hash bcrypt (password_verify).
 // AUTH_V invalida sessões de versões antigas do piloto (que tinham login mock).
 const AUTH_V = 3;
-if (session_status() === PHP_SESSION_NONE) session_start();
+require_once __DIR__ . '/seguranca.php';
+bootstrap_seguranca();   // cookie de sessão seguro, timeout por inatividade e cabeçalhos de segurança
 
 function usuario() {
     if (($_SESSION['auth_v'] ?? 0) !== AUTH_V) return null;   // sessão antiga/inválida não vale
@@ -17,8 +18,10 @@ function login_usuario(PDO $pdo, string $email, string $senha, string $perfil): 
         session_regenerate_id(true);
         $_SESSION['usuario'] = $u;
         $_SESSION['auth_v'] = AUTH_V;
+        registrar_auditoria($pdo, 'login_ok', ['ator' => $u['nome'], 'perfil' => $perfil, 'entidade' => 'sessao', 'detalhe' => "Login bem-sucedido ($email)"]);
         return true;
     }
+    registrar_auditoria($pdo, 'login_falha', ['ator' => $email !== '' ? $email : 'anônimo', 'perfil' => $perfil, 'entidade' => 'sessao', 'detalhe' => 'Tentativa de login malsucedida']);
     return false;
 }
 
@@ -58,18 +61,30 @@ function base_url(): string {
     return defined('BASE_URL') ? BASE_URL : '../';
 }
 
-/** Todos os fundos vinculados ao usuário (uma conta de gestor pode ter vários: FIC/master, subclasses). */
+/** Todos os fundos em que o usuário é MEMBRO ATIVO (principal ou membro com permissões). */
 function fundos_do_usuario(PDO $pdo, array $u): array {
-    $st = $pdo->prepare('SELECT f.* FROM usuario_fundos uf JOIN fundos f ON f.id = uf.fundo_id
-                         WHERE uf.usuario_id = ? ORDER BY f.pl_atual DESC');
-    $st->execute([$u['id']]);
-    $lista = $st->fetchAll();
-    if (!$lista && $u['fundo_id']) {   // retrocompatibilidade com o vínculo 1:1
+    // Modelo atual: fundo_membros (papel/status/permissões). Membro só "vê" o fundo quando Ativo.
+    try {
+        $st = $pdo->prepare("SELECT f.* FROM fundo_membros m JOIN fundos f ON f.id = m.fundo_id
+                             WHERE m.usuario_id = ? AND m.status = 'Ativo' ORDER BY f.pl_atual DESC");
+        $st->execute([$u['id']]);
+        $lista = $st->fetchAll();
+        if ($lista) return $lista;
+    } catch (Throwable $e) { /* tabela ainda não criada — cai no legado */ }
+    // Legado: vínculo N:N antigo e 1:1
+    try {
+        $st = $pdo->prepare('SELECT f.* FROM usuario_fundos uf JOIN fundos f ON f.id = uf.fundo_id
+                             WHERE uf.usuario_id = ? ORDER BY f.pl_atual DESC');
+        $st->execute([$u['id']]);
+        $lista = $st->fetchAll();
+        if ($lista) return $lista;
+    } catch (Throwable $e) {}
+    if (!empty($u['fundo_id'])) {
         $st = $pdo->prepare('SELECT * FROM fundos WHERE id = ?');
         $st->execute([$u['fundo_id']]);
-        if ($f = $st->fetch()) $lista = [$f];
+        if ($f = $st->fetch()) return [$f];
     }
-    return $lista;
+    return [];
 }
 
 /** Fundo em foco. Gestor: escolhe entre os seus via ?fundo_id (fica na sessão). Admin: qualquer fundo. */

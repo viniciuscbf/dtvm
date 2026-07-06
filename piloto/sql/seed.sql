@@ -1521,7 +1521,9 @@ INSERT INTO usuarios (id, nome, email, senha, perfil, fundo_id, gestora, telefon
 (2, 'Ricardo Nunes', 'gestor@auroracapital.com.br', '$2b$10$BbDXQP.p1ZG5geegTfkOKOb8uzy0krgbeITn8z3j0KPMmeFzi2/7K', 'gestor', 1, 'Aurora Capital Gestão', '(11) 98765-1001', 'Aprovado'),
 (3, 'Luísa Andrade', 'gestor@horizonteinvest.com.br', '$2b$10$BbDXQP.p1ZG5geegTfkOKOb8uzy0krgbeITn8z3j0KPMmeFzi2/7K', 'gestor', 4, 'Horizonte Investimentos', '(11) 98765-1004', 'Aprovado'),
 (4, 'Otávio Ferraz', 'gestor@atlascapital.com.br', '$2b$10$BbDXQP.p1ZG5geegTfkOKOb8uzy0krgbeITn8z3j0KPMmeFzi2/7K', 'gestor', 7, 'Atlas Capital', '(11) 98765-1007', 'Pendente'),
-(5, 'Camila Duarte', 'gestor@novafronteira.com.br', '$2b$10$BbDXQP.p1ZG5geegTfkOKOb8uzy0krgbeITn8z3j0KPMmeFzi2/7K', 'gestor', 8, 'Nova Fronteira Gestão', '(11) 98765-1008', 'Pendente');
+(5, 'Camila Duarte', 'gestor@novafronteira.com.br', '$2b$10$BbDXQP.p1ZG5geegTfkOKOb8uzy0krgbeITn8z3j0KPMmeFzi2/7K', 'gestor', 8, 'Nova Fronteira Gestão', '(11) 98765-1008', 'Pendente'),
+-- Funcionário sem fundo: conta de gestor recém-criada, começa SEM acesso a nenhum fundo (demo do fluxo de convite).
+(7, 'Marina Lopes', 'analista@auroracapital.com.br', '$2b$10$BbDXQP.p1ZG5geegTfkOKOb8uzy0krgbeITn8z3j0KPMmeFzi2/7K', 'gestor', NULL, 'Aurora Capital Gestão', '(11) 98765-1099', 'Aprovado');
 
 -- ---------- usuario_fundos (conta pode ter vários fundos: FIC/master, subclasses) ----------
 INSERT INTO usuario_fundos (usuario_id, fundo_id) VALUES (2,1),(2,9),(3,4),(4,7),(5,8);

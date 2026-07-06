@@ -10,10 +10,12 @@ $fundo = fundo_do_usuario($pdo, $u);
 if (!$fundo) die('Sem fundo vinculado.');
 exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
+exigir_permissao($pdo, $u, $fid, 'aprovar_cota');
 $msg = ''; $msgTipo = 'success';
 
 /** Publica a cota aprovada em cotas_historico, propagando para frente se for retroativa. */
 function publicar_cota(PDO $pdo, int $fid, string $data, float $cota, float $pl): void {
+    com_transacao($pdo, function () use ($pdo, $fid, $data, $cota, $pl) {
     $st = $pdo->prepare('SELECT valor_cota FROM cotas_historico WHERE fundo_id = ? AND data_ref = ?');
     $st->execute([$fid, $data]);
     $antiga = $st->fetchColumn();
@@ -39,8 +41,10 @@ function publicar_cota(PDO $pdo, int $fid, string $data, float $cota, float $pl)
         $pdo->prepare('UPDATE fundos SET cota_atual = ?, pl_atual = ? WHERE id = ?')
             ->execute([$ult['valor_cota'], $ult['pl'], $fid]);
     }
+    });
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) { $_POST = []; $msg = 'Requisição inválida (proteção CSRF). Recarregue a página.'; $msgTipo = 'danger'; }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['fechamento_id'])) {
     $st = $pdo->prepare("SELECT * FROM fechamentos WHERE id = ? AND fundo_id = ? AND status = 'Aguardando aprovação'");
     $st->execute([(int)$_POST['fechamento_id'], $fid]);
@@ -114,13 +118,13 @@ page_start('Aprovação de cota', 'Aprovação de cota', $u,
       <?php endif; ?>
       <div class="d-flex gap-2 flex-wrap align-items-start">
         <form method="post">
-          <input type="hidden" name="fechamento_id" value="<?= (int)$f['id'] ?>">
+          <?= csrf_campo() ?><input type="hidden" name="fechamento_id" value="<?= (int)$f['id'] ?>">
           <button class="btn btn-success" name="acao" value="aprovar"
                   onclick="return confirm('Aprovar a cota de <?= data_br($f['data_ref']) ?>? Ela será publicada aos cotistas.')">
             <i class="bi bi-check-lg me-1"></i>Aprovar cota</button>
         </form>
         <form method="post" class="d-flex gap-2 flex-grow-1" style="max-width:560px">
-          <input type="hidden" name="fechamento_id" value="<?= (int)$f['id'] ?>">
+          <?= csrf_campo() ?><input type="hidden" name="fechamento_id" value="<?= (int)$f['id'] ?>">
           <input class="form-control form-control-sm" name="motivo" placeholder="Motivo da rejeição (ex.: preço da DEB VALE29 divergente do nosso controle)…">
           <button class="btn btn-outline-danger" name="acao" value="rejeitar"><i class="bi bi-x-lg me-1"></i>Rejeitar</button>
         </form>

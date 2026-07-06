@@ -8,6 +8,11 @@ require_once __DIR__ . '/../includes/layout.php';
 $u = exigir_perfil('admin');
 $msg = ''; $msgTipo = 'success';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = [];
+    $msg = 'Requisição inválida (proteção CSRF). Recarregue a página e tente novamente.'; $msgTipo = 'danger';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // aprovar / rejeitar documento
     if (!empty($_POST['doc_id'])) {
@@ -110,6 +115,7 @@ page_start('Aberturas de fundos', 'Aberturas de fundos', $u,
       <span><i class="bi bi-rocket-takeoff me-1"></i> <b><?= e_html($f['nome']) ?></b>
         <span class="text-muted" style="font-size:.78rem">· <?= e_html($f['gestora']) ?> · <?= e_html($f['classe']) ?> · <?= e_html($f['publico_alvo']) ?></span></span>
       <form method="post" onsubmit="return confirm('Lançar o fundo <?= e_html($f['nome']) ?>? Ele passa a Ativo e o gestor ganha acesso completo.')">
+        <?= csrf_campo() ?>
         <input type="hidden" name="lancar_fundo" value="<?= (int)$f['id'] ?>">
         <button class="btn btn-sm <?= $prontoParaLancar ? 'btn-success' : 'btn-outline-secondary' ?>" <?= $prontoParaLancar ? '' : 'disabled title="Há pendências no checklist"' ?>>
           <i class="bi bi-flag me-1"></i>Lançar fundo</button>
@@ -125,7 +131,7 @@ page_start('Aberturas de fundos', 'Aberturas de fundos', $u,
               <span class="d-flex gap-1 align-items-center">
                 <?= badge_status($e['status']) ?>
                 <?php if ($e['status'] === 'Em andamento' && $e['etapa'] !== 'Fundo apto'): ?>
-                  <form method="post"><input type="hidden" name="concluir_etapa" value="<?= (int)$e['id'] ?>">
+                  <form method="post"><?= csrf_campo() ?><input type="hidden" name="concluir_etapa" value="<?= (int)$e['id'] ?>">
                     <button class="btn btn-sm btn-outline-success py-0" title="Marcar como concluída"><i class="bi bi-check-lg"></i></button></form>
                 <?php endif; ?>
               </span>
@@ -156,6 +162,7 @@ page_start('Aberturas de fundos', 'Aberturas de fundos', $u,
                   <td>
                     <?php if (in_array($d['status'], ['Recebido', 'Rejeitado', 'Aprovado'], true)): ?>
                       <form method="post" class="d-flex gap-1">
+                        <?= csrf_campo() ?>
                         <input type="hidden" name="doc_id" value="<?= (int)$d['id'] ?>">
                         <?php if ($d['status'] !== 'Aprovado'): ?>
                           <button class="btn btn-sm btn-outline-success py-0" name="acao" value="aprovar" <?= $d['status'] === 'Pendente' ? 'disabled' : '' ?>><i class="bi bi-check-lg"></i></button>
