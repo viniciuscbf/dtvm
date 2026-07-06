@@ -1,0 +1,145 @@
+<?php
+// Sessão e controle de acesso — senhas com hash bcrypt (password_verify).
+// AUTH_V invalida sessões de versões antigas do piloto (que tinham login mock).
+const AUTH_V = 3;
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+function usuario() {
+    if (($_SESSION['auth_v'] ?? 0) !== AUTH_V) return null;   // sessão antiga/inválida não vale
+    return $_SESSION['usuario'] ?? null;
+}
+
+function login_usuario(PDO $pdo, string $email, string $senha, string $perfil): bool {
+    $st = $pdo->prepare('SELECT * FROM usuarios WHERE email = ? AND perfil = ?');
+    $st->execute([$email, $perfil]);
+    $u = $st->fetch();
+    if ($u && password_verify($senha, $u['senha'])) {
+        session_regenerate_id(true);
+        $_SESSION['usuario'] = $u;
+        $_SESSION['auth_v'] = AUTH_V;
+        return true;
+    }
+    return false;
+}
+
+function logout_usuario(): void {
+    $_SESSION = [];
+    session_destroy();
+}
+
+/** Bloqueia a página se não houver login com o perfil exigido. Revalida o usuário no banco a cada página. */
+function exigir_perfil(string ...$perfis): array {
+    global $pdo;
+    $u = usuario();
+    // revalidação no banco: usuário precisa continuar existindo com o mesmo perfil
+    if ($u && isset($pdo)) {
+        $st = $pdo->prepare('SELECT * FROM usuarios WHERE id = ? AND perfil = ?');
+        $st->execute([$u['id'], $u['perfil']]);
+        $atual = $st->fetch();
+        if (!$atual) { logout_usuario(); $u = null; }
+        else { $_SESSION['usuario'] = $u = $atual; }
+    }
+    if (!$u) {
+        // manda para o login do portal correto
+        $login = 'gestor/login.php';
+        if (count($perfis) === 1 && $perfis[0] === 'admin') $login = 'admin/login.php';
+        if (count($perfis) === 1 && $perfis[0] === 'custodia') $login = 'custodia/login.php';
+        header('Location: ' . base_url() . $login); exit;
+    }
+    if (!in_array($u['perfil'], $perfis, true)) {
+        $destino = ['admin' => 'admin/index.php', 'custodia' => 'custodia/index.php'][$u['perfil']] ?? 'gestor/index.php';
+        header('Location: ' . base_url() . $destino); exit;
+    }
+    return $u;
+}
+
+/** Prefixo relativo até a raiz do piloto (páginas ficam 1 nível abaixo). */
+function base_url(): string {
+    return defined('BASE_URL') ? BASE_URL : '../';
+}
+
+/** Todos os fundos vinculados ao usuário (uma conta de gestor pode ter vários: FIC/master, subclasses). */
+function fundos_do_usuario(PDO $pdo, array $u): array {
+    $st = $pdo->prepare('SELECT f.* FROM usuario_fundos uf JOIN fundos f ON f.id = uf.fundo_id
+                         WHERE uf.usuario_id = ? ORDER BY f.pl_atual DESC');
+    $st->execute([$u['id']]);
+    $lista = $st->fetchAll();
+    if (!$lista && $u['fundo_id']) {   // retrocompatibilidade com o vínculo 1:1
+        $st = $pdo->prepare('SELECT * FROM fundos WHERE id = ?');
+        $st->execute([$u['fundo_id']]);
+        if ($f = $st->fetch()) $lista = [$f];
+    }
+    return $lista;
+}
+
+/** Fundo em foco. Gestor: escolhe entre os seus via ?fundo_id (fica na sessão). Admin: qualquer fundo. */
+function fundo_do_usuario(PDO $pdo, array $u): ?array {
+    if ($u['perfil'] === 'admin') {
+        if (isset($_GET['fundo_id'])) $_SESSION['admin_fundo_id'] = (int)$_GET['fundo_id'];
+        $fid = $_SESSION['admin_fundo_id'] ?? 1;
+        $st = $pdo->prepare('SELECT * FROM fundos WHERE id = ?');
+        $st->execute([$fid]);
+        return $st->fetch() ?: null;
+    }
+    $meus = fundos_do_usuario($pdo, $u);
+    if (!$meus) return null;
+    $ids = array_map(fn($f) => (int)$f['id'], $meus);
+    if (isset($_GET['fundo_id']) && in_array((int)$_GET['fundo_id'], $ids, true)) {
+        $_SESSION['gestor_fundo_id'] = (int)$_GET['fundo_id'];
+    }
+    $fid = $_SESSION['gestor_fundo_id'] ?? $ids[0];
+    if (!in_array($fid, $ids, true)) $fid = $ids[0];
+    foreach ($meus as $f) if ((int)$f['id'] === $fid) return $f;
+    return $meus[0];
+}
+
+/** Gestor de fundo em abertura só vê a página de status da abertura. */
+function exigir_fundo_ativo(array $fundo): void {
+    if ($fundo['status'] !== 'Ativo' && (usuario()['perfil'] ?? '') === 'gestor') {
+        header('Location: ' . base_url() . 'gestor/abertura.php'); exit;
+    }
+}
+
+// ---------------- Acesso do COTISTA (por token, sem usuário) ----------------
+
+/** Valida token informado; grava na sessão. Retorna a linha do token ou null. */
+function login_token(PDO $pdo, string $token): ?array {
+    $token = strtolower(trim($token));
+    if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $token)) return null;
+    $st = $pdo->prepare("SELECT t.*, f.nome fundo_nome, f.status fundo_status FROM tokens_acesso t
+                         JOIN fundos f ON f.id = t.fundo_id WHERE t.token = ? AND t.status = 'Ativo'");
+    $st->execute([$token]);
+    $t = $st->fetch();
+    if ($t) { session_regenerate_id(true); $_SESSION['cotista_token'] = $t['token']; }
+    return $t ?: null;
+}
+
+/** Exige token de cotista válido (revalida no banco — revogação vale na hora). */
+function exigir_token(PDO $pdo): array {
+    $tok = $_SESSION['cotista_token'] ?? '';
+    if ($tok) {
+        $st = $pdo->prepare("SELECT t.*, f.nome fundo_nome, f.status fundo_status FROM tokens_acesso t
+                             JOIN fundos f ON f.id = t.fundo_id WHERE t.token = ? AND t.status = 'Ativo'");
+        $st->execute([$tok]);
+        if ($t = $st->fetch()) return $t;
+    }
+    unset($_SESSION['cotista_token']);
+    header('Location: ' . base_url() . 'cotista/index.php?expirado=1'); exit;
+}
+
+/** Data de corte dos dados visíveis pelo nível do token. */
+function data_corte_token(array $token): string {
+    return match ($token['nivel']) {
+        'realtime' => date('Y-m-d'),
+        'delay_1m' => date('Y-m-d', strtotime('-1 month')),
+        default    => date('Y-m-d', strtotime('-3 months')),
+    };
+}
+
+/** UUID v4 (36 caracteres) para tokens de acesso. */
+function uuid4(): string {
+    $b = random_bytes(16);
+    $b[6] = chr((ord($b[6]) & 0x0f) | 0x40);
+    $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($b), 4));
+}

@@ -1,0 +1,119 @@
+/* ============================================================
+   Plataforma Administradora — tema visual do piloto
+   ============================================================ */
+:root {
+  --navy: #0e1a2b;
+  --navy-2: #14243a;
+  --gold: #c9a227;
+  --teal: #14b8a6;
+  --blue: #3b82f6;
+  --bg: #f2f4f8;
+  --card: #ffffff;
+  --texto: #1e293b;
+  --muted: #64748b;
+  --borda: #e2e8f0;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--texto);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+
+.app-wrap { display: flex; min-height: 100vh; }
+
+/* ---------- Sidebar ---------- */
+.sidebar { width: 250px; flex-shrink: 0; background: linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%);
+  color: #cbd5e1; display: flex; flex-direction: column; padding: 18px 14px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+.brand { display: flex; gap: 10px; align-items: center; padding: 4px 8px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.brand i { font-size: 1.6rem; color: var(--gold); }
+.brand-name { font-weight: 700; letter-spacing: 2px; font-size: .82rem; color: #fff; }
+.brand-sub { font-size: .66rem; color: #94a3b8; }
+.perfil-chip { margin: 14px 0 10px; padding: 8px 10px; border-radius: 10px; font-size: .8rem;
+  background: rgba(255,255,255,.06); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.perfil-chip span { margin-left: auto; font-size: .65rem; padding: 2px 8px; border-radius: 20px; }
+.chip-gold span { background: rgba(201,162,39,.25); color: #eeda9a; }
+.chip-teal span { background: rgba(20,184,166,.22); color: #7ee8dc; }
+.chip-blue span { background: rgba(59,130,246,.25); color: #a8c8fa; }
+.menu { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; flex: 1; }
+.menu a { color: #cbd5e1; text-decoration: none; padding: 9px 12px; border-radius: 8px;
+  font-size: .88rem; display: flex; align-items: center; gap: 10px; transition: background .15s; }
+.menu a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.menu a.ativo { background: var(--gold); color: var(--navy); font-weight: 600; }
+.menu a.ativo i { color: var(--navy); }
+.menu i { color: #94a3b8; width: 18px; text-align: center; }
+.sair { color: #94a3b8; text-decoration: none; font-size: .85rem; padding: 10px 12px;
+  border-top: 1px solid rgba(255,255,255,.08); margin-top: 10px; }
+.sair:hover { color: #fff; }
+
+/* ---------- Conteúdo ---------- */
+.conteudo { flex: 1; padding: 26px 32px; max-width: 1500px; }
+.titulo-pagina { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+.titulo-pagina h1 { font-size: 1.45rem; font-weight: 700; margin: 0; }
+.subtitulo { color: var(--muted); font-size: .88rem; margin: 4px 0 0; }
+.data-ref { color: var(--muted); font-size: .85rem; background: var(--card); border: 1px solid var(--borda);
+  padding: 6px 14px; border-radius: 8px; }
+
+/* ---------- Cartões ---------- */
+.card { border: 1px solid var(--borda); border-radius: 12px; box-shadow: 0 1px 3px rgba(15,23,42,.05); }
+.card-header { background: transparent; border-bottom: 1px solid var(--borda); font-weight: 600; font-size: .92rem; }
+.kpi-card { background: var(--card); border: 1px solid var(--borda); border-radius: 12px; padding: 16px;
+  display: flex; gap: 14px; align-items: center; height: 100%; box-shadow: 0 1px 3px rgba(15,23,42,.05); }
+.kpi-icone { width: 44px; height: 44px; border-radius: 10px; background: rgba(20,184,166,.12);
+  color: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0; }
+.kpi-rotulo { font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.kpi-valor { font-size: 1.25rem; font-weight: 700; line-height: 1.25; }
+.kpi-extra { font-size: .78rem; color: var(--muted); }
+
+/* ---------- Badges suaves ---------- */
+.badge[class*="badge-soft-"] { font-weight: 600; padding: .38em .7em; border-radius: 20px; }
+.badge-soft-success  { background: #dcfce7; color: #15803d; }
+.badge-soft-danger   { background: #fee2e2; color: #b91c1c; }
+.badge-soft-warning  { background: #fef3c7; color: #92400e; }
+.badge-soft-info     { background: #dbeafe; color: #1d4ed8; }
+.badge-soft-secondary{ background: #e2e8f0; color: #475569; }
+.badge-soft-gold     { background: #f5ecd0; color: #8a6d15; }
+
+/* ---------- Tabelas ---------- */
+.table { font-size: .87rem; }
+.table thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .4px;
+  color: var(--muted); border-bottom-width: 2px; }
+.table td { vertical-align: middle; }
+
+/* ---------- Semáforo / diversos ---------- */
+.semaforo { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.sem-verde { background: #22c55e; } .sem-amarelo { background: #eab308; } .sem-vermelho { background: #ef4444; }
+.split-banco { color: var(--gold); font-weight: 700; }
+.grafico-box { position: relative; }
+.link-limpo { text-decoration: none; }
+
+/* ---------- Stepper (onboarding) ---------- */
+.stepper { list-style: none; padding: 0; margin: 0; }
+.stepper li { display: flex; gap: 14px; padding: 0 0 22px; position: relative; }
+.stepper li::before { content: ""; position: absolute; left: 15px; top: 32px; bottom: 0; width: 2px; background: var(--borda); }
+.stepper li:last-child::before { display: none; }
+.step-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; flex-shrink: 0; z-index: 1; border: 2px solid var(--borda); background: #fff; color: var(--muted); }
+.step-ok .step-dot { background: #16a34a; border-color: #16a34a; color: #fff; }
+.step-atual .step-dot { background: #fff; border-color: var(--gold); color: var(--gold); }
+.step-titulo { font-weight: 600; font-size: .9rem; }
+.step-meta { font-size: .78rem; color: var(--muted); }
+
+/* ---------- Login ---------- */
+.login-bg { min-height: 100vh; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(1200px 600px at 70% -10%, #1d3354 0%, var(--navy) 55%); }
+.login-card { width: 100%; max-width: 900px; margin: 20px; background: #fff; border-radius: 18px;
+  overflow: hidden; display: flex; box-shadow: 0 25px 60px rgba(0,0,0,.45); }
+.login-lado { background: linear-gradient(160deg, var(--navy) 0%, #1a2f4a 100%); color: #e2e8f0;
+  padding: 44px 38px; width: 46%; display: flex; flex-direction: column; }
+.login-lado h2 { font-size: 1.3rem; color: #fff; }
+.login-lado ul { font-size: .85rem; color: #94a3b8; padding-left: 18px; margin-top: 14px; }
+.login-lado li { margin-bottom: 8px; }
+.login-form { padding: 44px 38px; flex: 1; }
+.acesso-rapido button { text-align: left; }
+@media (max-width: 820px) { .login-card { flex-direction: column; } .login-lado { width: 100%; } }
+
+/* ---------- Grafo de partes relacionadas ---------- */
+#grafo-partes { width: 100%; height: 380px; background: #0e1a2b; border-radius: 12px; }
+
+/* ---------- Barras de limite (enquadramento) ---------- */
+.limite-barra { height: 8px; border-radius: 6px; background: #e2e8f0; overflow: hidden; }
+.limite-barra > div { height: 100%; border-radius: 6px; }
