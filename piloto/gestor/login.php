@@ -7,12 +7,14 @@ require_once __DIR__ . '/../includes/auth.php';
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'gestor')) {
-        // fundo em abertura? o gestor cai direto no status do processo
         $u = usuario();
-        $st = $pdo->prepare('SELECT status FROM fundos WHERE id = ?');
-        $st->execute([$u['fundo_id']]);
-        $statusFundo = $st->fetchColumn();
-        header('Location: ' . ($statusFundo === 'Ativo' ? 'index.php' : 'abertura.php'));
+        $meus = fundos_do_usuario($pdo, $u);
+        if (!$meus) {
+            header('Location: equipe.php'); exit;        // conta sem fundo: vê convites e cria o 1º fundo
+        }
+        // fundo em foco em abertura? cai no status do processo
+        $emAberturaSozinho = count($meus) === 1 && ($meus[0]['status'] ?? '') !== 'Ativo';
+        header('Location: ' . ($emAberturaSozinho ? 'abertura.php' : 'index.php'));
         exit;
     }
     $erro = 'E-mail ou senha inválidos.';
@@ -58,6 +60,7 @@ if (usuario()) { header('Location: ' . (usuario()['perfil'] === 'admin' ? '../ad
         </div>
         <button class="btn w-100" style="background:#14b8a6;color:#fff">Entrar no portal</button>
       </form>
+      <div class="text-end mt-2"><a href="recuperar.php" style="font-size:.78rem;color:#0d9488">Esqueci minha senha</a></div>
       <hr>
       <p style="font-size:.82rem" class="mb-1">Ainda não é cliente?</p>
       <a class="btn btn-outline-dark btn-sm w-100" href="cadastro.php"><i class="bi bi-rocket-takeoff me-1"></i>Constituir um novo fundo</a>

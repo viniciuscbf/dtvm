@@ -19,6 +19,7 @@ $data = $_GET['data'] ?? $_POST['data'] ?? ($datas[0] ?? date('Y-m-d'));
 if (!in_array($data, $datas, true) && $datas) $data = $datas[0];
 
 // ---------------- AÇÕES ----------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) { $_POST = []; $msg = 'Requisição inválida (proteção CSRF). Recarregue a página.'; $msgTipo = 'danger'; }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ajuste de preço ou quantidade de um ativo do snapshot da data
     if (!empty($_POST['ajustar_ativo'])) {
@@ -28,13 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $campo = $_POST['campo'] === 'quantidade' ? 'quantidade' : 'preco_mam';
             $novo = (float)str_replace(',', '.', $_POST['novo_valor'] ?? '0');
             if ($novo > 0) {
-                $pdo->prepare("UPDATE ativos_carteira SET $campo = ? WHERE id = ?")->execute([$novo, $a['id']]);
-                $pdo->prepare("INSERT INTO lancamentos (fundo_id, data_ref, tipo, ativo_codigo, descricao, valor_antigo, valor_novo, autor)
-                               VALUES (?,?,?,?,?,?,?,?)")
-                    ->execute([$fid, $a['data_ref'],
-                               $campo === 'preco_mam' ? 'Ajuste de preço' : 'Correção de quantidade',
-                               $a['codigo'], trim($_POST['justificativa'] ?? 'Ajuste da controladoria'),
-                               $a[$campo], $novo, $u['nome']]);
+                com_transacao($pdo, function () use ($pdo, $campo, $novo, $a, $fid, $u) {
+                    $pdo->prepare("UPDATE ativos_carteira SET $campo = ? WHERE id = ?")->execute([$novo, $a['id']]);
+                    $pdo->prepare("INSERT INTO lancamentos (fundo_id, data_ref, tipo, ativo_codigo, descricao, valor_antigo, valor_novo, autor)
+                                   VALUES (?,?,?,?,?,?,?,?)")
+                        ->execute([$fid, $a['data_ref'],
+                                   $campo === 'preco_mam' ? 'Ajuste de preço' : 'Correção de quantidade',
+                                   $a['codigo'], trim($_POST['justificativa'] ?? 'Ajuste da controladoria'),
+                                   $a[$campo], $novo, $u['nome']]);
+                });
                 $msg = ($campo === 'preco_mam' ? 'Preço' : 'Quantidade') . " de {$a['codigo']} ajustado em " . data_br($a['data_ref']) .
                        '. Recalcule a cota para gerar nova prévia ao gestor.';
                 $msgTipo = 'warning';
@@ -47,12 +50,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tipo = in_array($_POST['tipo_caixa'] ?? '', ['Movimentação de caixa', 'Provento', 'Taxa/Despesa', 'Evento corporativo'], true)
               ? $_POST['tipo_caixa'] : 'Movimentação de caixa';
         if (abs($valor) > 0.009) {
-            $pdo->prepare("INSERT INTO lancamentos (fundo_id, data_ref, tipo, descricao, valor_caixa, autor) VALUES (?,?,?,?,?,?)")
-                ->execute([$fid, $data, $tipo, trim($_POST['descricao_caixa'] ?? ''), $valor, $u['nome']]);
-            $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-                ->execute([$fid, $data, $tipo === 'Provento' ? 'Provento' : ($valor >= 0 ? 'Aplicação' : 'Taxa'),
-                           '[Lançamento controladoria] ' . trim($_POST['descricao_caixa'] ?? ''), $valor]);
-            $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual + ? WHERE id = ?')->execute([$valor, $fid]);
+            // classifica o movimento pelo TIPO escolhido pela controladoria (não pelo sinal)
+            $movTipo = ['Provento' => 'Provento', 'Taxa/Despesa' => 'Taxa', 'Evento corporativo' => 'Provento', 'Movimentação de caixa' => 'Movimentação'][$tipo] ?? 'Movimentação';
+            com_transacao($pdo, function () use ($pdo, $fid, $data, $tipo, $movTipo, $valor, $u) {
+                $pdo->prepare("INSERT INTO lancamentos (fundo_id, data_ref, tipo, descricao, valor_caixa, autor) VALUES (?,?,?,?,?,?)")
+                    ->execute([$fid, $data, $tipo, trim($_POST['descricao_caixa'] ?? ''), $valor, $u['nome']]);
+                $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
+                    ->execute([$fid, $data, $movTipo, '[Lançamento controladoria] ' . trim($_POST['descricao_caixa'] ?? ''), $valor]);
+                $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual + ? WHERE id = ?')->execute([$valor, $fid]);
+            });
             $fundoSel['caixa_atual'] += $valor;
             $msg = 'Lançamento de caixa registrado (' . moeda($valor) . '). Recalcule a cota para refletir na prévia.';
             $msgTipo = 'warning';
@@ -63,17 +69,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $calc = calcular_cota($pdo, $fundoSel, $data);
         if ($calc) {
             [$cota, $pl] = $calc;
-            $st = $pdo->prepare('SELECT COALESCE(MAX(versao),0) FROM fechamentos WHERE fundo_id = ? AND data_ref = ?');
-            $st->execute([$fid, $data]);
-            $versao = (int)$st->fetchColumn() + 1;
-            // versões anteriores aprovadas ficam marcadas como republicadas na trilha
-            $pdo->prepare("UPDATE fechamentos SET status='Republicada', liberado_download=0
-                           WHERE fundo_id=? AND data_ref=? AND status IN ('Aprovada','Reaberta')")->execute([$fid, $data]);
-            $pdo->prepare("INSERT INTO fechamentos (fundo_id, data_ref, versao, valor_cota, pl, status, calculada_em, motivo)
-                           VALUES (?,?,?,?,?,'Aguardando aprovação',NOW(),?)")
-                ->execute([$fid, $data, $versao, $cota, $pl, 'Reprocessamento após lançamentos da controladoria']);
-            $pdo->prepare("INSERT INTO log_processamento (fundo_id, data_ref, etapa, nivel, mensagem) VALUES (?,?,?,?,?)")
-                ->execute([$fid, $data, 'Cota', 'INFO', "Cota reprocessada (v$versao) por " . $u['nome'] . ' após lançamentos']);
+            $versao = com_transacao($pdo, function () use ($pdo, $fid, $data, $cota, $pl, $u) {
+                $st = $pdo->prepare('SELECT COALESCE(MAX(versao),0) FROM fechamentos WHERE fundo_id = ? AND data_ref = ?');
+                $st->execute([$fid, $data]);
+                $versao = (int)$st->fetchColumn() + 1;
+                $pdo->prepare("UPDATE fechamentos SET status='Republicada', liberado_download=0
+                               WHERE fundo_id=? AND data_ref=? AND status IN ('Aprovada','Reaberta')")->execute([$fid, $data]);
+                $pdo->prepare("INSERT INTO fechamentos (fundo_id, data_ref, versao, valor_cota, pl, status, calculada_em, motivo)
+                               VALUES (?,?,?,?,?,'Aguardando aprovação',NOW(),?)")
+                    ->execute([$fid, $data, $versao, $cota, $pl, 'Reprocessamento após lançamentos da controladoria']);
+                $pdo->prepare("INSERT INTO log_processamento (fundo_id, data_ref, etapa, nivel, mensagem) VALUES (?,?,?,?,?)")
+                    ->execute([$fid, $data, 'Cota', 'INFO', "Cota reprocessada (v$versao) por " . $u['nome'] . ' após lançamentos']);
+                return $versao;
+            });
             $ehRetro = $data !== ($datas[0] ?? $data);
             $msg = "Cota de " . data_br($data) . " reprocessada (v$versao) e enviada ao gestor." .
                    ($ehRetro ? ' Por ser retroativa, na aprovação as cotas dos dias seguintes serão republicadas em cascata.' : '');
@@ -143,7 +151,7 @@ page_start('Lançamentos & Ajustes', 'Lançamentos & Ajustes', $u,
               <td class="text-end"><?= moeda($a['valor_mercado']) ?></td>
               <td>
                 <form method="post" class="d-flex gap-1">
-                  <input type="hidden" name="ajustar_ativo" value="<?= (int)$a['id'] ?>">
+                  <?= csrf_campo() ?><input type="hidden" name="ajustar_ativo" value="<?= (int)$a['id'] ?>">
                   <input type="hidden" name="fundo_id" value="<?= $fid ?>"><input type="hidden" name="data" value="<?= e_html($data) ?>">
                   <select name="campo" class="form-select form-select-sm" style="max-width:110px">
                     <option value="preco_mam">preço</option><option value="quantidade">qtde</option>
@@ -170,7 +178,7 @@ page_start('Lançamentos & Ajustes', 'Lançamentos & Ajustes', $u,
       <div class="card-header"><i class="bi bi-wallet2 me-1"></i> Lançar no caixa (<?= data_br($data) ?>)</div>
       <div class="card-body">
         <form method="post">
-          <input type="hidden" name="lancar_caixa" value="1">
+          <?= csrf_campo() ?><input type="hidden" name="lancar_caixa" value="1">
           <input type="hidden" name="fundo_id" value="<?= $fid ?>"><input type="hidden" name="data" value="<?= e_html($data) ?>">
           <div class="mb-2">
             <select name="tipo_caixa" class="form-select form-select-sm">
@@ -192,7 +200,7 @@ page_start('Lançamentos & Ajustes', 'Lançamentos & Ajustes', $u,
       <div class="card-body text-center d-flex flex-column justify-content-center">
         <p class="mb-2" style="font-size:.84rem">Ajustes feitos? Gere a nova prévia:</p>
         <form method="post">
-          <input type="hidden" name="recalcular" value="1">
+          <?= csrf_campo() ?><input type="hidden" name="recalcular" value="1">
           <input type="hidden" name="fundo_id" value="<?= $fid ?>"><input type="hidden" name="data" value="<?= e_html($data) ?>">
           <button class="btn btn-success w-100"><i class="bi bi-arrow-repeat me-1"></i>Recalcular cota de <?= data_br($data) ?></button>
         </form>

@@ -1,5 +1,6 @@
 <?php
 // Conexão PDO com o MySQL do XAMPP
+date_default_timezone_set('America/Sao_Paulo');   // fuso fixo (evita virada de dia errada)
 $host = 'localhost';
 $db   = 'administradora';
 $user = 'root';

@@ -9,6 +9,11 @@ $u = exigir_perfil('admin');
 $msg = ''; $msgTipo = 'success';
 
 // ---------------- AÇÕES ----------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = [];
+    $msg = 'Requisição inválida (proteção CSRF). Recarregue a página e tente novamente.'; $msgTipo = 'danger';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // reprocessar etapa do batch com erro
     if (!empty($_POST['reprocessar_etapa'])) {
@@ -113,7 +118,7 @@ page_start('Processamento & Cota', 'Processamento & Cota', $u,
           <?php endforeach; ?>
           <td class="text-end" style="min-width:130px">
             <?php if ($falha && $falha['status'] === 'Erro'): ?>
-              <form method="post"><input type="hidden" name="reprocessar_etapa" value="<?= (int)$falha['id'] ?>">
+              <form method="post"><?= csrf_campo() ?><input type="hidden" name="reprocessar_etapa" value="<?= (int)$falha['id'] ?>">
                 <button class="btn btn-sm btn-danger"><i class="bi bi-arrow-clockwise me-1"></i>Reprocessar</button></form>
             <?php elseif ($falha): ?><?= badge('aguardando', 'warning') ?>
             <?php else: ?><?= badge('batch OK', 'success') ?><?php endif; ?>
@@ -150,6 +155,7 @@ page_start('Processamento & Cota', 'Processamento & Cota', $u,
           <td class="text-end">
             <?php if (!$fe || in_array($fe['status'], ['Em processamento', 'Rejeitada', 'Reaberta'], true)): ?>
               <form method="post" class="d-inline">
+                <?= csrf_campo() ?>
                 <input type="hidden" name="gerar_previa" value="<?= (int)$f['id'] ?>|<?= e_html($dataBatch) ?>">
                 <button class="btn btn-sm btn-dark"><i class="bi bi-send me-1"></i><?= $fe ? 'Recalcular e reenviar' : 'Gerar prévia' ?></button>
               </form>
@@ -159,6 +165,7 @@ page_start('Processamento & Cota', 'Processamento & Cota', $u,
               <span class="text-muted" style="font-size:.76rem"><i class="bi bi-hourglass-split me-1"></i>com o gestor</span>
             <?php else: ?>
               <form method="post" class="d-inline" onsubmit="return confirm('Reabrir o fechamento? A cota sairá do ar até novo ciclo de aprovação.')">
+                <?= csrf_campo() ?>
                 <input type="hidden" name="reabrir" value="<?= (int)$fe['id'] ?>">
                 <button class="btn btn-sm btn-outline-danger" title="Reabrir para correção"><i class="bi bi-arrow-counterclockwise"></i> Reabrir</button>
               </form>

@@ -9,6 +9,7 @@ $fundo = fundo_do_usuario($pdo, $u);
 if (!$fundo) die('Sem fundo vinculado.');
 exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
+exigir_permissao($pdo, $u, $fid, 'ver_carteira');
 
 // seletor retroativo de data (snapshots diários da carteira)
 $datas = datas_carteira($pdo, $fid);

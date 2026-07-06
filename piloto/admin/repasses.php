@@ -6,6 +6,12 @@ require_once __DIR__ . '/../includes/layout.php';
 
 $u = exigir_perfil('admin');
 $msg = '';
+$erroSeg = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = [];
+    $erroSeg = 'Requisição inválida (proteção CSRF). Recarregue a página e tente novamente.';
+}
 
 // AÇÃO REAL: instruir pagamento de um repasse
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['instruir'])) {
@@ -35,6 +41,7 @@ page_start('Repasses & Receita', 'Repasses', $u,
 ?>
 
 <?php if ($msg): ?><div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i><?= e_html($msg) ?></div><?php endif; ?>
+<?php if ($erroSeg): ?><div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle me-1"></i><?= e_html($erroSeg) ?></div><?php endif; ?>
 
 <div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
   <?= kpi('Receita de adm. (' . e_html($comp) . ')', moeda($totAdm, 0), 'bi-cash-stack', 'projeção anual: ' . moeda_compacta($totAdm * 12)) ?>
@@ -80,7 +87,7 @@ page_start('Repasses & Receita', 'Repasses', $u,
           <td><?= badge_status($r['status']) ?></td>
           <td class="text-end">
             <?php if ($r['status'] === 'Apurado'): ?>
-              <form method="post"><input type="hidden" name="instruir" value="<?= (int)$r['id'] ?>">
+              <form method="post"><?= csrf_campo() ?><input type="hidden" name="instruir" value="<?= (int)$r['id'] ?>">
                 <button class="btn btn-sm btn-outline-dark"><i class="bi bi-send me-1"></i>Instruir</button></form>
             <?php endif; ?>
           </td>

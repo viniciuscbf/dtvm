@@ -10,6 +10,7 @@ $fundo = fundo_do_usuario($pdo, $u);
 if (!$fundo) die('Sem fundo vinculado.');
 exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
+exigir_permissao($pdo, $u, $fid, 'ver_performance');
 
 $meusFundos = $u['perfil'] === 'gestor' ? fundos_do_usuario($pdo, $u) : [$fundo];
 

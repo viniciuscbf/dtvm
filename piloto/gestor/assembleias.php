@@ -12,6 +12,13 @@ exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
 
 $msg = '';
+$erroSeg = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = [];
+    $erroSeg = 'Requisição inválida (proteção CSRF). Recarregue a página e tente novamente.';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['pauta'])) {
     $pdo->prepare("INSERT INTO assembleias (fundo_id, tipo, pauta, origem, status, criado_por)
                    VALUES (?, 'AGE', ?, 'Solicitação do gestor', 'Solicitada', ?)")
@@ -28,6 +35,7 @@ page_start('Assembleias de cotistas', 'Assembleias', $u,
 ?>
 
 <?php if ($msg): ?><div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i><?= e_html($msg) ?></div><?php endif; ?>
+<?php if ($erroSeg): ?><div class="alert alert-warning py-2"><i class="bi bi-exclamation-triangle me-1"></i><?= e_html($erroSeg) ?></div><?php endif; ?>
 
 <div class="row g-3">
   <div class="col-lg-4">
@@ -35,6 +43,7 @@ page_start('Assembleias de cotistas', 'Assembleias', $u,
       <div class="card-header"><i class="bi bi-plus-circle me-1"></i> Solicitar assembleia (AGE)</div>
       <div class="card-body">
         <form method="post">
+          <?= csrf_campo() ?>
           <label class="form-label" style="font-size:.8rem">Pauta da deliberação</label>
           <select class="form-select form-select-sm mb-2" onchange="if(this.value)document.getElementById('pauta').value=this.value">
             <option value="">Modelos de pauta…</option>

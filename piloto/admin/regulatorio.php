@@ -9,6 +9,11 @@ require_once __DIR__ . '/../includes/layout.php';
 $u = exigir_perfil('admin');
 $msg = ''; $msgTipo = 'success';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
+    $_POST = [];
+    $msg = 'Requisição inválida (proteção CSRF). Recarregue a página e tente novamente.'; $msgTipo = 'danger';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // enviar/reenviar obrigação ao regulador
     if (!empty($_POST['enviar'])) {
@@ -110,7 +115,7 @@ page_start('Regulatório CVM / ANBIMA', 'Regulatório CVM', $u,
                 <?= $e['enviado_em'] ? '<br>' . date('d/m H:i', strtotime($e['enviado_em'])) : '' ?></td>
               <td class="text-end">
                 <?php if ($e['status'] !== 'Enviado'): ?>
-                  <form method="post"><input type="hidden" name="enviar" value="<?= (int)$e['id'] ?>">
+                  <form method="post"><?= csrf_campo() ?><input type="hidden" name="enviar" value="<?= (int)$e['id'] ?>">
                     <button class="btn btn-sm btn-dark"><i class="bi bi-send me-1"></i><?= $e['status'] === 'Erro' ? 'Reenviar' : 'Enviar' ?></button></form>
                 <?php endif; ?>
               </td>
@@ -145,12 +150,13 @@ page_start('Regulatório CVM / ANBIMA', 'Regulatório CVM', $u,
           <?php if (in_array($o['status'], ['Recebido', 'Em resposta'], true)): ?>
             <?php if ($o['prazo_resposta']): ?>
               <form method="post" class="d-flex gap-2">
+                <?= csrf_campo() ?>
                 <input type="hidden" name="responder_oficio" value="<?= (int)$o['id'] ?>">
                 <input class="form-control form-control-sm" name="resposta" placeholder="Resposta ao regulador (será protocolada)…" required>
                 <button class="btn btn-sm btn-dark"><i class="bi bi-reply me-1"></i>Protocolar resposta</button>
               </form>
             <?php else: ?>
-              <form method="post"><input type="hidden" name="ciencia_oficio" value="<?= (int)$o['id'] ?>">
+              <form method="post"><?= csrf_campo() ?><input type="hidden" name="ciencia_oficio" value="<?= (int)$o['id'] ?>">
                 <button class="btn btn-sm btn-outline-secondary"><i class="bi bi-check me-1"></i>Registrar ciência</button></form>
             <?php endif; ?>
           <?php elseif ($o['resposta']): ?>
@@ -184,10 +190,11 @@ page_start('Regulatório CVM / ANBIMA', 'Regulatório CVM', $u,
                 <br><span class="text-muted" style="font-size:.7rem"><?= e_html($a['status']) ?></span></td>
               <td>
                 <?php if ($a['status'] === 'Solicitada'): ?>
-                  <form method="post"><input type="hidden" name="convocar" value="<?= (int)$a['id'] ?>">
+                  <form method="post"><?= csrf_campo() ?><input type="hidden" name="convocar" value="<?= (int)$a['id'] ?>">
                     <button class="btn btn-sm btn-dark"><i class="bi bi-megaphone me-1"></i>Convocar assembleia</button></form>
                 <?php elseif ($a['status'] === 'Convocada'): ?>
                   <form method="post" class="d-flex gap-1 flex-wrap">
+                    <?= csrf_campo() ?>
                     <input type="hidden" name="registrar_resultado" value="<?= (int)$a['id'] ?>">
                     <input class="form-control form-control-sm" name="resultado" placeholder="Resultado da deliberação…" required style="max-width:180px">
                     <input class="form-control form-control-sm" name="quorum" placeholder="quórum" style="max-width:90px">

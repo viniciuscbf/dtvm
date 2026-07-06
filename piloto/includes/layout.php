@@ -11,8 +11,17 @@ function menu_itens(array $u): array {
             ['Lançamentos & Ajustes', $b.'admin/lancamentos.php',  'bi-pencil-square'],
             ['Custódia & Liquidação', $b.'admin/custodia.php',     'bi-safe2'],
             ['Conciliação',         $b.'admin/conciliacao.php',    'bi-check2-square'],
+            ['Contabilidade',       $b.'admin/contabilidade.php',  'bi-clipboard-data'],
+            ['Precificação',        $b.'admin/precificacao.php',   'bi-tag'],
+            ['Derivativos',         $b.'admin/derivativos.php',    'bi-graph-up'],
             ['Regulatório CVM',     $b.'admin/regulatorio.php',    'bi-send-check'],
+            ['Passivo & Tributação', $b.'admin/passivo.php',       'bi-receipt'],
+            ['Onboarding de cotistas', $b.'admin/onboarding_cotista.php', 'bi-person-plus'],
+            ['Base de instrumentos', $b.'admin/ativos.php',        'bi-database'],
+            ['Suporte',             $b.'admin/tickets.php',        'bi-life-preserver'],
             ['Aberturas de fundos', $b.'admin/aberturas.php',      'bi-rocket-takeoff'],
+            ['Classes & Subclasses', $b.'admin/subclasses.php',    'bi-diagram-3'],
+            ['FIP / Private Equity', $b.'admin/fip.php',           'bi-building-gear'],
             ['Carteiras',           $b.'admin/carteiras.php',      'bi-collection'],
             ['Pendências',          $b.'admin/pendencias.php',     'bi-list-task'],
             ['IA · Fraude',         $b.'admin/fraude.php',         'bi-shield-exclamation'],
@@ -26,13 +35,17 @@ function menu_itens(array $u): array {
             ['Mensageria SPB',        $b.'custodia/mensageria.php', 'bi-envelope-arrow-down'],
             ['Instruções & Liquidação', $b.'custodia/instrucoes.php', 'bi-arrow-left-right'],
             ['Arquivos & Extratos',   $b.'custodia/arquivos.php',   'bi-file-earmark-zip'],
+            ['Trilha de auditoria',   $b.'custodia/auditoria.php',  'bi-shield-lock'],
         ];
     }
-    // gestor
-    return [
+    // gestor — menu filtrado por permissões do fundo em foco (principal vê tudo)
+    global $pdo;
+    $itens = [
         ['Visão geral',       $b.'gestor/index.php',        'bi-speedometer2'],
         ['Aprovação de cota', $b.'gestor/cotas.php',        'bi-clipboard-check'],
         ['Boletar operação',  $b.'gestor/boletas.php',      'bi-receipt-cutoff'],
+        ['Catálogo de ativos', $b.'gestor/ativos.php',      'bi-database'],
+        ['Derivativos',       $b.'admin/derivativos.php',   'bi-graph-up'],
         ['Carteira',          $b.'gestor/carteira.php',     'bi-pie-chart'],
         ['Caixa & Fluxo',     $b.'gestor/caixa.php',        'bi-wallet2'],
         ['Cotistas',          $b.'gestor/cotistas.php',     'bi-people'],
@@ -42,7 +55,29 @@ function menu_itens(array $u): array {
         ['Enquadramento',     $b.'gestor/enquadramento.php','bi-check-circle'],
         ['Assembleias',       $b.'gestor/assembleias.php',  'bi-megaphone'],
         ['Comunicados',       $b.'gestor/comunicados.php',  'bi-chat-left-text'],
+        ['Chamados de cotistas', $b.'gestor/chamados_cotistas.php', 'bi-chat-dots'],
+        ['Equipe do fundo',   $b.'gestor/equipe.php',       'bi-people-fill'],
+        ['Criar fundo',       $b.'gestor/novo_fundo.php',   'bi-plus-square'],
+        ['Suporte',           $b.'gestor/tickets.php',      'bi-life-preserver'],
     ];
+    // Sempre visíveis, independem de fundo/permissão
+    $livres = ['Equipe do fundo', 'Criar fundo', 'Suporte'];
+    if (!isset($pdo) || !function_exists('perms_no_fundo')) return $itens;
+    $fundo = fundo_do_usuario($pdo, $u);
+    if (!$fundo) {
+        // gestor sem fundo (conta nova ou recém-convidada): só o essencial
+        return array_values(array_filter($itens, fn($it) => in_array($it[0], $livres, true)));
+    }
+    $fid = (int)$fundo['id'];
+    $principal = eh_principal($pdo, $u, $fid);
+    $mapa = permissao_de_menu();
+    return array_values(array_filter($itens, function ($it) use ($mapa, $principal, $pdo, $u, $fid, $livres) {
+        if (in_array($it[0], $livres, true)) return true;
+        $req = $mapa[$it[0]] ?? null;           // permissão exigida
+        if ($req === null) return true;         // item sem restrição
+        if ($req === '__principal__') return $principal;
+        return $principal || pode($pdo, $u, $fid, $req);
+    }));
 }
 
 function page_start(string $titulo, string $ativo, array $u, string $subtitulo = ''): void {
@@ -107,6 +142,10 @@ function page_start(string $titulo, string $ativo, array $u, string $subtitulo =
       <div class="data-ref"><i class="bi bi-calendar3"></i> <?= date('d/m/Y') ?></div>
     </div>
 <?php
+    if (!empty($_SESSION['flash_perm'])) {
+        echo '<div class="alert alert-warning py-2"><i class="bi bi-shield-lock me-1"></i>' . e_html($_SESSION['flash_perm']) . '</div>';
+        unset($_SESSION['flash_perm']);
+    }
 }
 
 function page_end(): void {

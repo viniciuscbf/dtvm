@@ -10,6 +10,7 @@ $fundo = fundo_do_usuario($pdo, $u);
 if (!$fundo) die('Sem fundo vinculado.');
 exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
+exigir_permissao($pdo, $u, $fid, 'gerir_cotistas');
 
 $novoToken = null; $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

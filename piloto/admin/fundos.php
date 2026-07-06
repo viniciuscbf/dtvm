@@ -9,6 +9,8 @@ require_once __DIR__ . '/../includes/layout.php';
 
 $u = exigir_perfil('admin');
 
+// O vínculo gestor↔fundo (acesso multi-fundo) é gerido pelo próprio gestor principal
+// em "Equipe do fundo" (convites + permissões). Esta tela é só consultiva.
 $fundos = $pdo->query('SELECT * FROM fundos ORDER BY FIELD(status,"Ativo","Em abertura","Fechado","Encerrado"), pl_atual DESC')->fetchAll();
 $usuarios = $pdo->query("SELECT us.*, f.nome fundo_nome FROM usuarios us LEFT JOIN fundos f ON f.id=us.fundo_id ORDER BY FIELD(us.perfil,'admin','gestor'), us.id")->fetchAll();
 $tokens = $pdo->query("SELECT t.*, f.nome fundo_nome FROM tokens_acesso t JOIN fundos f ON f.id=t.fundo_id ORDER BY t.status, t.criado_em DESC")->fetchAll();
