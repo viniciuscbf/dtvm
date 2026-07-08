@@ -429,9 +429,13 @@ function ensure_dominio(PDO $pdo): void {
     ensure_derivativos($pdo);
     ensure_fip($pdo);
     ensure_equipe($pdo);
+    ensure_batch($pdo);
+    ensure_regulamento($pdo);
 }
 
 require_once __DIR__ . '/marcacao.php';     // motor de marcação por indexador (usa fonte_por_tipo, definido acima)
 require_once __DIR__ . '/derivativos.php';  // DI1/DAP com ajuste diário (usa eh_dia_util, com_transacao)
 require_once __DIR__ . '/fip.php';          // Private Equity: LPs, chamadas, participações, laudo, waterfall
 require_once __DIR__ . '/equipe.php';       // membros do fundo, permissões, convites, transferência, reset de senha
+require_once __DIR__ . '/batch.php';        // processamento em lote (fechamento) resiliente por fundo
+require_once __DIR__ . '/regulamento.php';  // gerador de regulamento (fundo/classe/subclasse) dirigido por schema

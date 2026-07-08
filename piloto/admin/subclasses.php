@@ -8,6 +8,7 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/layout.php';
 
 ensure_subclasses($pdo);   // DDL (commit implícito) — sempre FORA de transação
+ensure_regulamento($pdo);  // garante coluna reg_html na subclasse (suplemento gerado)
 
 $u = exigir_perfil('admin');
 $msg = ''; $msgTipo = 'success';
@@ -58,12 +59,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $fundo) {
             } elseif ($dataVig === '') {
                 $msg = 'Informe a data pretendida de início de vigência.'; $msgTipo = 'warning';
             } else {
-                com_transacao($pdo, function () use ($pdo, $fid, $nome, $publico, $aplicacaoMinima, $taxaAdm, $taxaPerf, $cotizacao, $liquidacao, $condominio, $anexo, $dataVig) {
+                // suplemento (documento) gerado a partir do passivo da subclasse
+                $suplemento = reg_suplemento_subclasse_html([
+                    'nome' => $nome, 'publico_alvo' => $publico, 'aplicacao_minima' => $aplicacaoMinima,
+                    'taxa_adm' => $taxaAdm, 'taxa_performance' => $taxaPerf, 'prazo_cotizacao' => $cotizacao,
+                    'prazo_liquidacao' => $liquidacao, 'condominio' => $condominio, 'data_vigencia' => $dataVig,
+                ], $fundo['nome'] ?? '');
+                com_transacao($pdo, function () use ($pdo, $fid, $nome, $publico, $aplicacaoMinima, $taxaAdm, $taxaPerf, $cotizacao, $liquidacao, $condominio, $anexo, $dataVig, $suplemento) {
                     // nasce "Em registro": ainda não é vigente até protocolo + vigência
                     $st = $pdo->prepare('INSERT INTO subclasses
-                        (fundo_id, nome, publico_alvo, aplicacao_minima, taxa_adm, taxa_performance, prazo_cotizacao, prazo_liquidacao, condominio, status, etapa_registro, regulamento_anexo, data_vigencia)
-                        VALUES (?,?,?,?,?,?,?,?,?, "Ativa", "Em registro", ?, ?)');
-                    $st->execute([$fid, $nome, $publico, $aplicacaoMinima, $taxaAdm, $taxaPerf, $cotizacao, $liquidacao, $condominio, $anexo, $dataVig]);
+                        (fundo_id, nome, publico_alvo, aplicacao_minima, taxa_adm, taxa_performance, prazo_cotizacao, prazo_liquidacao, condominio, status, etapa_registro, regulamento_anexo, data_vigencia, reg_html)
+                        VALUES (?,?,?,?,?,?,?,?,?, "Ativa", "Em registro", ?, ?, ?)');
+                    $st->execute([$fid, $nome, $publico, $aplicacaoMinima, $taxaAdm, $taxaPerf, $cotizacao, $liquidacao, $condominio, $anexo, $dataVig, $suplemento]);
                     $novoId = (int)$pdo->lastInsertId();
                     registrar_auditoria($pdo, 'subclasse_criada', [
                         'entidade' => 'subclasse', 'entidade_id' => $novoId, 'fundo_id' => $fid,
@@ -299,6 +306,7 @@ page_start('Classes & Subclasses', 'Classes & Subclasses', $u,
             <?php if (!empty($s['protocolo_cvm'])): ?><br><span class="text-muted"><?= e_html($s['protocolo_cvm']) ?></span><?php endif; ?>
             <?php if (!empty($s['data_vigencia'])): ?><br><span class="text-muted">vig. <?= data_br($s['data_vigencia']) ?></span><?php endif; ?>
             <?php if (!empty($s['regulamento_anexo'])): ?><br><span class="text-muted" title="anexo ao regulamento"><i class="bi bi-paperclip"></i> <?= e_html($s['regulamento_anexo']) ?></span><?php endif; ?>
+            <?php if (!empty($s['reg_html'])): ?><br><a href="regulamento_ver.php?origem=subclasse&id=<?= (int)$s['id'] ?>" target="_blank" style="font-size:.75rem"><i class="bi bi-file-earmark-text"></i> suplemento</a><?php endif; ?>
           </td>
           <td class="text-center"><?= badge_status($s['status']) ?></td>
           <td class="text-end">

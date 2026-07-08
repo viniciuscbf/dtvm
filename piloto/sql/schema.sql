@@ -12,7 +12,7 @@ DROP TABLE IF EXISTS fip_distribuicoes, fip_avaliacoes, fip_participacoes, fip_c
   conciliacao, log_processamento, processamento, previsao_caixa, movimentacoes, mov_cotistas,
   documentos_abertura, lancamentos, fechamentos, tokens_acesso,
   envios_regulatorios, oficios_cvm, assembleias, eventos_corporativos, liquidacoes,
-  mensagens_spb, contas_centrais, boletas, usuario_fundos, fundo_membros, senha_resets,
+  mensagens_spb, contas_centrais, boletas, usuario_fundos, fundo_membros, senha_resets, processamento_batch, classes,
   cotistas, cdi_historico, cotas_historico, ativos_carteira, usuarios, fundos;
 
 SET FOREIGN_KEY_CHECKS = 1;

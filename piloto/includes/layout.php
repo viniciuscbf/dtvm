@@ -8,6 +8,7 @@ function menu_itens(array $u): array {
         return [
             ['Painel geral',        $b.'admin/index.php',          'bi-speedometer2'],
             ['Processamento & Cota', $b.'admin/processamento.php', 'bi-cpu'],
+            ['Processamento em lote', $b.'admin/batch.php',        'bi-diagram-3-fill'],
             ['Lançamentos & Ajustes', $b.'admin/lancamentos.php',  'bi-pencil-square'],
             ['Custódia & Liquidação', $b.'admin/custodia.php',     'bi-safe2'],
             ['Conciliação',         $b.'admin/conciliacao.php',    'bi-check2-square'],
@@ -20,6 +21,7 @@ function menu_itens(array $u): array {
             ['Base de instrumentos', $b.'admin/ativos.php',        'bi-database'],
             ['Suporte',             $b.'admin/tickets.php',        'bi-life-preserver'],
             ['Aberturas de fundos', $b.'admin/aberturas.php',      'bi-rocket-takeoff'],
+            ['Classes de cotas',    $b.'admin/classes.php',        'bi-collection'],
             ['Classes & Subclasses', $b.'admin/subclasses.php',    'bi-diagram-3'],
             ['FIP / Private Equity', $b.'admin/fip.php',           'bi-building-gear'],
             ['Carteiras',           $b.'admin/carteiras.php',      'bi-collection'],

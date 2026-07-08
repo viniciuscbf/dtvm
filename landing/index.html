@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vértice · Custódia e Administração de Fundos</title>
+<meta name="description" content="Estrutura e tecnologia para instituições constituírem sua área de custódia e administração fiduciária de fundos.">
+<link rel="icon" href="assets/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   PALETA — TROQUE AS CORES AQUI (um lugar só)
+   ============================================================ */
+:root{
+  --c-brand:   #123a5e;   /* azul-petróleo principal */
+  --c-brand-2: #2bb6a3;   /* verde-teal (gradiente)  */
+  --c-accent:  #e0b13a;   /* dourado (detalhes/CTA)  */
+  --c-ink:     #0f1f33;   /* texto principal         */
+  --c-muted:   #5b6b7f;   /* texto secundário        */
+  --c-bg:      #ffffff;   /* fundo claro             */
+  --c-soft:    #f3f7fa;   /* fundo de seções         */
+  --c-line:    #e6edf3;   /* linhas/bordas           */
+  --c-dark:    #0a1a2c;   /* fundo escuro (hero)     */
+
+  --grad: linear-gradient(135deg, var(--c-brand), var(--c-brand-2));
+  --radius: 16px;
+  --shadow: 0 18px 50px -20px rgba(15,31,51,.35);
+  --font-title: 'Sora', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+/* ============================ base ============================ */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);color:var(--c-ink);background:var(--c-bg);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3{font-family:var(--font-title);line-height:1.1;letter-spacing:-.02em;font-weight:700}
+a{color:inherit;text-decoration:none}
+img{max-width:100%;display:block}
+.wrap{width:min(1160px,92vw);margin:0 auto}
+.eyebrow{font-family:var(--font-title);font-size:.8rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--c-brand-2)}
+.btn{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--font-title);font-weight:600;font-size:.95rem;padding:.85rem 1.5rem;border-radius:999px;border:1px solid transparent;cursor:pointer;transition:transform .15s ease, box-shadow .2s ease, background .2s}
+.btn-primary{background:var(--grad);color:#fff;box-shadow:0 12px 30px -10px color-mix(in srgb, var(--c-brand-2) 60%, transparent)}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-ghost{background:transparent;border-color:rgba(255,255,255,.25);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.08)}
+.btn-dark{background:var(--c-ink);color:#fff}
+.btn-dark:hover{transform:translateY(-2px)}
+.btn svg{width:18px;height:18px}
+
+/* ============================ nav ============================ */
+header.nav{position:sticky;top:0;z-index:50;transition:.25s}
+header.nav.scrolled{background:rgba(255,255,255,.82);backdrop-filter:blur(12px);box-shadow:0 1px 0 var(--c-line)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0}
+.brand{display:flex;align-items:center;gap:.6rem;height:40px}
+.brand img{height:40px;width:auto}
+.nav-links{display:flex;align-items:center;gap:2rem;font-weight:500;font-size:.94rem}
+.nav-links a.lnk{color:var(--c-muted);transition:.2s}
+header.nav:not(.scrolled) .nav-links a.lnk{color:rgba(255,255,255,.85)}
+header.nav:not(.scrolled) .brand-name{color:#fff}
+.nav-links a.lnk:hover{color:var(--c-brand-2)}
+.nav-toggle{display:none;background:none;border:0;cursor:pointer}
+
+/* ============================ hero ============================ */
+.hero{position:relative;background:var(--c-dark);color:#fff;overflow:hidden;padding:3rem 0 5.5rem}
+.hero .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;animation:float 16s ease-in-out infinite}
+.blob.b1{width:520px;height:520px;background:var(--c-brand-2);top:-160px;right:-120px}
+.blob.b2{width:460px;height:460px;background:var(--c-brand);bottom:-200px;left:-120px;animation-delay:-6s}
+.blob.b3{width:280px;height:280px;background:var(--c-accent);top:40%;right:30%;opacity:.28;animation-delay:-3s}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-30px) scale(1.08)}}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse at 60% 0%,#000,transparent 75%)}
+.hero-in{position:relative;display:grid;grid-template-columns:1.1fr .9fr;gap:3rem;align-items:center;padding-top:2.5rem}
+.hero h1{font-size:clamp(2.2rem,4.4vw,3.6rem);font-weight:800;margin:.9rem 0 1rem}
+.hero h1 .hl{background:linear-gradient(90deg,var(--c-brand-2),var(--c-accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lead{font-size:1.14rem;color:rgba(255,255,255,.8);max-width:34rem}
+.hero .cta-row{display:flex;gap:1rem;margin-top:2rem;flex-wrap:wrap}
+.hero .micro{margin-top:1.6rem;color:rgba(255,255,255,.55);font-size:.85rem;display:flex;gap:1.3rem;flex-wrap:wrap}
+.hero .micro b{color:#fff}
+
+/* dashboard mock */
+.mock{background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:1.1rem;backdrop-filter:blur(8px);box-shadow:var(--shadow);transform:perspective(1200px) rotateY(-9deg) rotateX(4deg)}
+.mock-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem}
+.mock-head .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35);display:inline-block;margin-right:5px}
+.mock-tag{font-family:var(--font-title);font-size:.72rem;color:rgba(255,255,255,.75);font-weight:600}
+.mock canvas{width:100%;height:150px;display:block}
+.mock-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.7rem}
+.mock-kpi{background:rgba(255,255,255,.06);border-radius:10px;padding:.6rem .7rem}
+.mock-kpi .v{font-family:var(--font-title);font-weight:700;font-size:1.05rem}
+.mock-kpi .l{font-size:.68rem;color:rgba(255,255,255,.6)}
+.mock-kpi .up{color:#5fe3c0}
+
+/* ============================ métricas ============================ */
+.metrics{background:var(--c-bg);border-bottom:1px solid var(--c-line)}
+.metrics-in{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5rem;padding:2.4rem 0}
+.metric{text-align:center}
+.metric .num{font-family:var(--font-title);font-weight:800;font-size:2.2rem;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.metric .lab{color:var(--c-muted);font-size:.9rem;margin-top:.2rem}
+
+/* ============================ seções ============================ */
+section{padding:5.5rem 0}
+.sec-head{max-width:44rem;margin-bottom:2.8rem}
+.sec-head h2{font-size:clamp(1.7rem,3vw,2.5rem);margin:.6rem 0 .8rem}
+.sec-head p{color:var(--c-muted);font-size:1.08rem}
+.soft{background:var(--c-soft)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.4rem}
+.card{background:var(--c-bg);border:1px solid var(--c-line);border-radius:var(--radius);padding:1.7rem;transition:transform .18s ease, box-shadow .25s ease;will-change:transform}
+.card:hover{box-shadow:var(--shadow)}
+.card .ic{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--c-brand-2) 14%,#fff);margin-bottom:1rem}
+.card .ic svg{width:24px;height:24px;stroke:var(--c-brand);fill:none;stroke-width:1.7}
+.card h3{font-size:1.15rem;margin-bottom:.45rem}
+.card p{color:var(--c-muted);font-size:.96rem}
+
+/* passos */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;counter-reset:s}
+.step{position:relative;background:var(--c-bg);border:1px solid var(--c-line);border-radius:var(--radius);padding:1.8rem 1.6rem}
+.step::before{counter-increment:s;content:counter(s);position:absolute;top:-18px;left:1.6rem;width:38px;height:38px;border-radius:10px;background:var(--grad);color:#fff;font-family:var(--font-title);font-weight:700;display:grid;place-items:center}
+.step h3{margin:.9rem 0 .4rem;font-size:1.12rem}
+.step p{color:var(--c-muted);font-size:.95rem}
+
+/* conformidade */
+.compliance{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.2rem}
+.badge{display:flex;gap:.9rem;align-items:flex-start;background:var(--c-bg);border:1px solid var(--c-line);border-radius:var(--radius);padding:1.3rem}
+.badge .seal{flex:0 0 auto;width:44px;height:44px;border-radius:50%;background:var(--grad);display:grid;place-items:center;color:#fff}
+.badge .seal svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2}
+.badge b{font-family:var(--font-title)}
+.badge span{color:var(--c-muted);font-size:.9rem}
+
+/* plataforma */
+.platform{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center}
+.plat-list{list-style:none;display:grid;gap:.85rem}
+.plat-list li{display:flex;gap:.7rem;align-items:flex-start;color:var(--c-ink)}
+.plat-list li svg{flex:0 0 auto;width:22px;height:22px;stroke:var(--c-brand-2);fill:none;stroke-width:2;margin-top:2px}
+.plat-note{margin-top:1.4rem;font-size:.85rem;color:var(--c-muted);background:var(--c-soft);border:1px dashed var(--c-line);border-radius:12px;padding:.8rem 1rem}
+.plat-visual{background:var(--c-dark);border-radius:20px;padding:1.4rem;color:#fff;box-shadow:var(--shadow)}
+.plat-visual .row{display:flex;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:.9rem}
+.plat-visual .row:last-child{border:0}
+.plat-visual .pill{font-size:.72rem;padding:.15rem .6rem;border-radius:999px;background:rgba(95,227,192,.18);color:#8ff0d8}
+
+/* CTA final */
+.final{background:var(--c-dark);color:#fff;text-align:center;border-radius:26px;padding:4rem 2rem;position:relative;overflow:hidden}
+.final .blob{position:absolute;border-radius:50%;filter:blur(80px);opacity:.5}
+.final h2{font-size:clamp(1.8rem,3vw,2.6rem);position:relative}
+.final p{color:rgba(255,255,255,.8);max-width:38rem;margin:1rem auto 2rem;position:relative}
+.final .cta-row{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;position:relative}
+
+/* footer */
+footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);font-size:.9rem}
+.foot-in{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.foot-in img{height:34px}
+/* acesso discreto ao god-mode/simulador — presente, mas sem destaque */
+.foot-sim{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;color:var(--c-muted);opacity:.45;border:1px solid var(--c-line);border-radius:999px;padding:.28rem .7rem;transition:opacity .2s, border-color .2s}
+.foot-sim:hover{opacity:1;border-color:var(--c-brand-2)}
+.foot-sim svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease, transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* responsivo */
+@media(max-width:900px){
+  .hero-in,.platform{grid-template-columns:1fr}
+  .metrics-in{grid-template-columns:repeat(2,1fr);gap:1.8rem 1rem}
+  .steps{grid-template-columns:1fr}
+  .nav-links{display:none}
+  .nav-toggle{display:block}
+  .mock{transform:none;margin-top:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ===================== NAV ===================== -->
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top"><img src="assets/logo.svg" alt="" data-logo></a>
+    <nav class="nav-links">
+      <a class="lnk" href="#solucao">Solução</a>
+      <a class="lnk" href="#como">Como funciona</a>
+      <a class="lnk" href="#conformidade">Conformidade</a>
+      <a class="lnk" href="#plataforma">Plataforma</a>
+      <a class="btn btn-primary" data-piloto href="#">Acessar o piloto
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </nav>
+    <button class="nav-toggle" aria-label="menu">
+      <svg width="26" height="26" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<a id="top"></a>
+<section class="hero">
+  <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+  <div class="hero-grid"></div>
+  <div class="wrap hero-in">
+    <div>
+      <span class="eyebrow">Custódia · Administração Fiduciária · Fundos</span>
+      <h1>Sua instituição operando <span class="hl">custódia e administração</span> de fundos — do zero.</h1>
+      <p class="lead">Estrutura regulatória, operacional e <b>tecnológica</b> pronta para um banco ou instituição financeira constituir sua própria área de custódia e administração fiduciária, conforme as Resoluções CVM 32, 21 e 175.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" data-piloto href="#">Acessar o piloto
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ghost" href="#contato">Agendar reunião</a>
+      </div>
+      <div class="micro">
+        <span><b>FIF · FIC · FIP</b> suportados</span>
+        <span><b>Res. 32 / 21 / 175</b> mapeadas</span>
+        <span><b>Regulamento</b> padronizado</span>
+      </div>
+    </div>
+    <div class="mock reveal">
+      <div class="mock-head">
+        <span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+        <span class="mock-tag">Cota do fundo vs. CDI</span>
+      </div>
+      <div style="display:flex;gap:1rem;font-size:.68rem;color:rgba(255,255,255,.7);margin-bottom:.3rem">
+        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:2px;background:#5fe3c0;display:inline-block"></i>Cota</span>
+        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:0;border-top:2px dashed rgba(255,255,255,.6);display:inline-block"></i>CDI</span>
+      </div>
+      <canvas id="cotaChart" width="520" height="150"></canvas>
+      <div class="mock-kpis">
+        <div class="mock-kpi"><div class="v" data-count="1.1287" data-dec="4">0</div><div class="l">Cota</div></div>
+        <div class="mock-kpi"><div class="v up">+<span data-count="12.4" data-dec="1">0</span>%</div><div class="l">no ano</div></div>
+        <div class="mock-kpi"><div class="v">R$ <span data-count="42" data-suf="M">0</span></div><div class="l">PL</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MÉTRICAS ===================== -->
+<div class="metrics">
+  <div class="wrap metrics-in">
+    <div class="metric"><div class="num"><span data-count="3">0</span></div><div class="lab">licenças mapeadas (Res. 32/21/175)</div></div>
+    <div class="metric"><div class="num"><span data-count="5">0</span></div><div class="lab">tipos de fundo (FIF RF/Ações/MM/Cambial, FIP)</div></div>
+    <div class="metric"><div class="num"><span data-count="4">0</span></div><div class="lab">portais integrados (adm, gestor, cotista, custódia)</div></div>
+    <div class="metric"><div class="num"><span data-count="15">0</span>+</div><div class="lab">regulamentos reais estudados</div></div>
+  </div>
+</div>
+
+<!-- ===================== SOLUÇÃO ===================== -->
+<section id="solucao">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">O que entregamos</span>
+      <h2>Uma área de fundos completa — licenciamento, operação e plataforma.</h2>
+      <p>Conduzimos a instituição por todo o caminho: da comprovação de estrutura à CVM até o sistema que roda o dia a dia dos fundos.</p>
+    </div>
+    <div class="cards">
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div>
+        <h3>Custódia</h3><p>Comprovação de estrutura para a autorização de custodiante (Res. CVM 32): contas segregadas, liquidação e conciliação.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div>
+        <h3>Administração fiduciária</h3><p>Autorização como administrador (Res. CVM 21) e cumprimento dos deveres da Res. 175: cota, passivo, tributação e controladoria.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
+        <h3>Motor de fundos</h3><p>FIF (RF, Ações, Multimercado, Cambial), FIC e FIP: marcação por indexador, derivativos, come-cotas e regulamento padronizado.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/></svg></div>
+        <h3>Plataforma tecnológica</h3><p>Sistema com quatro portais integrados que roda o ciclo completo — pronto para demonstrar a estrutura em funcionamento.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== COMO FUNCIONA ===================== -->
+<section id="como" class="soft">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Três passos, do licenciamento à operação.</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><h3>Licenciar</h3><p>Montamos os pacotes regulatórios (custódia Res. 32 e administração Res. 21/175) que comprovam a estrutura tecnológica e operacional à CVM.</p></div>
+      <div class="step reveal"><h3>Estruturar</h3><p>Configuramos a área e a plataforma: tipos de fundo, regulamento padronizado, passivo, custódia e conciliação.</p></div>
+      <div class="step reveal"><h3>Operar</h3><p>A instituição passa a administrar fundos com processamento diário de cota, boletagem, liquidação e tributação — tudo auditável.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CONFORMIDADE ===================== -->
+<section id="conformidade">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Conformidade</span>
+      <h2>Estrutura alinhada às normas da CVM.</h2>
+      <p>Cada função da plataforma referencia a norma correspondente — pronto para o diálogo com o regulador.</p>
+    </div>
+    <div class="compliance">
+      <div class="badge reveal"><div class="seal"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div><b>Res. CVM 32</b><br><span>Custódia de valores mobiliários</span></div></div>
+      <div class="badge reveal"><div class="seal"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div><b>Res. CVM 21</b><br><span>Administração de carteiras</span></div></div>
+      <div class="badge reveal"><div class="seal"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div><b>Res. CVM 175</b><br><span>Marco dos fundos de investimento</span></div></div>
+      <div class="badge reveal"><div class="seal"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div><b>Res. 30 / 50</b><br><span>Suitability e PLD/FT</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== PLATAFORMA (DEMO) ===================== -->
+<section id="plataforma" class="soft">
+  <div class="wrap platform">
+    <div class="reveal">
+      <span class="eyebrow">A plataforma</span>
+      <h2 style="font-size:clamp(1.7rem,3vw,2.4rem);margin:.6rem 0 1rem">Veja a estrutura funcionando — de verdade.</h2>
+      <ul class="plat-list">
+        <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Quatro portais: administradora, gestor, cotista e banco custodiante.</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Abertura de fundos com regulamento padronizado e checklist Res. 175.</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Processamento diário de cota, boletagem, liquidação e conciliação.</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Passivo, come-cotas e tributação de cotistas.</li>
+      </ul>
+      <div class="plat-note">Ambiente de <b>demonstração</b> com dados fictícios. Para explorar, crie um fundo ou use as credenciais de demonstração fornecidas na reunião.</div>
+      <div class="cta-row" style="margin-top:1.6rem">
+        <a class="btn btn-dark" data-piloto href="#">Acessar o piloto
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+    <div class="plat-visual reveal">
+      <div class="row"><span>Aurora RF Crédito Privado FI</span><span class="pill">cota publicada</span></div>
+      <div class="row"><span>Vetor Multimercado FIM</span><span class="pill">em processamento</span></div>
+      <div class="row"><span>Horizonte Ações FIA</span><span class="pill">boleta aceita</span></div>
+      <div class="row"><span>Fundo em abertura</span><span class="pill">checklist CVM 175</span></div>
+      <div class="row"><span>Come-cotas · nov</span><span class="pill">apurado</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CTA FINAL ===================== -->
+<section id="contato">
+  <div class="wrap">
+    <div class="final reveal">
+      <span class="blob b1" style="width:360px;height:360px;background:var(--c-brand-2);top:-120px;right:-60px"></span>
+      <span class="blob b2" style="width:320px;height:320px;background:var(--c-accent);bottom:-140px;left:-40px;opacity:.35"></span>
+      <h2>Vamos estruturar a área de fundos da sua instituição?</h2>
+      <p>Apresentamos a plataforma funcionando e o caminho de licenciamento numa conversa objetiva.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" data-piloto href="#">Acessar o piloto</a>
+        <a class="btn btn-ghost" data-mailto href="#">Falar por e-mail</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FOOTER ===================== -->
+<footer>
+  <div class="wrap foot-in">
+    <img src="assets/logo.svg" alt="" data-logo>
+    <div>© <span id="ano"></span> <span data-marca>Vértice</span> · <span data-email>contato@exemplo.com.br</span></div>
+    <div style="font-size:.8rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+      Plataforma de demonstração. Não constitui oferta nem parecer jurídico.
+      <a class="foot-sim" data-simulador href="#" title="Acesso interno — simulador master">
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h3M8.5 10.5v3M15 11h.01M18 13h.01"/></svg>
+        Simulador
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   CONFIG — TROQUE AQUI (marca, URL do piloto, e-mail)
+   ============================================================ */
+const CONFIG = {
+  marca: 'Vértice',
+  pilotoURL:    '/piloto/',              // <-- URL do piloto quando hospedar (ex.: https://app.suaempresa.com.br/)
+  simuladorURL: '/piloto/simulador/',    // <-- god-mode / simulador master (acesso discreto no rodapé)
+  email:  'contato@vertice.com.br'       // <-- seu e-mail profissional
+};
+
+/* aplica config */
+document.title = CONFIG.marca + ' · Custódia e Administração de Fundos';
+document.querySelectorAll('[data-marca]').forEach(e=>e.textContent=CONFIG.marca);
+document.querySelectorAll('[data-email]').forEach(e=>e.textContent=CONFIG.email);
+document.querySelectorAll('[data-piloto]').forEach(e=>e.setAttribute('href',CONFIG.pilotoURL));
+document.querySelectorAll('[data-simulador]').forEach(e=>e.setAttribute('href',CONFIG.simuladorURL));
+document.querySelectorAll('[data-mailto]').forEach(e=>e.setAttribute('href','mailto:'+CONFIG.email));
+document.getElementById('ano').textContent = new Date().getFullYear();
+
+/* nav scroll + mobile */
+const nav = document.getElementById('nav');
+addEventListener('scroll',()=>nav.classList.toggle('scrolled', scrollY>20));
+document.querySelector('.nav-toggle').addEventListener('click',()=>{
+  document.querySelector('.nav-links').style.display = 'flex';
+  document.querySelector('.nav-links').style.cssText='display:flex;position:absolute;top:64px;right:4vw;flex-direction:column;background:#fff;padding:1rem 1.4rem;border-radius:14px;box-shadow:var(--shadow);gap:1rem';
+});
+
+/* reveal on scroll */
+const io = new IntersectionObserver((es)=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}}),{threshold:.15});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+/* animated counters */
+function animateCount(el){
+  const target=parseFloat(el.dataset.count), dec=parseInt(el.dataset.dec||'0'), suf=el.dataset.suf||'';
+  let t0=null, dur=1400;
+  const step=(ts)=>{ if(!t0)t0=ts; const p=Math.min((ts-t0)/dur,1); const e=1-Math.pow(1-p,3);
+    el.textContent=(target*e).toFixed(dec).replace('.',',')+suf; if(p<1)requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+const ioC=new IntersectionObserver((es)=>es.forEach(x=>{if(x.isIntersecting){animateCount(x.target);ioC.unobserve(x.target)}}),{threshold:.6});
+document.querySelectorAll('[data-count]').forEach(el=>ioC.observe(el));
+
+/* card tilt */
+document.querySelectorAll('.card').forEach(c=>{
+  c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5;const y=(e.clientY-r.top)/r.height-.5;
+    c.style.transform=`perspective(700px) rotateX(${-y*5}deg) rotateY(${x*5}deg) translateY(-3px)`;});
+  c.addEventListener('mouseleave',()=>c.style.transform='');
+});
+
+/* cota chart (canvas animado) */
+(function(){
+  const cv=document.getElementById('cotaChart'); if(!cv)return; const ctx=cv.getContext('2d');
+  const W=cv.width,H=cv.height, n=60;
+  const data=[]; let v=100; for(let i=0;i<n;i++){v+=(Math.sin(i/6)*0.6)+(Math.random()*0.8-0.2)+0.35;data.push(v);}
+  // linha do CDI (benchmark): sobe de forma suave e fica abaixo da cota — o fundo entrega alfa
+  const cdi=[]; const base=data[0], excedente=(data[n-1]-data[0])*0.6;
+  for(let i=0;i<n;i++){const t=i/(n-1); cdi.push(base + excedente*(t*0.85 + t*t*0.15));}
+  const all=data.concat(cdi);
+  const min=Math.min(...all), max=Math.max(...all);
+  const X=i=>i/(n-1)*W, Y=val=>H-8-((val-min)/(max-min))*(H-24);
+  let prog=0;
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // grade
+    ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;
+    for(let g=1;g<4;g++){const y=g/4*H;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    const count=Math.floor(prog*n);
+    // área
+    const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'rgba(43,182,163,.35)');grad.addColorStop(1,'rgba(43,182,163,0)');
+    ctx.beginPath();ctx.moveTo(0,H);
+    for(let i=0;i<count;i++)ctx.lineTo(X(i),Y(data[i]));
+    ctx.lineTo(X(Math.max(count-1,0)),H);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+    // linha do CDI (benchmark) — tracejada, discreta
+    ctx.beginPath();ctx.lineWidth=1.6;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.setLineDash([5,4]);
+    for(let i=0;i<count;i++){const x=X(i),y=Y(cdi[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    ctx.stroke();ctx.setLineDash([]);
+    // linha da cota do fundo
+    ctx.beginPath();ctx.lineWidth=2.4;ctx.strokeStyle='#5fe3c0';ctx.lineJoin='round';
+    for(let i=0;i<count;i++){const x=X(i),y=Y(data[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    ctx.stroke();
+    // ponto
+    if(count>0){const x=X(count-1),y=Y(data[count-1]);ctx.beginPath();ctx.arc(x,y,3.5,0,7);ctx.fillStyle='#fff';ctx.fill();}
+    if(prog<1){prog+=0.02;requestAnimationFrame(draw);}
+  }
+  new IntersectionObserver((e)=>{if(e[0].isIntersecting){prog=0;draw();}}).observe(cv);
+})();
+</script>
+</body>
+</html>
