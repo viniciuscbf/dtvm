@@ -168,14 +168,23 @@ function fip_distribuir(PDO $pdo, int $fid, float $valor, string $data): array {
         $jaCap = (float) $pdo->query("SELECT COALESCE(SUM(retorno_capital),0) FROM fip_distribuicoes WHERE fundo_id=$fid")->fetchColumn();
         $restanteCap = max(0.0, $integ - $jaCap);
         $retornoCapital = min($valor, $restanteCap);
-        $excedente = round($valor - $retornoCapital, 2);           // parcela de "lucro" distribuída
-        $carry = $excedente > 0 ? round($excedente * FIP_CARRY, 2) : 0.0;   // 20% ao gestor
-        $retornoLps = round($excedente - $carry, 2);               // 80% do lucro aos LPs (preferred incluído)
+        $excedente = round($valor - $retornoCapital, 2);           // lucro disponível para distribuir
+
+        // Waterfall com HURDLE (retorno preferencial aos LPs ANTES do carry):
+        // 1) retorno de capital → 2) preferencial de 8% a.a. aos LPs → 3) carry 20% só sobre o excesso.
+        $prefPago   = (float) $pdo->query("SELECT COALESCE(SUM(retorno_preferencial),0) FROM fip_distribuicoes WHERE fundo_id=$fid")->fetchColumn();
+        $prefAlvo   = round($integ * FIP_HURDLE_AA, 2);            // preferencial de referência (~1 ano de hurdle)
+        $prefDevido = max(0.0, $prefAlvo - $prefPago);
+        $preferencial = min($excedente, $prefDevido);             // LPs recebem o hurdle antes do carry
+        $excLucro   = round($excedente - $preferencial, 2);       // lucro acima do hurdle
+        $carry      = $excLucro > 0 ? round($excLucro * FIP_CARRY, 2) : 0.0;   // 20% só sobre o excesso
+        $retornoLps = round($preferencial + ($excLucro - $carry), 2);         // preferencial + 80% do excesso
+
         $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
             ->execute([$fid, $data, 'Distribuição FIP', "Distribuição (amortização) — retorno capital " . number_format($retornoCapital, 2, ',', '.') . " + lucro", -$valor]);
         $pdo->prepare("UPDATE fundos SET caixa_atual = caixa_atual - ? WHERE id=?")->execute([$valor, $fid]);
         $pdo->prepare("INSERT INTO fip_distribuicoes (fundo_id, data_ref, valor_total, retorno_capital, retorno_preferencial, carry, detalhe)
-                       VALUES (?,?,?,?,?,?,?)")->execute([$fid, $data, $valor, $retornoCapital, $retornoLps, $carry, 'Waterfall: retorno de capital → LPs → carry 20%']);
-        return compact('retornoCapital', 'retornoLps', 'carry');
+                       VALUES (?,?,?,?,?,?,?)")->execute([$fid, $data, $valor, $retornoCapital, $retornoLps, $carry, 'Waterfall: capital → hurdle 8% (preferencial) → carry 20% sobre o excesso']);
+        return compact('retornoCapital', 'retornoLps', 'carry') + ['preferencial' => $preferencial];
     });
 }

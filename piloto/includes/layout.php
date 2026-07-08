@@ -14,7 +14,6 @@ function menu_itens(array $u): array {
             ['Conciliação',         $b.'admin/conciliacao.php',    'bi-check2-square'],
             ['Contabilidade',       $b.'admin/contabilidade.php',  'bi-clipboard-data'],
             ['Precificação',        $b.'admin/precificacao.php',   'bi-tag'],
-            ['Derivativos',         $b.'admin/derivativos.php',    'bi-graph-up'],
             ['Regulatório CVM',     $b.'admin/regulatorio.php',    'bi-send-check'],
             ['Passivo & Tributação', $b.'admin/passivo.php',       'bi-receipt'],
             ['Onboarding de cotistas', $b.'admin/onboarding_cotista.php', 'bi-person-plus'],
@@ -47,7 +46,6 @@ function menu_itens(array $u): array {
         ['Aprovação de cota', $b.'gestor/cotas.php',        'bi-clipboard-check'],
         ['Boletar operação',  $b.'gestor/boletas.php',      'bi-receipt-cutoff'],
         ['Catálogo de ativos', $b.'gestor/ativos.php',      'bi-database'],
-        ['Derivativos',       $b.'admin/derivativos.php',   'bi-graph-up'],
         ['Carteira',          $b.'gestor/carteira.php',     'bi-pie-chart'],
         ['Caixa & Fluxo',     $b.'gestor/caixa.php',        'bi-wallet2'],
         ['Cotistas',          $b.'gestor/cotistas.php',     'bi-people'],
@@ -91,11 +89,14 @@ function page_start(string $titulo, string $ativo, array $u, string $subtitulo =
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?= e_html($titulo) ?> · Plataforma Administradora</title>
+<title><?= e_html($titulo) ?> · Argus DTVM</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" rel="stylesheet">
 <link href="<?= $b ?>assets/css/style.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/pt.js"></script>
 </head>
 <body>
 <div class="app-wrap">
@@ -103,8 +104,8 @@ function page_start(string $titulo, string $ativo, array $u, string $subtitulo =
     <div class="brand">
       <i class="bi bi-bank2"></i>
       <div>
-        <div class="brand-name">ADMINISTRADORA</div>
-        <div class="brand-sub">plataforma de fundos · piloto</div>
+        <div class="brand-name">ARGUS</div>
+        <div class="brand-sub">DTVM · piloto · dados simulados</div>
       </div>
     </div>
     <div class="perfil-chip chip-<?= $perfilCor ?>">

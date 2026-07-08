@@ -117,3 +117,18 @@ body { margin: 0; background: var(--bg); color: var(--texto);
 /* ---------- Barras de limite (enquadramento) ---------- */
 .limite-barra { height: 8px; border-radius: 6px; background: #e2e8f0; overflow: hidden; }
 .limite-barra > div { height: 100%; border-radius: 6px; }
+
+/* ---------- Date picker (Flatpickr) — tema da plataforma ---------- */
+.flatpickr-calendar { border: 1px solid var(--borda); box-shadow: 0 12px 32px rgba(15,23,42,.14); border-radius: 12px; }
+.flatpickr-months, .flatpickr-weekdays { border-radius: 12px 12px 0 0; }
+.flatpickr-months .flatpickr-month, .flatpickr-current-month, .flatpickr-weekday { color: var(--navy); fill: var(--navy); }
+.flatpickr-months .flatpickr-prev-month svg, .flatpickr-months .flatpickr-next-month svg { fill: var(--navy); }
+.flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg { fill: var(--gold); }
+.flatpickr-day:hover, .flatpickr-day.prevMonthDay:hover, .flatpickr-day.nextMonthDay:hover { background: #f1f5f9; border-color: #f1f5f9; }
+.flatpickr-day.today { border-color: var(--gold); }
+.flatpickr-day.today:hover { background: var(--gold); border-color: var(--gold); color: var(--navy); }
+.flatpickr-day.selected, .flatpickr-day.selected:hover,
+.flatpickr-day.startRange, .flatpickr-day.endRange { background: var(--gold); border-color: var(--gold); color: var(--navy); font-weight: 600; }
+.flatpickr-day.selected.today { border-color: var(--navy); }
+span.flatpickr-weekday { font-weight: 600; }
+.flatpickr-current-month .flatpickr-monthDropdown-months, .numInputWrapper span:hover { background: transparent; }

@@ -33,6 +33,19 @@ function ensure_derivativos(PDO $pdo): void {
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_dva (deriv_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    // Generaliza a engine a futuros de PREÇO (DOL/IND) além dos de taxa/PU (DI1/DAP).
+    ddl_portavel($pdo, "ALTER TABLE derivativos ADD COLUMN IF NOT EXISTS mecanica VARCHAR(10) DEFAULT 'PU'");
+    ddl_portavel($pdo, "ALTER TABLE derivativos ADD COLUMN IF NOT EXISTS ponto DECIMAL(12,4) DEFAULT 1");
+}
+
+/** Perfil do derivativo pelo código: [mecanica 'PU'|'PRECO', ponto (R$/ponto), fator 'juros'|'fx'|'indice']. */
+function deriv_perfil(string $codigo): array {
+    $c = strtoupper($codigo);
+    if (strncmp($c, 'DI1', 3) === 0) return ['PU', 1.0, 'juros'];
+    if (strncmp($c, 'DAP', 3) === 0) return ['PU', 1.0, 'juros'];
+    if (strncmp($c, 'DOL', 3) === 0) return ['PRECO', 10.0, 'fx'];      // futuro de dólar
+    if (strncmp($c, 'IND', 3) === 0) return ['PRECO', 1.0, 'indice'];   // futuro de índice Bovespa
+    return ['PRECO', 1.0, 'indice'];
 }
 
 /** Dias úteis entre $de (exclusive) e $ate (inclusive). */
@@ -60,12 +73,25 @@ function ajuste_diario_derivativos(PDO $pdo, int $fid, string $data): float {
     foreach ($st->fetchAll() as $d) {
         if ($data >= $d['vencimento']) { $pdo->prepare("UPDATE derivativos SET status='Encerrada' WHERE id=?")->execute([$d['id']]); continue; }
         $du = du_uteis($data, $d['vencimento']);
-        $taxaNova = max(0.001, (float) $d['taxa_atual'] + mt_rand(-20, 20) / 10000.0);   // ±0,20% a.a./dia
-        $puAnt = (float) $d['pu_atual'] > 0 ? (float) $d['pu_atual'] : pu_futuro((float) $d['taxa_operacao'], $du + 1);
-        $puNovo = pu_futuro($taxaNova, $du);
-        $sinal = (int) $d['comprado_pu'] ? 1 : -1;
-        $ajuste = round(($puNovo - $puAnt) * (int) $d['contratos'] * $sinal, 2);
-        $pdo->prepare("UPDATE derivativos SET taxa_atual=?, pu_atual=?, data_ref=? WHERE id=?")->execute([$taxaNova, $puNovo, $data, $d['id']]);
+        [$mecPerfil, $pontoPerfil, $fator] = deriv_perfil($d['instrumento']);
+        if (($d['mecanica'] ?? 'PU') === 'PU') {
+            // Futuro de TAXA (DI1/DAP): PU marcado pela curva do prazo + choque pequeno (estrutura a termo).
+            $ehDap    = strncmp($d['instrumento'], 'DAP', 3) === 0;
+            $alvo     = $ehDap ? curva_real_aa($data, $du) : curva_pre_aa($data, $du);
+            $taxaNova = max(0.001, $alvo + choque_ativo($d['instrumento'], $data) * 0.5);
+            $puAnt    = (float) $d['pu_atual'] > 0 ? (float) $d['pu_atual'] : pu_futuro((float) $d['taxa_operacao'], $du + 1);
+            $puNovo   = pu_futuro($taxaNova, $du);
+            $pdo->prepare("UPDATE derivativos SET taxa_atual=?, pu_atual=?, data_ref=? WHERE id=?")->execute([$taxaNova, $puNovo, $data, $d['id']]);
+        } else {
+            // Futuro de PREÇO (DOL/IND): preço marcado pelo fator do objeto (câmbio ou índice).
+            $puAnt  = (float) $d['pu_atual'];
+            $mult   = $fator === 'fx' ? fx_fator_dia($data) : (1 + fator_mercado_dia($data));
+            $puNovo = round($puAnt * $mult, 6);
+            $pdo->prepare("UPDATE derivativos SET pu_atual=?, data_ref=? WHERE id=?")->execute([$puNovo, $data, $d['id']]);
+        }
+        $ponto  = (float) ($d['ponto'] ?? $pontoPerfil);
+        $sinal  = (int) $d['comprado_pu'] ? 1 : -1;
+        $ajuste = round(($puNovo - $puAnt) * (int) $d['contratos'] * $ponto * $sinal, 2);
         $pdo->prepare("INSERT INTO derivativos_ajustes (deriv_id, fundo_id, data_ref, pu_ant, pu_novo, ajuste) VALUES (?,?,?,?,?,?)")
             ->execute([$d['id'], $fid, $data, $puAnt, $puNovo, $ajuste]);
         $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
@@ -76,14 +102,38 @@ function ajuste_diario_derivativos(PDO $pdo, int $fid, string $data): float {
     return $tot;
 }
 
-/** Abre uma posição de derivativo (deposita margem; sem desembolso do principal). */
-function abrir_derivativo(PDO $pdo, int $fid, string $instr, string $venc, int $contratos, bool $compradoPu, float $taxa, float $margem, string $data): int {
-    return com_transacao($pdo, function () use ($pdo, $fid, $instr, $venc, $contratos, $compradoPu, $taxa, $margem, $data) {
+/** Posições de derivativos abertas do fundo, com ajuste acumulado e exposição nocional. */
+function posicoes_derivativos(PDO $pdo, int $fid): array {
+    $st = $pdo->prepare("SELECT * FROM derivativos WHERE fundo_id = ? AND status = 'Aberta' ORDER BY vencimento, id");
+    $st->execute([$fid]);
+    $rows = $st->fetchAll();
+    foreach ($rows as &$r) {
+        $aj = $pdo->prepare("SELECT COALESCE(SUM(ajuste),0) FROM derivativos_ajustes WHERE deriv_id = ?");
+        $aj->execute([(int) $r['id']]);
+        $r['ajuste_acum'] = (float) $aj->fetchColumn();
+        $r['nocional']    = (int) $r['contratos'] * (float) $r['pu_atual'] * (float) ($r['ponto'] ?? 1);
+    }
+    return $rows;
+}
+
+/**
+ * Abre uma posição de derivativo (deposita margem; sem desembolso do principal).
+ * $valorEntrada: para futuro de TAXA (DI1/DAP) é a taxa a.a. em % (ex.: 11,20); para futuro
+ * de PREÇO (DOL/IND) é o preço do contrato. A mecânica/ponto vêm de deriv_perfil($instr).
+ */
+function abrir_derivativo(PDO $pdo, int $fid, string $instr, string $venc, int $contratos, bool $compradoPu, float $valorEntrada, float $margem, string $data): int {
+    return com_transacao($pdo, function () use ($pdo, $fid, $instr, $venc, $contratos, $compradoPu, $valorEntrada, $margem, $data) {
+        [$mec, $ponto, $fator] = deriv_perfil($instr);
         $du = du_uteis($data, $venc);
-        $pu = pu_futuro($taxa, $du);
-        $pdo->prepare("INSERT INTO derivativos (fundo_id, instrumento, vencimento, contratos, comprado_pu, taxa_operacao, taxa_atual, pu_atual, margem, data_ref)
-                       VALUES (?,?,?,?,?,?,?,?,?,?)")
-            ->execute([$fid, $instr, $venc, $contratos, $compradoPu ? 1 : 0, $taxa, $taxa, $pu, $margem, $data]);
+        if ($mec === 'PU') {
+            $taxa = $valorEntrada / 100.0;        // % a.a. → fração
+            $taxaOp = $taxa; $mark = pu_futuro($taxa, $du);
+        } else {
+            $taxaOp = 0.0; $mark = $valorEntrada;  // preço do contrato
+        }
+        $pdo->prepare("INSERT INTO derivativos (fundo_id, instrumento, vencimento, contratos, comprado_pu, taxa_operacao, taxa_atual, pu_atual, margem, data_ref, mecanica, ponto)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+            ->execute([$fid, $instr, $venc, $contratos, $compradoPu ? 1 : 0, $taxaOp, $taxaOp, $mark, $margem, $data, $mec, $ponto]);
         return (int) $pdo->lastInsertId();
     });
 }

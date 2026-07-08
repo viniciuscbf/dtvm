@@ -62,7 +62,7 @@ function ensure_equipe(PDO $pdo): void {
     // 1) coluna account_id em usuarios
     foreach ([
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS account_id VARCHAR(12) NULL",
-    ] as $sql) { try { $pdo->exec($sql); } catch (Throwable $e) {} }
+    ] as $sql) { try { ddl_portavel($pdo, $sql); } catch (Throwable $e) {} }
     try { $pdo->exec("ALTER TABLE usuarios ADD UNIQUE KEY uq_account (account_id)"); } catch (Throwable $e) {}
 
     // 2) tabela de membros do fundo (papel + status + permissões)

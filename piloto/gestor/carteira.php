@@ -128,6 +128,41 @@ page_start('Carteira', 'Carteira', $u, e_html($fundo['nome']) . ' · posição d
     </table>
   </div>
 </div>
+
+<?php ensure_derivativos($pdo); $derivs = posicoes_derivativos($pdo, $fid);
+if ($derivs): ?>
+<div class="card mt-4">
+  <div class="card-header"><i class="bi bi-graph-up-arrow me-1"></i> Posições em derivativos (futuros)
+    <span class="text-muted" style="font-size:.75rem">— margem + ajuste diário em caixa, fora do principal</span></div>
+  <div class="card-body p-0">
+    <table class="table table-sm table-hover align-middle mb-0" style="font-size:.83rem">
+      <thead><tr>
+        <th>Contrato</th><th>Vencimento</th><th class="text-end">Contratos</th><th class="text-center">Direção</th>
+        <th class="text-end">Taxa atual</th><th class="text-end">PU atual</th><th class="text-end">Margem</th>
+        <th class="text-end">Exposição nocional</th><th class="text-end">Ajuste acum.</th>
+      </tr></thead>
+      <tbody>
+      <?php foreach ($derivs as $d): $comp = (int)$d['comprado_pu'] === 1; ?>
+        <tr>
+          <td><b><?= e_html($d['instrumento']) ?></b></td>
+          <td class="text-muted" style="white-space:nowrap"><?= data_br($d['vencimento']) ?></td>
+          <td class="text-end"><?= number_format((int)$d['contratos'], 0, ',', '.') ?></td>
+          <td class="text-center"><?= $comp ? badge('Comprado em PU', 'success') : badge('Vendido em PU', 'warning') ?></td>
+          <td class="text-end"><?= number_format((float)$d['taxa_atual'] * 100, 2, ',', '.') ?>%</td>
+          <td class="text-end"><?= number_format((float)$d['pu_atual'], 6, ',', '.') ?></td>
+          <td class="text-end"><?= moeda($d['margem']) ?></td>
+          <td class="text-end"><b><?= moeda($d['nocional']) ?></b></td>
+          <td class="text-end <?= pct_color($d['ajuste_acum']) ?>"><?= moeda($d['ajuste_acum']) ?></td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer text-muted" style="font-size:.72rem">
+    Abra ou ajuste posições em <a href="boletas.php">Boletar operação</a> — futuros estão no catálogo como qualquer instrumento.</div>
+</div>
+<?php endif; ?>
+
 <p class="text-muted mt-3" style="font-size:.78rem"><i class="bi bi-search me-1"></i>
 Encontrou um erro na posição (preço, quantidade, evento não capturado)? <b>Rejeite a cota do dia</b> na aba
 <a href="cotas.php">Aprovação de cota</a> descrevendo a divergência — a controladoria corrige, reprocessa e reenvia a prévia.</p>

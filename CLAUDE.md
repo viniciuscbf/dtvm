@@ -29,7 +29,7 @@ Escopo **fora** (não implementar sem pedido): FIDC, FII. Sempre manter as **not
 - **funcionário sem fundo** (demo de convite/equipe): `analista@auroracapital.com.br`
 - custódia: `custodia@bancoparceiro.com.br`
 - cotista (token, fundo 1): `3f2a1c9e-8b47-4d10-9e2f-6a5d4c3b2a19`
-- Simulator Master (2º site, `piloto/simulador/`): senha `master123`
+- Simulator Master (2º site, `piloto/simulador/`): senha `Argus!Sim-9Kv#2026` (trocada de `master123` ao ir a produção)
 
 ## Estrutura
 ```

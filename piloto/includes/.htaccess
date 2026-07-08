@@ -1,0 +1,9 @@
+# Pasta interna da aplicação — NUNCA deve ser acessível via HTTP.
+# É carregada pelo PHP via filesystem (require), não pela web.
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

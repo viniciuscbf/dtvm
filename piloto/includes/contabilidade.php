@@ -13,6 +13,7 @@ const PLANO_CONTAS = [
     '1.2' => ['Títulos e Valores Mobiliários',       'Ativo'],
     '2.1' => ['Tributos a Recolher',                 'Passivo'],
     '2.2' => ['Taxas a Pagar (provisão)',            'Passivo'],
+    '2.3' => ['Valores a Pagar a Cotistas',          'Passivo'],
     '3.0' => ['Patrimônio Líquido (Cotas)',          'PL'],
     '4.0' => ['Receitas (proventos e rendimentos)',  'Receita'],
     '5.0' => ['Despesas (taxas)',                    'Despesa'],
@@ -76,6 +77,10 @@ function balancete(PDO $pdo, array $fundo, string $ate): array {
     $caixa = caixa_na_data($pdo, $fid, $ate);
     $titulos = array_sum(array_column(carteira($pdo, $fid, $ate), 'valor_mercado'));
     $taxasAPagar = (float)($fundo['provisao_despesas'] ?? 0);
+    // Passivos reais do LIVRO de passivos (tributos a recolher + valores a pagar a cotistas).
+    $pg = passivos_por_grupo($pdo, $fid, $ate);
+    $tributosARecolher = $pg['tributos'];
+    $valoresCotistas   = $pg['cotistas'] + $pg['outros'];
 
     // resultado do período (receitas e despesas acumuladas até a data)
     $razao = razao_contabil($pdo, $fid, $ate);
@@ -83,8 +88,16 @@ function balancete(PDO $pdo, array $fundo, string $ate): array {
     $despesas = $razao['5.0']['debito'] - $razao['5.0']['credito'];
 
     $ativo = $caixa + $titulos;
-    $passivo = $taxasAPagar;                 // tributos a recolher = 0 (recolhidos na hora na simulação)
-    $pl = $ativo - $passivo;                  // PL fecha por diferença (patrimônio dos cotistas)
+    $passivo = $taxasAPagar + $tributosARecolher + $valoresCotistas;   // provisão + tributos + valores a cotistas
+    $plContabil = $ativo - $passivo;          // PL pela contabilidade (Ativo − Passivo)
+
+    // Conferência REAL de controladoria: o PL contábil deve bater com o PL do passivo de
+    // cotistas (cotas emitidas × cota publicada), que vem de fonte SEPARADA (cotas_historico).
+    // Pode DIVERGIR de verdade (cota defasada, carteira alterada) — não é identidade forçada.
+    $cota = cota_em($pdo, $fid, $ate) ?? 0.0;
+    $plCotas = round(total_cotas($pdo, $fid) * $cota, 2);
+    $divergencia = round($plContabil - $plCotas, 2);
+    $tolerancia = max(1.0, abs($plContabil) * 0.001);   // tolerância: 0,1% do PL ou R$ 1,00
 
     return [
         'ativo' => [
@@ -93,12 +106,15 @@ function balancete(PDO $pdo, array $fundo, string $ate): array {
             'total' => $ativo,
         ],
         'passivo' => [
-            '2.1' => 0.0,
+            '2.1' => $tributosARecolher,
             '2.2' => $taxasAPagar,
+            '2.3' => $valoresCotistas,
             'total' => $passivo,
         ],
-        'pl' => $pl,
+        'pl' => $plContabil,
+        'pl_cotas' => $plCotas,
+        'divergencia_pl' => $divergencia,
         'resultado' => ['receitas' => $receitas, 'despesas' => $despesas, 'liquido' => $receitas - $despesas],
-        'confere' => abs($ativo - ($passivo + $pl)) < 0.01,
+        'confere' => abs($divergencia) < $tolerancia,
     ];
 }

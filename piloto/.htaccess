@@ -1,0 +1,43 @@
+# ============================================================================
+# Argus DTVM · aplicação PHP (piloto) — hardening específico da app
+# Vai para public_html/piloto/ (herda também a .htaccess da raiz do site).
+# ============================================================================
+
+AddDefaultCharset UTF-8
+Options -Indexes
+
+# ---------------------------------------------------------------------------
+# 1) PHP — só vale se o host rodar mod_php. Em PHP-FPM/CGI (comum em cPanel),
+#    estas linhas são IGNORADAS: use o arquivo .user.ini (ver DEPLOY_PRODUCAO.md).
+#    Envolto em <IfModule> para não derrubar o site (erro 500) onde não se aplica.
+# ---------------------------------------------------------------------------
+<IfModule mod_php.c>
+  php_flag  display_errors        Off
+  php_flag  log_errors            On
+  php_flag  expose_php            Off
+  php_flag  session.cookie_httponly On
+  php_flag  session.use_strict_mode On
+  php_value session.cookie_samesite "Lax"
+</IfModule>
+<IfModule mod_php7.c>
+  php_flag  display_errors Off
+  php_flag  log_errors     On
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 2) Bloqueio por extensão sensível dentro da app
+# ---------------------------------------------------------------------------
+<FilesMatch "(?i)\.(sql|py|md|bak|old|orig|log|ini|sample|dist|sh|yml|yaml)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# ---------------------------------------------------------------------------
+# 3) O bloqueio das pastas internas (includes/ config/ sql/) é feito pela
+#    .htaccess "Require all denied" dentro de cada uma — independe do caminho.
+# ---------------------------------------------------------------------------

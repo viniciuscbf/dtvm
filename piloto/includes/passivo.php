@@ -30,11 +30,21 @@ function aliquota_come_cotas(string $tributacao): ?float {
     };
 }
 
-/** IOF regressivo simplificado para resgates com menos de 30 dias. Aproximação linear. */
+/** IOF regressivo (Dec. 6.306/2007, Anexo) — tabela OFICIAL de 30 alíquotas por dia (%). */
 function iof_resgate(int $dias, float $rendimento): float {
-    if ($dias >= 30 || $rendimento <= 0) return 0.0;
-    $percent = max(0.0, (30 - $dias)) * (100.0 / 30.0);   // ~96,7% no dia 1 → 0% no dia 30
-    return round($rendimento * $percent / 100.0, 2);
+    if ($dias >= 30 || $dias < 1 || $rendimento <= 0) return 0.0;
+    static $tab = [1 => 96, 2 => 93, 3 => 90, 4 => 86, 5 => 83, 6 => 80, 7 => 76, 8 => 73,
+                   9 => 70, 10 => 66, 11 => 63, 12 => 60, 13 => 56, 14 => 53, 15 => 50, 16 => 46,
+                   17 => 43, 18 => 40, 19 => 36, 20 => 33, 21 => 30, 22 => 26, 23 => 23, 24 => 20,
+                   25 => 16, 26 => 13, 27 => 10, 28 => 6, 29 => 3];
+    return round($rendimento * ($tab[$dias] ?? 0) / 100.0, 2);
+}
+
+/** Último dia útil de um mês (para as datas legais do come-cotas: mai/nov). */
+function ultimo_dia_util_do_mes(int $ano, int $mes): string {
+    $d = new DateTime(sprintf('%04d-%02d-%02d', $ano, $mes, (int) date('t', mktime(0, 0, 0, $mes, 1, $ano))));
+    while (!eh_dia_util($d->format('Y-m-d'))) $d->modify('-1 day');
+    return $d->format('Y-m-d');
 }
 
 /** Dias corridos entre duas datas (Y-m-d). */
@@ -97,10 +107,14 @@ function passivo_resgatar(PDO $pdo, int $fundoId, int $cotistaId, float $valorBr
         $rendimento = max(0.0, $bruto - $custoResg);
 
         $dias = dias_entre($c['data_entrada'] ?? null, $data);
-        $aliq = aliquota_ir_regressiva($dias);
-        $ir = round($rendimento * $aliq / 100.0, 2);
+        // Ordem correta: IOF é retido PRIMEIRO; o IR incide sobre o rendimento LÍQUIDO de IOF.
         $iof = iof_resgate($dias, $rendimento);
+        $baseIr = max(0.0, $rendimento - $iof);
+        $aliq = aliquota_ir_regressiva($dias);
+        $ir = round($baseIr * $aliq / 100.0, 2);
         $liquido = round($bruto - $ir - $iof, 2);
+        $dLiqCot  = mais_dias_uteis($data, 2);   // pagamento ao cotista em D+2 (prazo de liquidação)
+        $dLiqTrib = mais_dias_uteis($data, 3);   // recolhimento dos tributos (DARF) ~D+3
 
         $novasCotas = (float)$c['cotas'] - $cotasResg;
         if ($novasCotas < 0.0000001) $novasCotas = 0.0;
@@ -111,14 +125,14 @@ function passivo_resgatar(PDO $pdo, int $fundoId, int $cotistaId, float $valorBr
             ->execute([$novasCotas, $novoCusto, $cotistaId]);
         $pdo->prepare('INSERT INTO mov_cotistas (fundo_id, cotista_id, data_ref, tipo, valor, cotas, data_cotizacao, data_liquidacao)
                        VALUES (?,?,?,?,?,?,?,?)')
-            ->execute([$fundoId, $cotistaId, $data, 'Resgate', $bruto, $cotasResg, $data, $data]);
+            ->execute([$fundoId, $cotistaId, $data, 'Resgate', $bruto, $cotasResg, $data, $dLiqCot]);
 
         // eventos fiscais
         if ($ir > 0) {
             $pdo->prepare('INSERT INTO eventos_fiscais (fundo_id, cotista_id, tipo, competencia, data_ref, base_calculo, aliquota, valor_tributo, cotas_reduzidas, detalhe)
                            VALUES (?,?,?,?,?,?,?,?,?,?)')
-                ->execute([$fundoId, $cotistaId, 'IR Resgate', substr($data, 0, 7), $data, $rendimento, $aliq, $ir, 0,
-                           "IR de {$aliq}% sobre rendimento de " . number_format($rendimento, 2, ',', '.') . " ({$dias} dias)"]);
+                ->execute([$fundoId, $cotistaId, 'IR Resgate', substr($data, 0, 7), $data, $baseIr, $aliq, $ir, 0,
+                           "IR de {$aliq}% sobre rendimento líquido de IOF de " . number_format($baseIr, 2, ',', '.') . " ({$dias} dias)"]);
         }
         if ($iof > 0) {
             $pdo->prepare('INSERT INTO eventos_fiscais (fundo_id, cotista_id, tipo, competencia, data_ref, base_calculo, aliquota, valor_tributo, cotas_reduzidas, detalhe)
@@ -127,14 +141,12 @@ function passivo_resgatar(PDO $pdo, int $fundoId, int $cotistaId, float $valorBr
                            "IOF por resgate em {$dias} dias (< 30)"]);
         }
 
-        // caixa: lançamentos separados por destino (líquido ao cotista + tributos à Receita)
-        $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-            ->execute([$fundoId, $data, 'Resgate', 'Resgate líquido ao cotista', -$liquido]);
-        if ($ir > 0) $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-            ->execute([$fundoId, $data, 'IR Retido', 'IR retido no resgate (recolhido à Receita)', -$ir]);
-        if ($iof > 0) $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-            ->execute([$fundoId, $data, 'IOF Retido', 'IOF retido no resgate (recolhido à Receita)', -$iof]);
-        $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual - ? WHERE id = ?')->execute([$bruto, $fundoId]);
+        // Em vez de baixar o caixa AGORA, registra PASSIVOS que liquidam nas datas devidas
+        // (cotista em D+2; tributos no DARF ~D+3). A cota fica estável: a redução de cotas é
+        // compensada pelo passivo criado; a liquidação futura é neutra na cota.
+        registrar_passivo($pdo, $fundoId, 'Valores a pagar (resgate)', $liquido, $data, $dLiqCot, 'Resgate líquido ao cotista #' . $cotistaId);
+        if ($ir > 0)  registrar_passivo($pdo, $fundoId, 'Tributos a recolher (IR)',  $ir,  $data, $dLiqTrib, 'IR retido no resgate');
+        if ($iof > 0) registrar_passivo($pdo, $fundoId, 'Tributos a recolher (IOF)', $iof, $data, $dLiqTrib, 'IOF retido no resgate');
 
         return compact('bruto', 'ir', 'iof', 'liquido', 'dias', 'aliq') + ['cotas' => $cotasResg, 'rendimento' => $rendimento];
     });
@@ -153,6 +165,14 @@ function passivo_come_cotas(PDO $pdo, int $fundoId, string $competencia, string 
         if (($fundo['classe'] ?? '') === 'Ações') $trib = 'Ações';
         $aliq = aliquota_come_cotas($trib);
         if ($aliq === null) return ['aplicavel' => false, 'total' => 0.0, 'n' => 0, 'aliquota' => null];
+
+        // Come-cotas só ocorre no ÚLTIMO DIA ÚTIL de MAIO e NOVEMBRO. Valida a competência e
+        // força a data oficial (ignora a data passada, se divergir da regra legal).
+        $cy = (int) substr($competencia, 0, 4); $cm = (int) substr($competencia, 5, 2);
+        if (!in_array($cm, [5, 11], true)) {
+            return ['aplicavel' => true, 'total' => 0.0, 'n' => 0, 'aliquota' => $aliq, 'data_invalida' => true];
+        }
+        $data = ultimo_dia_util_do_mes($cy, $cm);
 
         $ja = $pdo->prepare("SELECT COUNT(*) FROM eventos_fiscais WHERE fundo_id = ? AND tipo = 'Come-cotas' AND competencia = ?");
         $ja->execute([$fundoId, $competencia]);
@@ -185,9 +205,9 @@ function passivo_come_cotas(PDO $pdo, int $fundoId, string $competencia, string 
         }
 
         if ($total > 0) {
-            $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-                ->execute([$fundoId, $data, 'Come-cotas', "Come-cotas {$competencia} recolhido à Receita ({$n} cotistas)", -$total]);
-            $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual - ? WHERE id = ?')->execute([$total, $fundoId]);
+            // o tributo do come-cotas vira PASSIVO "a recolher" até o DARF (~D+3), não sai na hora
+            $dLiqTrib = mais_dias_uteis($data, 3);
+            registrar_passivo($pdo, $fundoId, 'Tributos a recolher (Come-cotas)', $total, $data, $dLiqTrib, "Come-cotas {$competencia} ({$n} cotistas)");
         }
 
         return ['aplicavel' => true, 'total' => $total, 'n' => $n, 'aliquota' => $aliq];

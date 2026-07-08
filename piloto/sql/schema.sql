@@ -5,7 +5,7 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-DROP TABLE IF EXISTS fip_distribuicoes, fip_avaliacoes, fip_participacoes, fip_chamada_lp, fip_chamadas, fip_lps,
+DROP TABLE IF EXISTS passivos, fip_distribuicoes, fip_avaliacoes, fip_participacoes, fip_chamada_lp, fip_chamadas, fip_lps,
   derivativos_ajustes, derivativos, subclasses, precos_mercado, posicao_custodiante, ticket_mensagens, tickets, solicitacoes_cadastro_ativo, ativos_catalogo, sim_estado,
   eventos_fiscais, auditoria, onboarding_etapas, comentarios, documentos, chamados, comunicados,
   enquadramento_eventos, enquadramento_regras, repasses, partes_relacionadas, alertas_fraude,

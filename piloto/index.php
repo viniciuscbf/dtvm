@@ -7,7 +7,7 @@ require_once __DIR__ . '/includes/auth.php';
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Administradora · Plataforma de Fundos</title>
+<title>Argus DTVM · Plataforma de Fundos</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="assets/css/style.css" rel="stylesheet">
@@ -29,7 +29,7 @@ require_once __DIR__ . '/includes/auth.php';
   <div class="container py-4 d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center gap-2">
       <i class="bi bi-bank2" style="font-size:1.5rem;color:var(--gold)"></i>
-      <span style="font-weight:700;letter-spacing:2px;font-size:.9rem">ADMINISTRADORA</span>
+      <span style="font-weight:700;letter-spacing:2px;font-size:.9rem">ARGUS <span style="font-weight:400;color:var(--gold)">DTVM</span></span>
       <span class="text-secondary" style="font-size:.7rem">· piloto · dados simulados</span>
     </div>
     <a class="btn btn-sm btn-portal-outline btn" href="gestor/cadastro.php">Constitua seu fundo →</a>

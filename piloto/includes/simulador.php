@@ -6,7 +6,7 @@
 // Depende de helpers.php (calcular_cota, cota_em, ultima_data_carteira).
 // ============================================================
 
-const SIM_MASTER_SENHA = 'master123';   // senha do painel master (troque em produção)
+const SIM_MASTER_SENHA = 'Argus!Sim-9Kv#2026';   // senha do painel master (god-mode) — produção
 
 /** Exige sessão master; senão manda para o login do simulador. */
 function exigir_master(): void {
@@ -69,7 +69,7 @@ function sim_resetar(PDO $pdo): void {
 function sim_avancar_dia(PDO $pdo): array {
     $atual = sim_data_atual($pdo);
     $prox  = proximo_dia_util($atual);
-    $cdiDia = pow(1.105, 1 / 252);   // ~1,0004/dia (CDI ~10,5% a.a.)
+    $cdiDia = cdi_fator_dia($prox);   // fator diário derivado da meta Selic vigente (curva, não fixo)
 
     // CDI do dia
     $chk = $pdo->prepare("SELECT COUNT(*) FROM cdi_historico WHERE data_ref = ?");
@@ -81,50 +81,22 @@ function sim_avancar_dia(PDO $pdo): array {
 
     // DDL FORA da transação (CREATE/ALTER causam commit implícito no MySQL/MariaDB)
     ensure_dominio($pdo);   // todas as tabelas/colunas (DDL) fora da transação
-    $ipcaDia = ipca_diario();
+    $ipcaDia = ipca_diario($prox);
     return com_transacao($pdo, function () use ($pdo, $atual, $prox, $cdiDia, $ipcaDia) {
         $fundos = $pdo->query("SELECT * FROM fundos WHERE status='Ativo'")->fetchAll();
         $n = 0; $divs = 0;
         foreach ($fundos as $f) {
             $fid = (int)$f['id'];
+            // ===== PIPELINE DIÁRIO por fundo — cada passo é uma função isolada, testável e
+            //       substituível; adicionar/reordenar um passo é uma linha aqui (não editar blobão). =====
             $ult = ultima_data_carteira($pdo, $fid);
-            if ($ult && $ult !== $prox) {
-                $st = $pdo->prepare("SELECT * FROM ativos_carteira WHERE fundo_id = ? AND data_ref = ?");
-                $st->execute([$fid, $ult]);
-                foreach ($st->fetchAll() as $a) {
-                    // marcação por classe/indexador: RF pela curva do indexador; cota de fundo pelo master; RV a mercado
-                    [$novo, $fonte] = preco_novo_do_ativo($pdo, $a, $cdiDia, $ipcaDia);
-                    // feed de mercado (fonte INDEPENDENTE) — a referência de preço nasce aqui
-                    $pdo->prepare("INSERT INTO precos_mercado (codigo, data_ref, preco, fonte) VALUES (?,?,?,?)
-                                   ON DUPLICATE KEY UPDATE preco=VALUES(preco), fonte=VALUES(fonte)")
-                        ->execute([$a['codigo'], $prox, $novo, $fonte]);
-                    $pdo->prepare("INSERT INTO ativos_carteira (fundo_id, codigo, tipo, quantidade, preco_medio, preco_mam, preco_referencia, fonte_preco, data_ref)
-                                   VALUES (?,?,?,?,?,?,?,?,?)")
-                        ->execute([$fid, $a['codigo'], $a['tipo'], $a['quantidade'], $a['preco_medio'], $novo, $novo, $fonte, $prox]);
-                }
-            }
-            // provisão diária de despesas (adm+gestão+custódia) → reduz o PL/cota
-            $desp = provisionar_despesas_dia($pdo, $f, $prox);
-            $f['provisao_despesas'] = (float)($f['provisao_despesas'] ?? 0) + $desp;
-            // ajuste diário de derivativos (DI1/DAP) — marcação a mercado liquidada no caixa
-            ajuste_diario_derivativos($pdo, $fid, $prox);
-            // nova cota/PL (já líquida da provisão e com o ajuste de derivativos no caixa)
-            $calc = calcular_cota($pdo, $f, $prox);
-            if ($calc) {
-                [$cota, $pl] = $calc;
-                $chk = $pdo->prepare("SELECT COUNT(*) FROM cotas_historico WHERE fundo_id = ? AND data_ref = ?");
-                $chk->execute([$fid, $prox]);
-                if ((int)$chk->fetchColumn()) $pdo->prepare("UPDATE cotas_historico SET valor_cota = ?, pl = ? WHERE fundo_id = ? AND data_ref = ?")->execute([$cota, $pl, $fid, $prox]);
-                else $pdo->prepare("INSERT INTO cotas_historico (fundo_id, data_ref, valor_cota, pl) VALUES (?,?,?,?)")->execute([$fid, $prox, $cota, $pl]);
-                $pdo->prepare("UPDATE fundos SET cota_atual = ?, pl_atual = ? WHERE id = ?")->execute([$cota, $pl, $fid]);
-            }
-            // posição custodiante INDEPENDENTE + conciliação computada de verdade
-            $divs += sim_gerar_posicao_e_conciliar($pdo, $fid, $prox);
-            // esteira
-            $ordem = 1;
-            foreach (['Posição', 'Preços', 'Caixa', 'Conciliação', 'Cota', 'ANBIMA'] as $etapa)
-                $pdo->prepare("INSERT INTO processamento (fundo_id, data_ref, etapa, ordem, status, horario, mensagem)
-                               VALUES (?,?,?,?, 'OK', CURTIME(), 'Processado pelo simulador')")->execute([$fid, $prox, $etapa, $ordem++]);
+            if ($ult && $ult !== $prox) proc_marcar_carteira($pdo, $fid, $ult, $prox, $cdiDia, $ipcaDia);              // 1) preços/posição
+            $f['provisao_despesas'] = (float)($f['provisao_despesas'] ?? 0) + provisionar_despesas_dia($pdo, $f, $prox); // 2) provisão de despesas
+            ajuste_diario_derivativos($pdo, $fid, $prox);              // 3) ajuste diário de derivativos (no caixa)
+            liquidar_passivos_vencidos($pdo, $fid, $prox);            // 4) liquida passivos vencidos (cotistas/tributos)
+            proc_persistir_cota($pdo, $f, $prox);                     // 5) recalcula e publica a cota/PL
+            $divs += sim_gerar_posicao_e_conciliar($pdo, $fid, $prox); // 6) posição do custodiante + conciliação
+            proc_esteira($pdo, $fid, $prox);                          // 7) esteira de processamento
             $n++;
         }
         $pdo->prepare("UPDATE sim_estado SET data_atual = ?, atualizado_em = NOW() WHERE id = 1")->execute([$prox]);
@@ -141,8 +113,10 @@ function sim_gerar_posicao_e_conciliar(PDO $pdo, int $fid, string $data): int {
     $divs = 0;
     foreach ($st->fetchAll() as $a) {
         $qtdCart = (float)$a['quantidade'];
-        // 8% de chance de divergência de timing (custodiante ainda não refletiu a liquidação)
-        $qtdCust = (mt_rand(1, 100) <= 8) ? round($qtdCart * (mt_rand(85, 98) / 100.0), 6) : $qtdCart;
+        // divergência de timing (custodiante ainda não refletiu a liquidação): DETERMINÍSTICA,
+        // ~8% dos ativos por dia, para a conciliação ser reprodutível (não sorteia a cada rodada).
+        $seed = crc32($fid . '|' . $a['codigo'] . '|' . $data);
+        $qtdCust = ($seed % 100) < 8 ? round($qtdCart * (0.85 + ($seed % 13) / 100.0), 6) : $qtdCart;
         $pdo->prepare("INSERT INTO posicao_custodiante (fundo_id, data_ref, codigo, tipo, quantidade, central) VALUES (?,?,?,?,?,?)")
             ->execute([$fid, $data, $a['codigo'], $a['tipo'], $qtdCust, central_do_ativo($a['tipo'])]);
         if (abs($qtdCart - $qtdCust) > 0.0001) {
@@ -156,6 +130,45 @@ function sim_gerar_posicao_e_conciliar(PDO $pdo, int $fid, string $data): int {
     return $divs;
 }
 
+// ---------------- Passos do pipeline diário (proc_*) — cada um isolado e testável ----------------
+
+/** Passo 1 — remarca a carteira do dia anterior para $prox (preço por classe/indexador). */
+function proc_marcar_carteira(PDO $pdo, int $fid, string $ult, string $prox, float $cdiDia, float $ipcaDia): void {
+    $st = $pdo->prepare("SELECT * FROM ativos_carteira WHERE fundo_id = ? AND data_ref = ?");
+    $st->execute([$fid, $ult]);
+    foreach ($st->fetchAll() as $a) {
+        [$novo, $fonte] = preco_novo_do_ativo($pdo, $a, $cdiDia, $ipcaDia, $prox);
+        // feed de mercado (fonte INDEPENDENTE) — a referência de preço nasce aqui
+        $pdo->prepare("INSERT INTO precos_mercado (codigo, data_ref, preco, fonte) VALUES (?,?,?,?)
+                       ON DUPLICATE KEY UPDATE preco=VALUES(preco), fonte=VALUES(fonte)")
+            ->execute([$a['codigo'], $prox, $novo, $fonte]);
+        $pdo->prepare("INSERT INTO ativos_carteira (fundo_id, codigo, tipo, quantidade, preco_medio, preco_mam, preco_referencia, fonte_preco, data_ref)
+                       VALUES (?,?,?,?,?,?,?,?,?)")
+            ->execute([$fid, $a['codigo'], $a['tipo'], $a['quantidade'], $a['preco_medio'], $novo, $novo, $fonte, $prox]);
+    }
+}
+
+/** Passo 5 — recalcula a cota/PL (já líquida de provisão, derivativos e passivos) e publica. */
+function proc_persistir_cota(PDO $pdo, array $f, string $prox): void {
+    $fid = (int) $f['id'];
+    $calc = calcular_cota($pdo, $f, $prox);
+    if (!$calc) return;
+    [$cota, $pl] = $calc;
+    $chk = $pdo->prepare("SELECT COUNT(*) FROM cotas_historico WHERE fundo_id = ? AND data_ref = ?");
+    $chk->execute([$fid, $prox]);
+    if ((int) $chk->fetchColumn()) $pdo->prepare("UPDATE cotas_historico SET valor_cota = ?, pl = ? WHERE fundo_id = ? AND data_ref = ?")->execute([$cota, $pl, $fid, $prox]);
+    else $pdo->prepare("INSERT INTO cotas_historico (fundo_id, data_ref, valor_cota, pl) VALUES (?,?,?,?)")->execute([$fid, $prox, $cota, $pl]);
+    $pdo->prepare("UPDATE fundos SET cota_atual = ?, pl_atual = ? WHERE id = ?")->execute([$cota, $pl, $fid]);
+}
+
+/** Passo 7 — registra a esteira de processamento do dia. */
+function proc_esteira(PDO $pdo, int $fid, string $prox): void {
+    $ordem = 1;
+    foreach (['Posição', 'Preços', 'Caixa', 'Conciliação', 'Cota', 'ANBIMA'] as $etapa)
+        $pdo->prepare("INSERT INTO processamento (fundo_id, data_ref, etapa, ordem, status, horario, mensagem)
+                       VALUES (?,?,?,?, 'OK', CURTIME(), 'Processado pelo simulador')")->execute([$fid, $prox, $etapa, $ordem++]);
+}
+
 // ---------------- Injetores de eventos ----------------
 
 /** Credita um recebimento no caixa do fundo (aporte/provento/vencimento). */
@@ -167,9 +180,10 @@ function sim_injetar_recebimento(PDO $pdo, int $fid, string $tipo, float $valor,
 
 /** Cria uma boleta pendente do gestor (para a mesa de custódia aceitar/liquidar). */
 function sim_gerar_boleta(PDO $pdo, int $fid, string $data): void {
-    $qtd = 100000; $preco = 1.0; $valor = $qtd * $preco;
+    // boleta plausível: compra de LTN pelo PU de mercado (não valores redondos irreais)
+    $qtd = 250; $preco = 883.47; $valor = round($qtd * $preco, 2);
     $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, status, criado_por)
-                   VALUES (?,?, 'Compra', 'CDB SIM 26', 'CDB', ?, ?, ?, 'Tesouraria (sim)', 'Enviada', 'Simulador Master')")
+                   VALUES (?,?, 'Compra', 'LTN 2027', 'Título Público', ?, ?, ?, 'Tesouraria (sim)', 'Enviada', 'Simulador Master')")
         ->execute([$fid, $data, $qtd, $preco, $valor]);
 }
 

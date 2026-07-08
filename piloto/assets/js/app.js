@@ -2,6 +2,26 @@
 
 const CORES = ['#14b8a6', '#c9a227', '#3b82f6', '#ef4444', '#8b5cf6', '#f97316', '#22c55e', '#64748b'];
 
+/* ------------------------------------------------------------------
+   Date pickers — turbina TODO input[type=date] com o Flatpickr (pt-BR).
+   O campo visível mostra dd/mm/aaaa; o valor enviado ao backend
+   permanece em Y-m-d (formato esperado pelo PHP). Idempotente.
+   ------------------------------------------------------------------ */
+document.addEventListener('DOMContentLoaded', function () {
+  if (!window.flatpickr) return;
+  if (flatpickr.l10ns && flatpickr.l10ns.pt) flatpickr.localize(flatpickr.l10ns.pt);
+  document.querySelectorAll('input[type="date"]').forEach(function (el) {
+    if (el._flatpickr) return;                 // já inicializado
+    flatpickr(el, {
+      dateFormat: 'Y-m-d',                     // valor real (backend)
+      altInput: true,                          // campo visível em dd/mm/aaaa
+      altFormat: 'd/m/Y',
+      allowInput: true,
+      disableMobile: true
+    });
+  });
+});
+
 function fmtBRL(v) {
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 }

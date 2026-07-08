@@ -49,7 +49,7 @@ function ensure_batch(PDO $pdo): void {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 }
 
-const BATCH_COTA_SALTO_LIMITE = 0.50;   // 50% de variação diária dispara a trava
+const BATCH_COTA_SALTO_LIMITE = 0.15;   // 15% de variação diária dispara a trava (real: 5–15% por classe)
 
 /**
  * Processa um conjunto de fundos para uma data, de forma isolada por fundo.

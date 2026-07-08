@@ -8,15 +8,91 @@
 // Carregado ao final de helpers.php (portanto após calcular_cota/cota_em).
 // ============================================================
 
-// ---------------- Calendário de dias úteis ----------------
-// Feriados nacionais + B3 (2025-2027). Ajuste/expanda conforme necessário.
-const FERIADOS = [
-    '2025-01-01','2025-03-03','2025-03-04','2025-04-18','2025-04-21','2025-05-01','2025-06-19','2025-09-07','2025-10-12','2025-11-02','2025-11-15','2025-11-20','2025-12-25',
-    '2026-01-01','2026-02-16','2026-02-17','2026-04-03','2026-04-21','2026-05-01','2026-06-04','2026-09-07','2026-10-12','2026-11-02','2026-11-15','2026-11-20','2026-12-25',
-    '2027-01-01','2027-02-08','2027-02-09','2027-03-26','2027-04-21','2027-05-01','2027-05-27','2027-09-07','2027-10-12','2027-11-02','2027-11-15','2027-12-25',
-];
+// ---------------- DDL portável (MariaDB ↔ MySQL) ----------------
+/**
+ * Executa DDL de forma portável entre MariaDB e MySQL 5.7.
+ * O MySQL 5.7 NÃO aceita "ALTER TABLE ... ADD COLUMN IF NOT EXISTS" (extensão MariaDB):
+ * neste caso, consulta o information_schema e roda um ALTER simples só se a coluna faltar.
+ * Qualquer outro SQL é executado direto. Best-effort: nunca lança para o chamador
+ * (mantém a semântica dos try/catch que envolvem as migrações ensure_*).
+ */
+function ddl_portavel(PDO $pdo, string $sql): void {
+    try {
+        if (preg_match('/^\s*ALTER\s+TABLE\s+`?(\w+)`?\s+ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+`?(\w+)`?/i', $sql, $m)) {
+            $st = $pdo->prepare(
+                'SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+            );
+            $st->execute([$m[1], $m[2]]);
+            if ((int) $st->fetchColumn() > 0) return;                      // coluna já existe
+            $sql = preg_replace('/\bIF\s+NOT\s+EXISTS\s+/i', '', $sql, 1);  // remove p/ MySQL 5.7
+        }
+        $pdo->exec($sql);
+    } catch (Throwable $e) {
+        // migração best-effort: jamais interrompe a operação
+    }
+}
 
-function eh_feriado(string $data): bool { return in_array(substr($data, 0, 10), FERIADOS, true); }
+// ---------------- Registry de classes de ativo (fonte ÚNICA da verdade) ----------------
+// Antes, listas de tipos viviam espalhadas (marcacao, helpers, boletas) e adicionar uma
+// classe exigia caçar todas. Aqui há UM mapa tipo→grupo; o resto pergunta a estas funções.
+const GRUPOS_ATIVO = [
+    // Renda fixa (juros / índice de preços / crédito)
+    'Título Público' => 'RF', 'LFT' => 'RF', 'CDB' => 'RF', 'RDB' => 'RF', 'Debênture' => 'RF',
+    'CRI/CRA' => 'RF', 'FIDC' => 'RF', 'LCI' => 'RF', 'LCA' => 'RF', 'Letra Financeira' => 'RF',
+    'LIG' => 'RF', 'DPGE' => 'RF', 'Nota Promissória' => 'RF', 'Compromissada' => 'RF',
+    // Renda variável
+    'Ação' => 'RV', 'ETF' => 'RV', 'BDR' => 'RV',
+    // Cotas de fundos
+    'Cota de Fundo' => 'COTA',
+    // Câmbio · exterior · commodities
+    'Cambial' => 'CAMBIAL',
+    'Exterior' => 'EXTERIOR',
+    'Ouro' => 'COMMODITY', 'Commodity' => 'COMMODITY',
+    // Derivativos: futuros (engine de ajuste diário) e demais marcados a mercado na carteira
+    'Derivativo' => 'DERIVATIVO',
+    'Opção' => 'DERIV_MTM', 'Swap' => 'DERIV_MTM', 'Termo' => 'DERIV_MTM', 'NDF' => 'DERIV_MTM',
+];
+function grupo_ativo(string $tipo): string { return GRUPOS_ATIVO[$tipo] ?? 'OUTRO'; }
+function eh_renda_fixa(string $tipo): bool { return grupo_ativo($tipo) === 'RF'; }
+function eh_renda_variavel(string $tipo): bool { return grupo_ativo($tipo) === 'RV'; }
+function eh_credito_privado(string $tipo): bool {
+    return in_array($tipo, ['Debênture', 'CDB', 'RDB', 'CRI/CRA', 'FIDC', 'LCI', 'LCA',
+        'Letra Financeira', 'LIG', 'DPGE', 'Nota Promissória'], true);
+}
+/** Lista de tipos de um grupo (derivada do registry). */
+function classes_do_grupo(string $g): array { return array_keys(array_filter(GRUPOS_ATIVO, fn($x) => $x === $g)); }
+function classes_credito_privado(): array {
+    return array_values(array_filter(array_keys(GRUPOS_ATIVO), 'eh_credito_privado'));
+}
+
+// ---------------- Calendário de dias úteis ----------------
+// Feriados nacionais + B3 calculados ALGORITMICAMENTE para qualquer ano — fixos + móveis
+// derivados da Páscoa (Carnaval, Sexta-feira Santa, Corpus Christi). Não expira em 2027.
+function feriados_do_ano(int $ano): array {
+    // fixos: Confraternização, Tiradentes, Trabalho, Independência, N.Sra Aparecida,
+    //        Finados, Proclamação, Consciência Negra (nacional desde 2024), Natal.
+    $fixos = ["$ano-01-01", "$ano-04-21", "$ano-05-01", "$ano-09-07", "$ano-10-12",
+              "$ano-11-02", "$ano-11-15", "$ano-11-20", "$ano-12-25"];
+    // Domingo de Páscoa (algoritmo de Meeus/Gauss)
+    $a = $ano % 19; $b = intdiv($ano, 100); $c = $ano % 100; $d = intdiv($b, 4); $e = $b % 4;
+    $f = intdiv($b + 8, 25); $g = intdiv($b - $f + 1, 3); $h = (19 * $a + $b - $d - $g + 15) % 30;
+    $i = intdiv($c, 4); $k = $c % 4; $l = (32 + 2 * $e + 2 * $i - $h - $k) % 7; $m = intdiv($a + 11 * $h + 22 * $l, 451);
+    $mes = intdiv($h + $l - 7 * $m + 114, 31); $dia = (($h + $l - 7 * $m + 114) % 31) + 1;
+    $pascoa = new DateTime(sprintf('%04d-%02d-%02d', $ano, $mes, $dia));
+    $desl = function (int $off) use ($pascoa) {
+        $x = clone $pascoa; $x->modify(($off >= 0 ? '+' : '') . $off . ' day'); return $x->format('Y-m-d');
+    };
+    // Carnaval (segunda e terça), Sexta-feira Santa, Corpus Christi
+    return array_merge($fixos, [$desl(-48), $desl(-47), $desl(-2), $desl(60)]);
+}
+
+function eh_feriado(string $data): bool {
+    static $cache = [];
+    $ano = (int) substr($data, 0, 4);
+    if (!isset($cache[$ano])) $cache[$ano] = array_flip(feriados_do_ano($ano));
+    return isset($cache[$ano][substr($data, 0, 10)]);
+}
 
 function eh_dia_util(string $data): bool {
     $n = (int)(new DateTime($data))->format('N');   // 6=sáb, 7=dom
@@ -99,7 +175,7 @@ function provisionar_despesas_dia(PDO $pdo, array $fundo, string $data): float {
 
 function ensure_provisao(PDO $pdo): void {
     // MariaDB (XAMPP) suporta ADD COLUMN IF NOT EXISTS
-    try { $pdo->exec("ALTER TABLE fundos ADD COLUMN IF NOT EXISTS provisao_despesas DECIMAL(18,2) DEFAULT 0"); }
+    try { ddl_portavel($pdo, "ALTER TABLE fundos ADD COLUMN IF NOT EXISTS provisao_despesas DECIMAL(18,2) DEFAULT 0"); }
     catch (Throwable $e) { /* coluna já existe ou engine sem suporte — ignora */ }
 }
 
@@ -171,6 +247,63 @@ function ensure_catalogo(PDO $pdo): void {
                               VALUES (?,?,?,?,?,?,?,?)");
         foreach ($ativos as $a) $ins->execute($a);
     }
+
+    // Futuros (derivativos) como instrumentos do catálogo — boletáveis como qualquer
+    // outro ativo. INSERT IGNORE é idempotente (codigo é UNIQUE). Vários vencimentos.
+    $futuros = [
+        // codigo, nome, tipo, emissor, indexador, taxa (referência), vencimento
+        ['DI1F26', 'Futuro de DI · Jan/2026',            'Derivativo', 'B3', 'DI',   '≈ 11,00% a.a.',        '2026-01-02'],
+        ['DI1F27', 'Futuro de DI · Jan/2027',            'Derivativo', 'B3', 'DI',   '≈ 11,20% a.a.',        '2027-01-04'],
+        ['DI1F28', 'Futuro de DI · Jan/2028',            'Derivativo', 'B3', 'DI',   '≈ 11,40% a.a.',        '2028-01-03'],
+        ['DI1F29', 'Futuro de DI · Jan/2029',            'Derivativo', 'B3', 'DI',   '≈ 11,60% a.a.',        '2029-01-02'],
+        ['DI1F30', 'Futuro de DI · Jan/2030',            'Derivativo', 'B3', 'DI',   '≈ 11,75% a.a.',        '2030-01-02'],
+        ['DI1F31', 'Futuro de DI · Jan/2031',            'Derivativo', 'B3', 'DI',   '≈ 11,90% a.a.',        '2031-01-02'],
+        ['DAPK27', 'Futuro de cupom IPCA · Mai/2027',    'Derivativo', 'B3', 'IPCA', '≈ 6,20% a.a. (real)',  '2027-05-17'],
+        ['DAPK29', 'Futuro de cupom IPCA · Mai/2029',    'Derivativo', 'B3', 'IPCA', '≈ 6,40% a.a. (real)',  '2029-05-15'],
+        ['DAPK31', 'Futuro de cupom IPCA · Mai/2031',    'Derivativo', 'B3', 'IPCA', '≈ 6,55% a.a. (real)',  '2031-05-15'],
+        ['DAPK33', 'Futuro de cupom IPCA · Mai/2033',    'Derivativo', 'B3', 'IPCA', '≈ 6,65% a.a. (real)',  '2033-05-15'],
+    ];
+    $insF = $pdo->prepare("INSERT IGNORE INTO ativos_catalogo (codigo,nome,tipo,emissor,indexador,taxa,vencimento,fonte_preco)
+                           VALUES (?,?,?,?,?,?,?, 'B3')");
+    foreach ($futuros as $f) $insF->execute($f);
+
+    // Demais classes de ativo permitidas pela Res. CVM 175 (RF de crédito, cambial, exterior,
+    // commodities e derivativos de câmbio/índice/opção/swap/termo). Idempotente (INSERT IGNORE).
+    $novos = [
+        // --- Renda fixa privada / crédito (marcadas pela curva do indexador; custódia B3 Balcão) ---
+        ['FIDC MERC SR',   'FIDC Mercantil Recebíveis — Sênior',   'FIDC',             'Gestora de Crédito', 'CDI',  'CDI+2,5%',   '2029-06-30', 'ANBIMA'],
+        ['FIDC MERC MEZ',  'FIDC Mercantil Recebíveis — Mezanino', 'FIDC',             'Gestora de Crédito', 'CDI',  'CDI+5,0%',   '2029-06-30', 'Comitê'],
+        ['LCI ITAU 27',    'LCI Itaú 2027',                        'LCI',              'Itaú Unibanco',      'CDI',  '95% CDI',    '2027-08-15', 'Comitê'],
+        ['LCA BB 27',      'LCA Banco do Brasil 2027',             'LCA',              'Banco do Brasil',    'CDI',  '96% CDI',    '2027-05-10', 'Comitê'],
+        ['LF SANT 29',     'Letra Financeira Santander 2029',      'Letra Financeira', 'Santander',          'CDI',  'CDI+1,2%',   '2029-03-01', 'Comitê'],
+        ['LIG BRAD 30',    'LIG Bradesco 2030',                    'LIG',              'Banco Bradesco',     'IPCA', 'IPCA+5,0%',  '2030-09-01', 'ANBIMA'],
+        ['DPGE ABC 27',    'DPGE Banco ABC 2027',                  'DPGE',             'Banco ABC Brasil',   'CDI',  '118% CDI',   '2027-11-30', 'Comitê'],
+        ['NP LOCALIZA 26', 'Nota Promissória Localiza 2026',       'Nota Promissória', 'Localiza',           'CDI',  'CDI+2,8%',   '2026-12-15', 'ANBIMA'],
+        ['COMPROM SELIC',  'Operação Compromissada (lastro LFT)',  'Compromissada',    'Banco Parceiro',     'Selic','100% Selic', '2026-07-10', 'Comitê'],
+        // --- Câmbio (marcadas pela variação do dólar; custódia B3 Câmbio) ---
+        ['USD POS',        'Posição cambial em dólar (spot)',      'Cambial',          '—',                  'USD',  '—',          null,         'B3'],
+        ['CUPOM CAMB 27',  'Título com cupom cambial 2027',        'Cambial',          'Tesouro/Privado',    'USD',  'Cupom+2,0%', '2027-01-04', 'ANBIMA'],
+        // --- Renda variável estrangeira (BDR) e ativos no exterior ---
+        ['AAPL34',         'Apple Inc. — BDR',                     'BDR',              'Apple (via B3)',     'USD',  '—',          null,         'B3'],
+        ['MSFT34',         'Microsoft — BDR',                      'BDR',              'Microsoft (via B3)', 'USD',  '—',          null,         'B3'],
+        ['UST 2031',       'US Treasury Note 2031',                'Exterior',         'US Treasury',        'USD',  'UST ~4,3%',  '2031-05-15', 'Custódia'],
+        ['SPY EXT',        'ETF S&P 500 (exterior)',               'Exterior',         'State Street',       'USD',  '—',          null,         'Custódia'],
+        // --- Ouro / commodities ---
+        ['OZ1D',           'Ouro — contrato à vista (grama)',      'Ouro',             'B3',                 '—',    '—',          null,         'B3'],
+        // --- Derivativos: futuros de dólar e de índice (engine de ajuste diário) ---
+        ['DOLF27',         'Futuro de Dólar · Jan/2027',           'Derivativo',       'B3',                 'USD',  'ref. câmbio','2027-01-04', 'B3'],
+        ['DOLF28',         'Futuro de Dólar · Jan/2028',           'Derivativo',       'B3',                 'USD',  'ref. câmbio','2028-01-03', 'B3'],
+        ['INDV27',         'Futuro de Índice Bovespa · Out/2027',  'Derivativo',       'B3',                 'IBOV', 'ref. índice','2027-10-13', 'B3'],
+        ['INDZ27',         'Futuro de Índice Bovespa · Dez/2027',  'Derivativo',       'B3',                 'IBOV', 'ref. índice','2027-12-15', 'B3'],
+        // --- Derivativos marcados a mercado na carteira (opção, swap, termo, NDF) ---
+        ['OPC PETR C',     'Opção de compra sobre PETR4',          'Opção',            'B3',                 'IBOV', 'call PETR4', '2026-12-18', 'B3'],
+        ['SWP DI-DOL',     'Swap DI × Dólar',                      'Swap',             'Balcão',             'USD',  'troca indexador', null,    'Comitê'],
+        ['NDF USD 27',     'NDF de Dólar (termo sem entrega)',     'NDF',              'Balcão',             'USD',  'termo cambial','2027-03-31','Comitê'],
+        ['TRM PETR',       'Termo de ações PETR4',                 'Termo',            'B3',                 'IBOV', 'termo ações', '2026-09-30', 'B3'],
+    ];
+    $insN = $pdo->prepare("INSERT IGNORE INTO ativos_catalogo (codigo,nome,tipo,emissor,indexador,taxa,vencimento,fonte_preco)
+                           VALUES (?,?,?,?,?,?,?,?)");
+    foreach ($novos as $a) $insN->execute($a);
 }
 
 /** Sistema de tickets de suporte. */
@@ -198,8 +331,8 @@ function ensure_tickets(PDO $pdo): void {
         INDEX idx_tkm (ticket_id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
     // Canal do chamado: 'gestor_admin' (gestor↔administradora) ou 'cotista_gestor' (cotista↔gestor).
-    try { $pdo->exec("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS canal VARCHAR(20) DEFAULT 'gestor_admin'"); } catch (Throwable $e) {}
-    try { $pdo->exec("ALTER TABLE tickets ADD COLUMN IF NOT EXISTS token_cotista VARCHAR(40) NULL"); } catch (Throwable $e) {}
+    try { ddl_portavel($pdo, "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS canal VARCHAR(20) DEFAULT 'gestor_admin'"); } catch (Throwable $e) {}
+    try { ddl_portavel($pdo, "ALTER TABLE tickets ADD COLUMN IF NOT EXISTS token_cotista VARCHAR(40) NULL"); } catch (Throwable $e) {}
 }
 
 /** Temas de chamado típicos da operação de fundos. */
@@ -226,8 +359,19 @@ function ensure_posicao_custodiante(PDO $pdo): void {
 
 /** Central de guarda por tipo de ativo. */
 function central_do_ativo(string $tipo): string {
-    if ($tipo === 'Título Público') return 'SELIC';
-    if (in_array($tipo, ['Debênture', 'CDB', 'CRI/CRA'], true)) return 'B3 Balcão';
+    // Títulos públicos federais e compromissadas lastreadas em público → SELIC.
+    if (in_array($tipo, ['Título Público', 'LFT', 'Compromissada'], true)) return 'SELIC';
+    // Renda fixa privada / crédito (inclui FIDC, letras, NP) → B3 Balcão (ex-CETIP, registro).
+    if (in_array($tipo, ['Debênture', 'CDB', 'RDB', 'CRI/CRA', 'FIDC', 'LCI', 'LCA',
+        'Letra Financeira', 'LIG', 'DPGE', 'Nota Promissória'], true)) return 'B3 Balcão';
+    // Renda variável e BDR → B3 Depositária (Central Depositária).
+    if (in_array($tipo, ['Ação', 'ETF', 'BDR'], true)) return 'B3 Depositária';
+    // Derivativos (futuros, opções, swap, termo, NDF) → registro/compensação na clearing da B3.
+    if (in_array($tipo, ['Derivativo', 'Opção', 'Swap', 'Termo', 'NDF'], true)) return 'B3 Clearing';
+    if ($tipo === 'Cambial')  return 'B3 Câmbio';
+    if ($tipo === 'Exterior') return 'Custódia no exterior';
+    if (grupo_ativo($tipo) === 'COMMODITY') return 'B3 (ouro/commodities)';
+    if ($tipo === 'Cota de Fundo') return 'Escriturador do fundo';
     return 'B3 Depositária';
 }
 
@@ -258,6 +402,90 @@ function total_cotas_na_data(PDO $pdo, int $fid, string $data): float {
     $h = $st->fetch();
     if ($h && (float)$h['valor_cota'] > 0) return (float)$h['pl'] / (float)$h['valor_cota'];
     return total_cotas($pdo, $fid);
+}
+
+// ---------------- Passivos genéricos (valores a pagar / tributos a recolher) ----------------
+// Livro ÚNICO de passivos do fundo. A cota subtrai a SOMA dos passivos em aberto
+// (passivos_na_data) — assim, adicionar um NOVO tipo de passivo nunca muda a fórmula da cota.
+// Semântica ponto-no-tempo: um passivo pesa no PL da data D se foi incorrido (data_ref <= D) e
+// ainda não estava liquidado em D (liquidado_em nulo ou > D) — casa com o desenho de caixa_na_data,
+// então a cota fica ESTÁVEL no dia (redução de cotas ↔ passivo criado) e invariante à liquidação.
+function ensure_passivos(PDO $pdo): void {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS passivos (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fundo_id INT NOT NULL,
+        tipo VARCHAR(40) NOT NULL,
+        descricao VARCHAR(255) NULL,
+        valor DECIMAL(18,2) NOT NULL,
+        data_ref DATE NOT NULL,
+        data_liquidacao DATE NOT NULL,
+        status VARCHAR(12) DEFAULT 'Aberto',
+        liquidado_em DATE NULL,
+        ref_tipo VARCHAR(30) NULL, ref_id INT NULL,
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_pass (fundo_id, status),
+        INDEX idx_pass_liq (fundo_id, data_liquidacao)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
+
+/** Soma dos passivos EM ABERTO do fundo na data (ponto-no-tempo). Seguro se a tabela não existir. */
+function passivos_na_data(PDO $pdo, int $fid, string $data): float {
+    try {
+        $st = $pdo->prepare("SELECT COALESCE(SUM(valor),0) FROM passivos
+            WHERE fundo_id = ? AND data_ref <= ? AND (liquidado_em IS NULL OR liquidado_em > ?)");
+        $st->execute([$fid, $data, $data]);
+        return (float) $st->fetchColumn();
+    } catch (Throwable $e) { return 0.0; }   // tabela ainda não criada → sem passivos
+}
+
+/** Passivos em aberto agrupados (Tributos a recolher / Valores a cotistas / Outros) na data. */
+function passivos_por_grupo(PDO $pdo, int $fid, string $data): array {
+    $g = ['tributos' => 0.0, 'cotistas' => 0.0, 'outros' => 0.0];
+    try {
+        $st = $pdo->prepare("SELECT tipo, valor FROM passivos
+            WHERE fundo_id = ? AND data_ref <= ? AND (liquidado_em IS NULL OR liquidado_em > ?)");
+        $st->execute([$fid, $data, $data]);
+        foreach ($st->fetchAll() as $p) {
+            $v = (float) $p['valor'];
+            if (strpos($p['tipo'], 'Tributos') === 0)             $g['tributos'] += $v;
+            elseif (strpos($p['tipo'], 'Valores a pagar') === 0)  $g['cotistas'] += $v;
+            else                                                  $g['outros']   += $v;
+        }
+    } catch (Throwable $e) {}
+    return $g;
+}
+
+/** Registra um passivo a pagar/recolher, com a data futura de liquidação.
+ *  A tabela é garantida por ensure_dominio (fora de transação) — NÃO fazer DDL aqui:
+ *  registrar_passivo roda DENTRO de com_transacao e um CREATE/ALTER daria commit implícito. */
+function registrar_passivo(PDO $pdo, int $fid, string $tipo, float $valor, string $data, string $dataLiq, string $desc = ''): int {
+    $pdo->prepare("INSERT INTO passivos (fundo_id, tipo, descricao, valor, data_ref, data_liquidacao) VALUES (?,?,?,?,?,?)")
+        ->execute([$fid, $tipo, $desc, round($valor, 2), $data, $dataLiq]);
+    return (int) $pdo->lastInsertId();
+}
+
+/** Liquida os passivos vencidos (data_liquidacao <= data): baixa o caixa e marca Liquidado. */
+function liquidar_passivos_vencidos(PDO $pdo, int $fid, string $data): float {
+    try {
+        $st = $pdo->prepare("SELECT * FROM passivos WHERE fundo_id = ? AND status = 'Aberto' AND data_liquidacao <= ?");
+        $st->execute([$fid, $data]);
+    } catch (Throwable $e) { return 0.0; }
+    $tot = 0.0;
+    foreach ($st->fetchAll() as $p) {
+        $v = (float) $p['valor'];
+        $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
+            ->execute([$fid, $data, 'Liquidação passivo', $p['descricao'] ?: $p['tipo'], -$v]);
+        $pdo->prepare("UPDATE fundos SET caixa_atual = caixa_atual - ? WHERE id = ?")->execute([$v, $fid]);
+        $pdo->prepare("UPDATE passivos SET status = 'Liquidado', liquidado_em = ? WHERE id = ?")->execute([$data, $p['id']]);
+        $tot += $v;
+    }
+    return $tot;
+}
+
+/** Aplica N dias úteis a partir de uma data (prazos de liquidação D+n). */
+function mais_dias_uteis(string $data, int $n): string {
+    for ($i = 0; $i < max(0, $n); $i++) $data = proximo_dia_util($data);
+    return $data;
 }
 
 /**
@@ -332,11 +560,11 @@ function checar_pre_trade(PDO $pdo, array $fundo, string $tipo, string $operacao
                 if ($proj > $lim + 1e-6) $violacoes[] = "{$r['descricao']}: iria a " . number_format($proj, 1, ',', '.') . "% (máx {$lim}%)";
                 break;
             case 'max_credito_privado':
-                $proj = ($soma(CLASSES_CREDITO) + (in_array($tipo, CLASSES_CREDITO, true) ? $sinal * $valor : 0)) / $pl * 100;
+                $proj = ($soma(classes_credito_privado()) + (eh_credito_privado($tipo) ? $sinal * $valor : 0)) / $pl * 100;
                 if ($proj > $lim + 1e-6) $violacoes[] = "{$r['descricao']}: iria a " . number_format($proj, 1, ',', '.') . "% (máx {$lim}%)";
                 break;
             case 'min_rf':
-                $proj = ($soma(CLASSES_RF) + (in_array($tipo, CLASSES_RF, true) ? $sinal * $valor : 0)) / $pl * 100;
+                $proj = ($soma(classes_do_grupo('RF')) + (eh_renda_fixa($tipo) ? $sinal * $valor : 0)) / $pl * 100;
                 if ($proj < $lim - 1e-6) $violacoes[] = "{$r['descricao']}: cairia a " . number_format($proj, 1, ',', '.') . "% (mín {$lim}%)";
                 break;
             case 'max_ativo_unico':
@@ -378,7 +606,7 @@ function ensure_kyc_cotista(PDO $pdo): void {
         "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS pld_status VARCHAR(20) DEFAULT 'Pendente'", // Pendente/OK/Alerta
         "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS fatca_crs VARCHAR(30) DEFAULT NULL",
         "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS termo_aceite DATETIME NULL",
-    ] as $sql) { try { $pdo->exec($sql); } catch (Throwable $e) { /* coluna já existe */ } }
+    ] as $sql) { try { ddl_portavel($pdo, $sql); } catch (Throwable $e) { /* coluna já existe */ } }
 }
 
 // ---------------- Classes / subclasses (Res. CVM 175) ----------------
@@ -404,7 +632,7 @@ function ensure_subclasses(PDO $pdo): void {
         "ALTER TABLE subclasses ADD COLUMN IF NOT EXISTS regulamento_anexo VARCHAR(255) NULL",
         "ALTER TABLE subclasses ADD COLUMN IF NOT EXISTS data_vigencia DATE NULL",
         "ALTER TABLE subclasses ADD COLUMN IF NOT EXISTS protocolo_cvm VARCHAR(40) NULL",
-    ] as $sql) { try { $pdo->exec($sql); } catch (Throwable $e) {} }
+    ] as $sql) { try { ddl_portavel($pdo, $sql); } catch (Throwable $e) {} }
 }
 
 /** Tipos de fundo (FIF/FIC/FIP), master do FIC e fundo-alvo de cota-de-fundo. */
@@ -413,12 +641,19 @@ function ensure_fund_types(PDO $pdo): void {
         "ALTER TABLE fundos ADD COLUMN IF NOT EXISTS tipo_fundo VARCHAR(10) DEFAULT 'FIF'",
         "ALTER TABLE fundos ADD COLUMN IF NOT EXISTS master_id INT DEFAULT NULL",
         "ALTER TABLE ativos_catalogo ADD COLUMN IF NOT EXISTS fundo_alvo_id INT DEFAULT NULL",
-    ] as $sql) { try { $pdo->exec($sql); } catch (Throwable $e) { /* já existe */ } }
+    ] as $sql) { try { ddl_portavel($pdo, $sql); } catch (Throwable $e) { /* já existe */ } }
 }
 
-/** Garante todas as estruturas de domínio de uma vez. */
+/**
+ * MIGRATIONS do domínio (DDL idempotente). Contrato de desacoplamento:
+ *  • Chame no BOOTSTRAP da página (fora de qualquer com_transacao) — CREATE/ALTER dão
+ *    commit implícito no MySQL e quebrariam uma transação aberta.
+ *  • Código de RUNTIME (transacional) NUNCA deve chamar ensure_*; assuma que as tabelas
+ *    já existem. Para ALTER portável entre MariaDB/MySQL, use ddl_portavel().
+ */
 function ensure_dominio(PDO $pdo): void {
     ensure_provisao($pdo);
+    ensure_passivos($pdo);
     ensure_catalogo($pdo);
     ensure_tickets($pdo);
     ensure_posicao_custodiante($pdo);
@@ -439,3 +674,8 @@ require_once __DIR__ . '/fip.php';          // Private Equity: LPs, chamadas, pa
 require_once __DIR__ . '/equipe.php';       // membros do fundo, permissões, convites, transferência, reset de senha
 require_once __DIR__ . '/batch.php';        // processamento em lote (fechamento) resiliente por fundo
 require_once __DIR__ . '/regulamento.php';  // gerador de regulamento (fundo/classe/subclasse) dirigido por schema
+require_once __DIR__ . '/passivo.php';      // passivo do cotista, come-cotas/IR/IOF, livro de passivos (Lei 14.754)
+require_once __DIR__ . '/contabilidade.php';// partidas dobradas, diário/razão, balancete
+// Grafo de carga COMPLETO: com passivo/contabilidade aqui, qualquer função de domínio fica
+// disponível em toda página (via a cadeia layout→helpers→dominio) — some a classe de bug
+// "Call to undefined function" por ordem de include. (simulador.php fica de fora: é o 2º site.)

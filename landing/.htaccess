@@ -1,0 +1,90 @@
+# ============================================================================
+# Argus DTVM · argusdtvm.com.br — configuração Apache da RAIZ do site
+# (o conteúdo de landing/ vira o docroot: public_html/)
+# Ambiente de DEMONSTRAÇÃO — dados simulados. Ver DEPLOY_PRODUCAO.md.
+# ============================================================================
+
+AddDefaultCharset UTF-8
+Options -Indexes
+ServerSignature Off
+
+# ---------------------------------------------------------------------------
+# 1) HTTPS + host canônico
+# ---------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Não mexer em ambiente local de desenvolvimento
+  RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1) [NC]
+
+  # Força HTTPS (respeita proxy/CDN via X-Forwarded-Proto)
+  RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1) [NC]
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # Canonicaliza para SEM www (argusdtvm.com.br)
+  RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
+  RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 2) Cabeçalhos de segurança (reforço; o app PHP também os envia por página)
+# ---------------------------------------------------------------------------
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  # HSTS — ATIVE SÓ depois de confirmar HTTPS 100% no domínio e subdomínios (é difícil reverter):
+  # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+  Header unset X-Powered-By
+  Header always unset X-Powered-By
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 3) Bloqueio de arquivos sensíveis (dumps, backups, docs, configs, VCS)
+# ---------------------------------------------------------------------------
+<FilesMatch "(?i)(^\.|\.(env|ini|sql|sqlite|db|log|bak|old|orig|swp|dist|sample|py|md|sh|yml|yaml|lock|twig)$)">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Bloqueia diretórios de versionamento/deploy, se subirem por engano
+RedirectMatch 404 (?i)/\.(git|svn|hg|claude)(/|$)
+
+# ---------------------------------------------------------------------------
+# 4) Compressão
+# ---------------------------------------------------------------------------
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml \
+    application/javascript application/json image/svg+xml font/woff2
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 5) Cache de estáticos (o HTML fica sem cache; assets versionam por deploy)
+# ---------------------------------------------------------------------------
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault                        "access plus 1 hour"
+  ExpiresByType text/html               "access plus 0 seconds"
+  ExpiresByType text/css                "access plus 7 days"
+  ExpiresByType application/javascript  "access plus 7 days"
+  ExpiresByType image/svg+xml           "access plus 30 days"
+  ExpiresByType image/png               "access plus 30 days"
+  ExpiresByType image/jpeg              "access plus 30 days"
+  ExpiresByType image/x-icon            "access plus 30 days"
+  ExpiresByType font/woff2              "access plus 30 days"
+</IfModule>
+
+# ---------------------------------------------------------------------------
+# 6) Páginas de erro (opcional — descomente se criar os arquivos)
+# ---------------------------------------------------------------------------
+# ErrorDocument 404 /404.html
+# ErrorDocument 403 /404.html

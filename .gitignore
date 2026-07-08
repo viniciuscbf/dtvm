@@ -1,0 +1,16 @@
+# Segredos de produção — nunca versionar
+piloto/config/env.php
+
+# Backups / temporários
+*.bak
+*.old
+*.orig
+*.swp
+*~
+
+# Logs
+*.log
+
+# Sistema
+.DS_Store
+Thumbs.db

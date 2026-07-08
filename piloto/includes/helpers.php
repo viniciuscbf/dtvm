@@ -175,8 +175,8 @@ function carteira(PDO $pdo, int $fid, ?string $data = null): array {
     return $rows;
 }
 
-const CLASSES_RF = ['Título Público', 'Debênture', 'CDB', 'LFT', 'CRI/CRA'];
-const CLASSES_CREDITO = ['Debênture', 'CDB', 'CRI/CRA'];
+// Classes de ativo agora vêm do REGISTRY central (dominio.php): eh_renda_fixa(),
+// eh_credito_privado(), eh_renda_variavel(), classes_do_grupo(), classes_credito_privado().
 
 /** Mede uma regra de enquadramento contra a carteira. Retorna [medido%, ok]. */
 function medir_regra(PDO $pdo, array $fundo, array $regra): array {
@@ -191,13 +191,13 @@ function medir_regra(PDO $pdo, array $fundo, array $regra): array {
     $limite = (float)$regra['limite'];
     switch ($regra['tipo_regra']) {
         case 'min_rf':
-            $v = $soma(fn($a) => in_array($a['tipo'], CLASSES_RF, true)) / $pl * 100;
+            $v = $soma(fn($a) => eh_renda_fixa($a['tipo'])) / $pl * 100;
             return [$v, $v >= $limite];
         case 'max_acoes':
             $v = $soma(fn($a) => $a['tipo'] === 'Ação') / $pl * 100;
             return [$v, $v <= $limite];
         case 'max_credito_privado':
-            $v = $soma(fn($a) => in_array($a['tipo'], CLASSES_CREDITO, true)) / $pl * 100;
+            $v = $soma(fn($a) => eh_credito_privado($a['tipo'])) / $pl * 100;
             return [$v, $v <= $limite];
         case 'max_ativo_unico':
             $max = 0.0;
@@ -277,14 +277,17 @@ function calcular_cota(PDO $pdo, array $fundo, string $data): ?array {
     $totCotas = total_cotas_na_data($pdo, $fid, $data);   // cotas DA data
     if ($totCotas <= 0) return null;
     $prov = (float)($fundo['provisao_despesas'] ?? 0);
+    // Passivos genéricos em aberto (valores a pagar a cotistas, tributos a recolher, …).
+    // Uma linha só: qualquer novo tipo de passivo entra aqui sem tocar na fórmula.
+    $pass = passivos_na_data($pdo, $fid, $data);
     if (($fundo['tipo_fundo'] ?? 'FIF') === 'FIP') {
         // FIP: PL = caixa + valor justo das participações (marcadas por laudo/nível 3)
-        $pl = caixa_na_data($pdo, $fid, $data) + valor_participacoes_fip($pdo, $fid) - $prov;
+        $pl = caixa_na_data($pdo, $fid, $data) + valor_participacoes_fip($pdo, $fid) - $prov - $pass;
         return $pl > 0 ? [$pl / $totCotas, $pl] : null;
     }
     $ativos = carteira($pdo, $fid, $data);
     if (!$ativos) return null;
-    $pl = array_sum(array_column($ativos, 'valor_mercado')) + caixa_na_data($pdo, $fid, $data) - $prov;
+    $pl = array_sum(array_column($ativos, 'valor_mercado')) + caixa_na_data($pdo, $fid, $data) - $prov - $pass;
     return [$pl / $totCotas, $pl];
 }
 

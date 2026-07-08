@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vértice · Custódia e Administração de Fundos</title>
-<meta name="description" content="Estrutura e tecnologia para instituições constituírem sua área de custódia e administração fiduciária de fundos.">
-<link rel="icon" href="assets/logo.svg">
+<title>Argus · Custódia e Administração de Fundos</title>
+<meta name="description" content="A infraestrutura que torna fundos pequenos viáveis: administração e custódia de fundos a custo marginal baixo, do licenciamento à cota diária.">
+<link rel="icon" href="assets/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -50,15 +50,13 @@ img{max-width:100%;display:block}
 .btn svg{width:18px;height:18px}
 
 /* ============================ nav ============================ */
-header.nav{position:sticky;top:0;z-index:50;transition:.25s}
+header.nav{position:sticky;top:0;z-index:50;background:#fff;transition:box-shadow .25s, background .25s}
 header.nav.scrolled{background:rgba(255,255,255,.82);backdrop-filter:blur(12px);box-shadow:0 1px 0 var(--c-line)}
 .nav-in{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0}
 .brand{display:flex;align-items:center;gap:.6rem;height:40px}
 .brand img{height:40px;width:auto}
 .nav-links{display:flex;align-items:center;gap:2rem;font-weight:500;font-size:.94rem}
-.nav-links a.lnk{color:var(--c-muted);transition:.2s}
-header.nav:not(.scrolled) .nav-links a.lnk{color:rgba(255,255,255,.85)}
-header.nav:not(.scrolled) .brand-name{color:#fff}
+.nav-links a.lnk{color:var(--c-ink);transition:.2s}
 .nav-links a.lnk:hover{color:var(--c-brand-2)}
 .nav-toggle{display:none;background:none;border:0;cursor:pointer}
 
@@ -83,7 +81,7 @@ header.nav:not(.scrolled) .brand-name{color:#fff}
 .mock-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.7rem}
 .mock-head .dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.35);display:inline-block;margin-right:5px}
 .mock-tag{font-family:var(--font-title);font-size:.72rem;color:rgba(255,255,255,.75);font-weight:600}
-.mock canvas{width:100%;height:150px;display:block}
+.mock canvas{width:100%;height:auto;display:block}
 .mock-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem;margin-top:.7rem}
 .mock-kpi{background:rgba(255,255,255,.06);border-radius:10px;padding:.6rem .7rem}
 .mock-kpi .v{font-family:var(--font-title);font-weight:700;font-size:1.05rem}
@@ -184,7 +182,7 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
     </nav>
     <button class="nav-toggle" aria-label="menu">
-      <svg width="26" height="26" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      <svg width="26" height="26" viewBox="0 0 24 24" stroke="#0f1f33" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
     </button>
   </div>
 </header>
@@ -196,34 +194,37 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
   <div class="hero-grid"></div>
   <div class="wrap hero-in">
     <div>
-      <span class="eyebrow">Custódia · Administração Fiduciária · Fundos</span>
-      <h1>Sua instituição operando <span class="hl">custódia e administração</span> de fundos — do zero.</h1>
-      <p class="lead">Estrutura regulatória, operacional e <b>tecnológica</b> pronta para um banco ou instituição financeira constituir sua própria área de custódia e administração fiduciária, conforme as Resoluções CVM 32, 21 e 175.</p>
+      <span class="eyebrow">Administração Fiduciária · Custódia · Fundos de R$ 1–10 mi</span>
+      <h1>Fundos pequenos, <span class="hl">finalmente viáveis</span>.</h1>
+      <p class="lead">A infraestrutura que roda administração e custódia de fundos a <b>custo marginal baixo</b> — do licenciamento à cota diária. Torna possível o fundo de R$ 1 a 10 milhões que a administração tradicional, com mínimos de R$ 3 a 8 mil por mês, hoje inviabiliza.</p>
       <div class="cta-row">
         <a class="btn btn-primary" data-piloto href="#">Acessar o piloto
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         <a class="btn btn-ghost" href="#contato">Agendar reunião</a>
       </div>
       <div class="micro">
+        <span><b>0,08% a.a.</b> taxa de administração</span>
+        <span><b>Piso R$ 100</b>/mês por fundo</span>
         <span><b>FIF · FIC · FIP</b> suportados</span>
-        <span><b>Res. 32 / 21 / 175</b> mapeadas</span>
-        <span><b>Regulamento</b> padronizado</span>
       </div>
     </div>
     <div class="mock reveal">
       <div class="mock-head">
         <span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
-        <span class="mock-tag">Cota do fundo vs. CDI</span>
+        <span class="mock-tag">Custo da administração por tamanho de fundo</span>
       </div>
       <div style="display:flex;gap:1rem;font-size:.68rem;color:rgba(255,255,255,.7);margin-bottom:.3rem">
-        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:2px;background:#5fe3c0;display:inline-block"></i>Cota</span>
-        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:0;border-top:2px dashed rgba(255,255,255,.6);display:inline-block"></i>CDI</span>
+        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:2px;background:#5fe3c0;display:inline-block"></i>Plataforma</span>
+        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:0;border-top:2px dashed #e0b13a;display:inline-block"></i>Tradicional</span>
       </div>
-      <canvas id="cotaChart" width="520" height="150"></canvas>
+      <canvas id="cotaChart" width="520" height="158"></canvas>
+      <div style="font-size:.6rem;color:rgba(255,255,255,.55);text-align:center;margin:.15rem 0 .1rem;line-height:1.3">
+        eixo&nbsp;X: PL do fundo (R$ milhões) &nbsp;·&nbsp; eixo&nbsp;Y: custo da administração ao ano (% do PL)
+      </div>
       <div class="mock-kpis">
-        <div class="mock-kpi"><div class="v" data-count="1.1287" data-dec="4">0</div><div class="l">Cota</div></div>
-        <div class="mock-kpi"><div class="v up">+<span data-count="12.4" data-dec="1">0</span>%</div><div class="l">no ano</div></div>
-        <div class="mock-kpi"><div class="v">R$ <span data-count="42" data-suf="M">0</span></div><div class="l">PL</div></div>
+        <div class="mock-kpi"><div class="v"><span data-count="0.08" data-dec="2">0</span>%</div><div class="l">a.a. adm.</div></div>
+        <div class="mock-kpi"><div class="v up">10–40×</div><div class="l">mais barato</div></div>
+        <div class="mock-kpi"><div class="v">R$ 1<span style="font-size:.7em"> mi</span></div><div class="l">fundo viável</div></div>
       </div>
     </div>
   </div>
@@ -232,10 +233,10 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
 <!-- ===================== MÉTRICAS ===================== -->
 <div class="metrics">
   <div class="wrap metrics-in">
-    <div class="metric"><div class="num"><span data-count="3">0</span></div><div class="lab">licenças mapeadas (Res. 32/21/175)</div></div>
-    <div class="metric"><div class="num"><span data-count="5">0</span></div><div class="lab">tipos de fundo (FIF RF/Ações/MM/Cambial, FIP)</div></div>
-    <div class="metric"><div class="num"><span data-count="4">0</span></div><div class="lab">portais integrados (adm, gestor, cotista, custódia)</div></div>
-    <div class="metric"><div class="num"><span data-count="15">0</span>+</div><div class="lab">regulamentos reais estudados</div></div>
+    <div class="metric"><div class="num"><span data-count="0.08" data-dec="2">0</span>%</div><div class="lab">ao ano — taxa de administração (vs. R$ 3–8 mil/mês do mercado)</div></div>
+    <div class="metric"><div class="num">10–40×</div><div class="lab">mais barato que o administrador tradicional</div></div>
+    <div class="metric"><div class="num">R$ <span data-count="1">0</span> mi</div><div class="lab">PL a partir do qual um fundo se torna viável</div></div>
+    <div class="metric"><div class="num"><span data-count="100">0</span>%</div><div class="lab">dos fundos monitorados por IA, todos os dias</div></div>
   </div>
 </div>
 
@@ -248,14 +249,14 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
       <p>Conduzimos a instituição por todo o caminho: da comprovação de estrutura à CVM até o sistema que roda o dia a dia dos fundos.</p>
     </div>
     <div class="cards">
-      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg></div>
-        <h3>Custódia</h3><p>Comprovação de estrutura para a autorização de custodiante (Res. CVM 32): contas segregadas, liquidação e conciliação.</p></div>
-      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></div>
-        <h3>Administração fiduciária</h3><p>Autorização como administrador (Res. CVM 21) e cumprimento dos deveres da Res. 175: cota, passivo, tributação e controladoria.</p></div>
-      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg></div>
-        <h3>Motor de fundos</h3><p>FIF (RF, Ações, Multimercado, Cambial), FIC e FIP: marcação por indexador, derivativos, come-cotas e regulamento padronizado.</p></div>
-      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 21h8"/></svg></div>
-        <h3>Plataforma tecnológica</h3><p>Sistema com quatro portais integrados que roda o ciclo completo — pronto para demonstrar a estrutura em funcionamento.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <h3>Custo que viabiliza</h3><p>Administração por 0,08% ao ano, com piso de R$ 100/mês. A taxa deixa de comer a rentabilidade — é o que torna um fundo de R$ 1 a 10 milhões economicamente possível.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg></div>
+        <h3>Deploy ágil de fundos</h3><p>Constituição e encerramento padronizados por template (regulamento, políticas, integrações). Colocar um fundo de pé em semanas, não meses — e desmontá-lo com baixo atrito quando não faz mais sentido.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>Ciclo diário com dupla checagem</h3><p>O batch precifica os ativos, concilia com o custodiante e calcula a cota; a prévia vai ao gestor e nada é publicado sem a aprovação dele. Informe à CVM e à ANBIMA no prazo.</p></div>
+      <div class="card reveal"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>Conformidade que blinda</h3><p>Monitoramento por IA em 100% dos fundos, conciliação em três frentes e trilha de auditoria de cada correção. O compliance do parceiro recebe acesso total — envolvimento é blindagem.</p></div>
     </div>
   </div>
 </section>
@@ -268,9 +269,9 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
       <h2>Três passos, do licenciamento à operação.</h2>
     </div>
     <div class="steps">
-      <div class="step reveal"><h3>Licenciar</h3><p>Montamos os pacotes regulatórios (custódia Res. 32 e administração Res. 21/175) que comprovam a estrutura tecnológica e operacional à CVM.</p></div>
-      <div class="step reveal"><h3>Estruturar</h3><p>Configuramos a área e a plataforma: tipos de fundo, regulamento padronizado, passivo, custódia e conciliação.</p></div>
-      <div class="step reveal"><h3>Operar</h3><p>A instituição passa a administrar fundos com processamento diário de cota, boletagem, liquidação e tributação — tudo auditável.</p></div>
+      <div class="step reveal"><h3>Parceria &amp; licença</h3><p>A atividade exige instituição autorizada: o banco parceiro entra com a licença, os credenciamentos e a conta dos fundos. Os dossiês regulatórios (Res. 32 e 21/175) já estão levantados.</p></div>
+      <div class="step reveal"><h3>Estruturar</h3><p>Configuramos a área e a plataforma: tipos de fundo, regulamento padronizado, passivo, custódia e conciliação — pronto para receber fundos.</p></div>
+      <div class="step reveal"><h3>Operar</h3><p>O ciclo diário roda automatizado: cota, boletagem, liquidação DVP e tributação — auditável e reportado à CVM no prazo.</p></div>
     </div>
   </div>
 </section>
@@ -280,8 +281,8 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow">Conformidade</span>
-      <h2>Estrutura alinhada às normas da CVM.</h2>
-      <p>Cada função da plataforma referencia a norma correspondente — pronto para o diálogo com o regulador.</p>
+      <h2>Conformidade não é enfeite — é a blindagem do parceiro.</h2>
+      <p>Cada função referencia a norma correspondente e produz prova de diligência: nada publica sem aprovação do gestor, toda correção deixa trilha e a conciliação é diária em três frentes.</p>
     </div>
     <div class="compliance">
       <div class="badge reveal"><div class="seal"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div><b>Res. CVM 32</b><br><span>Custódia de valores mobiliários</span></div></div>
@@ -311,11 +312,12 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
       </div>
     </div>
     <div class="plat-visual reveal">
-      <div class="row"><span>Aurora RF Crédito Privado FI</span><span class="pill">cota publicada</span></div>
-      <div class="row"><span>Vetor Multimercado FIM</span><span class="pill">em processamento</span></div>
-      <div class="row"><span>Horizonte Ações FIA</span><span class="pill">boleta aceita</span></div>
-      <div class="row"><span>Fundo em abertura</span><span class="pill">checklist CVM 175</span></div>
-      <div class="row"><span>Come-cotas · nov</span><span class="pill">apurado</span></div>
+      <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:#8ff0d8;margin-bottom:.5rem">O ciclo de um dia</div>
+      <div class="row"><span>Batch D‑1 · precifica e concilia</span><span class="pill">automático</span></div>
+      <div class="row"><span>Prévia de cota · enviada ao gestor</span><span class="pill">aguarda gestor</span></div>
+      <div class="row"><span>Aprovação do gestor · dupla checagem</span><span class="pill">obrigatória</span></div>
+      <div class="row"><span>Publicação da cota</span><span class="pill">registrada</span></div>
+      <div class="row"><span>Informe à CVM</span><span class="pill">em 1 dia útil</span></div>
     </div>
   </div>
 </section>
@@ -326,8 +328,8 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
     <div class="final reveal">
       <span class="blob b1" style="width:360px;height:360px;background:var(--c-brand-2);top:-120px;right:-60px"></span>
       <span class="blob b2" style="width:320px;height:320px;background:var(--c-accent);bottom:-140px;left:-40px;opacity:.35"></span>
-      <h2>Vamos estruturar a área de fundos da sua instituição?</h2>
-      <p>Apresentamos a plataforma funcionando e o caminho de licenciamento numa conversa objetiva.</p>
+      <h2>Veja a estrutura funcionando.</h2>
+      <p>Explore o piloto ou fale com a gente para entender o modelo, os controles e a economia por trás de tornar fundos pequenos viáveis.</p>
       <div class="cta-row">
         <a class="btn btn-primary" data-piloto href="#">Acessar o piloto</a>
         <a class="btn btn-ghost" data-mailto href="#">Falar por e-mail</a>
@@ -340,7 +342,7 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
 <footer>
   <div class="wrap foot-in">
     <img src="assets/logo.svg" alt="" data-logo>
-    <div>© <span id="ano"></span> <span data-marca>Vértice</span> · <span data-email>contato@exemplo.com.br</span></div>
+    <div>© <span id="ano"></span> <span data-marca>Argus</span> · <span data-email>contato@argusdtvm.com.br</span></div>
     <div style="font-size:.8rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
       Plataforma de demonstração. Não constitui oferta nem parecer jurídico.
       <a class="foot-sim" data-simulador href="#" title="Acesso interno — simulador master">
@@ -356,10 +358,10 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
    CONFIG — TROQUE AQUI (marca, URL do piloto, e-mail)
    ============================================================ */
 const CONFIG = {
-  marca: 'Vértice',
+  marca: 'Argus',
   pilotoURL:    '/piloto/',              // <-- URL do piloto quando hospedar (ex.: https://app.suaempresa.com.br/)
   simuladorURL: '/piloto/simulador/',    // <-- god-mode / simulador master (acesso discreto no rodapé)
-  email:  'contato@vertice.com.br'       // <-- seu e-mail profissional
+  email:  'contato@argusdtvm.com.br'     // <-- seu e-mail profissional
 };
 
 /* aplica config */
@@ -401,39 +403,52 @@ document.querySelectorAll('.card').forEach(c=>{
   c.addEventListener('mouseleave',()=>c.style.transform='');
 });
 
-/* cota chart (canvas animado) */
+/* curva-tese: custo da administração (% do PL a.a.) por tamanho de fundo — com eixos rotulados */
 (function(){
   const cv=document.getElementById('cotaChart'); if(!cv)return; const ctx=cv.getContext('2d');
   const W=cv.width,H=cv.height, n=60;
-  const data=[]; let v=100; for(let i=0;i<n;i++){v+=(Math.sin(i/6)*0.6)+(Math.random()*0.8-0.2)+0.35;data.push(v);}
-  // linha do CDI (benchmark): sobe de forma suave e fica abaixo da cota — o fundo entrega alfa
-  const cdi=[]; const base=data[0], excedente=(data[n-1]-data[0])*0.6;
-  for(let i=0;i<n;i++){const t=i/(n-1); cdi.push(base + excedente*(t*0.85 + t*t*0.15));}
-  const all=data.concat(cdi);
-  const min=Math.min(...all), max=Math.max(...all);
-  const X=i=>i/(n-1)*W, Y=val=>H-8-((val-min)/(max-min))*(H-24);
+  const plMin=0.5e6, plMax=10e6;                    // PL do fundo: R$ 0,5 mi a R$ 10 mi (escala log)
+  const tradAno=60000;                              // administrador tradicional ~ R$ 5 mil/mês
+  const maxY=0.12;                                  // topo do eixo Y = 12% do PL
+  const padL=30, padR=8, padT=8, padB=20;           // margens p/ rótulos dos eixos
+  const pw=W-padL-padR, ph=H-padT-padB;
+  const pl=i=>plMin*Math.pow(plMax/plMin, i/(n-1));
+  const iDe=v=>(n-1)*Math.log(v/plMin)/Math.log(plMax/plMin);   // PL -> índice (inverso do log)
+  const trad=[], plat=[];
+  for(let i=0;i<n;i++){const p=pl(i);
+    trad.push(Math.min(maxY, tradAno/p));           // % efetivo cai com o PL, mas pune fundo pequeno
+    plat.push(Math.max(0.0008, 1200/p));            // 0,08% a.a. com piso de R$ 100/mês
+  }
+  const X=i=>padL+i/(n-1)*pw, Y=v=>padT+(1-v/maxY)*ph;
+  const yt=[[0,'0'],[0.04,'4%'],[0.08,'8%'],[0.12,'12%']];
+  const xt=[[0.5e6,'0,5'],[1e6,'1'],[2e6,'2'],[5e6,'5'],[10e6,'10']];
   let prog=0;
   function draw(){
     ctx.clearRect(0,0,W,H);
-    // grade
-    ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=1;
-    for(let g=1;g<4;g++){const y=g/4*H;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.font='10px system-ui,Arial,sans-serif';
+    // grade horizontal + rótulos do eixo Y (custo %)
+    ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.lineWidth=1;
+    yt.forEach(([v,l])=>{const y=Y(v);
+      ctx.strokeStyle='rgba(255,255,255,.09)'; ctx.beginPath();ctx.moveTo(padL,y);ctx.lineTo(W-padR,y);ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,.55)'; ctx.fillText(l,padL-5,y);
+    });
+    // rótulos do eixo X (PL do fundo, R$ mi)
+    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='rgba(255,255,255,.55)';
+    xt.forEach(([v,l])=>ctx.fillText(l, X(iDe(v)), H-padB+5));
     const count=Math.floor(prog*n);
-    // área
-    const grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'rgba(43,182,163,.35)');grad.addColorStop(1,'rgba(43,182,163,0)');
-    ctx.beginPath();ctx.moveTo(0,H);
-    for(let i=0;i<count;i++)ctx.lineTo(X(i),Y(data[i]));
-    ctx.lineTo(X(Math.max(count-1,0)),H);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
-    // linha do CDI (benchmark) — tracejada, discreta
-    ctx.beginPath();ctx.lineWidth=1.6;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.setLineDash([5,4]);
-    for(let i=0;i<count;i++){const x=X(i),y=Y(cdi[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    // área sob a plataforma
+    const grad=ctx.createLinearGradient(0,padT,0,H-padB);grad.addColorStop(0,'rgba(43,182,163,.32)');grad.addColorStop(1,'rgba(43,182,163,0)');
+    ctx.beginPath();ctx.moveTo(X(0),H-padB);
+    for(let i=0;i<count;i++)ctx.lineTo(X(i),Y(plat[i]));
+    ctx.lineTo(X(Math.max(count-1,0)),H-padB);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+    // tradicional — tracejada dourada, altíssima nos fundos pequenos
+    ctx.beginPath();ctx.lineWidth=2;ctx.strokeStyle='#e0b13a';ctx.setLineDash([5,4]);
+    for(let i=0;i<count;i++){const x=X(i),y=Y(trad[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
     ctx.stroke();ctx.setLineDash([]);
-    // linha da cota do fundo
+    // plataforma — teal sólida, colada no piso
     ctx.beginPath();ctx.lineWidth=2.4;ctx.strokeStyle='#5fe3c0';ctx.lineJoin='round';
-    for(let i=0;i<count;i++){const x=X(i),y=Y(data[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    for(let i=0;i<count;i++){const x=X(i),y=Y(plat[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
     ctx.stroke();
-    // ponto
-    if(count>0){const x=X(count-1),y=Y(data[count-1]);ctx.beginPath();ctx.arc(x,y,3.5,0,7);ctx.fillStyle='#fff';ctx.fill();}
     if(prog<1){prog+=0.02;requestAnimationFrame(draw);}
   }
   new IntersectionObserver((e)=>{if(e[0].isIntersecting){prog=0;draw();}}).observe(cv);

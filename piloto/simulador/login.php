@@ -43,7 +43,7 @@ if (!empty($_SESSION['sim_master'])) { header('Location: index.php'); exit; }
       <input type="password" name="senha" class="form-control mb-3" required autofocus>
       <button class="btn w-100" style="background:#f59e0b;color:#111;font-weight:600">Entrar no painel</button>
     </form>
-    <p class="text-secondary mt-3 mb-0" style="font-size:.72rem">Demo: senha <code>master123</code> (troque em produção)</p>
+    <p class="text-secondary mt-3 mb-0" style="font-size:.72rem">Acesso interno restrito.</p>
     <a href="../index.php" style="color:#64748b;font-size:.72rem">← voltar à plataforma</a>
   </div>
 </body>

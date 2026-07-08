@@ -633,7 +633,7 @@ function ensure_regulamento(PDO $pdo): void {
         "ALTER TABLE fundos ADD COLUMN IF NOT EXISTS reg_tipo VARCHAR(20) NULL",
         "ALTER TABLE fundos ADD COLUMN IF NOT EXISTS reg_dados MEDIUMTEXT NULL",
         "ALTER TABLE fundos ADD COLUMN IF NOT EXISTS reg_html MEDIUMTEXT NULL",
-    ] as $sql) { try { $pdo->exec($sql); } catch (Throwable $e) {} }
+    ] as $sql) { try { ddl_portavel($pdo, $sql); } catch (Throwable $e) {} }
     // classes (camada de registro; segregação contábil plena não está no piloto)
     $pdo->exec("CREATE TABLE IF NOT EXISTS classes (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -651,5 +651,5 @@ function ensure_regulamento(PDO $pdo): void {
     foreach ([
         "ALTER TABLE subclasses ADD COLUMN IF NOT EXISTS reg_dados MEDIUMTEXT NULL",
         "ALTER TABLE subclasses ADD COLUMN IF NOT EXISTS reg_html MEDIUMTEXT NULL",
-    ] as $sql) { try { $pdo->exec($sql); } catch (Throwable $e) {} }
+    ] as $sql) { try { ddl_portavel($pdo, $sql); } catch (Throwable $e) {} }
 }
