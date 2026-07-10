@@ -501,7 +501,7 @@ function reg_gerar_html(string $tipo, array $d): string {
     $h .= "<h3 style='font-size:1.05rem'>Capítulo II — Dos Prestadores de Serviços Essenciais</h3>";
     $h .= $A('Prestadores e esferas de responsabilidade', "Administrador fiduciário: <b>" . reg_fmt($d, 'administrador') . "</b>. Gestor da carteira: <b>"
         . reg_fmt($d, 'gestor') . "</b>. Custodiante: <b>" . reg_fmt($d, 'custodiante') . "</b>. Auditor independente: <b>"
-        . reg_fmt($d, 'auditor') . "</b>. Cada prestador atua na sua esfera de responsabilidade, <b>não havendo solidariedade</b> entre administrador e gestor (Res. CVM 175, art. 81).");
+        . reg_fmt($d, 'auditor') . "</b>. Cada prestador atua na sua esfera de responsabilidade, <b>não havendo solidariedade</b> entre administrador e gestor (nos termos da Res. CVM 175 e do art. 1.368-D, II, do Código Civil).");
     $h .= $A('Encargos e rateio de despesas', "Constituem encargos do fundo as taxas e despesas admitidas pela Res. CVM 175, apropriadas e rateadas na forma deste regulamento.");
 
     $h .= "<h3 style='font-size:1.05rem'>ANEXO — Da Classe — Capítulo III — Da Política de Investimento</h3>";

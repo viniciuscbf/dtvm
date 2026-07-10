@@ -12,7 +12,7 @@ DROP TABLE IF EXISTS passivos, fip_distribuicoes, fip_avaliacoes, fip_participac
   conciliacao, log_processamento, processamento, previsao_caixa, movimentacoes, mov_cotistas,
   documentos_abertura, lancamentos, fechamentos, tokens_acesso,
   envios_regulatorios, oficios_cvm, assembleias, eventos_corporativos, liquidacoes,
-  mensagens_spb, contas_centrais, boletas, usuario_fundos, fundo_membros, senha_resets, processamento_batch, classes,
+  mensagens_spb, contas_centrais, boletas, contrapartes, usuario_fundos, fundo_membros, senha_resets, processamento_batch, classes,
   cotistas, cdi_historico, cotas_historico, ativos_carteira, usuarios, fundos;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -64,6 +64,32 @@ CREATE TABLE usuario_fundos (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Boletas de operação do gestor (compra/venda) → aceite da custódia → liquidação DVP
+-- Cadastro/habilitação de contrapartes (conheça sua contraparte): bolsa = corretora executora
+-- (contraparte central B3/CCP); balcão = contraparte bilateral nominal com KYC/limite/aprovação.
+CREATE TABLE contrapartes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  razao_social VARCHAR(150) NOT NULL,
+  nome_fantasia VARCHAR(120),
+  cnpj VARCHAR(20),
+  tipo_instituicao VARCHAR(30),                  -- Banco, Corretora, Distribuidora, Gestora, Emissor, Tesouraria
+  papeis VARCHAR(200),                           -- CSV: corretora_executora,emissor,dealer_balcao,contraparte_derivativo,banco_liquidante
+  camara VARCHAR(20) DEFAULT 'B3_BALCAO',        -- B3_CCP, B3_BALCAO, SELIC, bilateral
+  rating VARCHAR(12),
+  limite_credito DECIMAL(18,2) DEFAULT 0,        -- teto de exposição bilateral (balcão)
+  contrato_mestre VARCHAR(20) DEFAULT 'Nenhum',  -- ISDA, CGD, Nenhum
+  conta_liquidacao VARCHAR(40),
+  beneficiario_final VARCHAR(200),               -- UBO exigido pela Res. CVM 50
+  kyc_status VARCHAR(20) DEFAULT 'Pendente',     -- Pendente, Concluído
+  kyc_validade DATE NULL,
+  status VARCHAR(20) DEFAULT 'Pendente',         -- Pendente, Aprovada, Suspensa
+  aprovada_por VARCHAR(100),
+  aprovada_em DATETIME NULL,
+  observacao VARCHAR(300),
+  ativo TINYINT DEFAULT 1,
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_cp_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE boletas (
   id INT AUTO_INCREMENT PRIMARY KEY,
   fundo_id INT NOT NULL,
@@ -74,7 +100,9 @@ CREATE TABLE boletas (
   quantidade DECIMAL(18,2) NOT NULL,
   preco DECIMAL(18,6) NOT NULL,             -- preço unitário negociado
   valor DECIMAL(18,2) NOT NULL,             -- financeiro (qtd × preço)
-  contraparte VARCHAR(120),
+  contraparte VARCHAR(120),                 -- snapshot textual (nome) para exibição na custódia
+  contraparte_id INT NULL,                  -- FK cadastro (balcão): contraparte bilateral habilitada
+  corretora_executora_id INT NULL,          -- FK cadastro (bolsa): corretora que executou (contraparte central = B3/CCP)
   status ENUM('Enviada','Aceita','Rejeitada','Liquidada') DEFAULT 'Enviada',
   motivo VARCHAR(300) NULL,                 -- motivo de rejeição pela custódia
   liquidacao_id INT NULL,                   -- instrução de liquidação gerada no aceite

@@ -198,7 +198,7 @@ Você pediu para eu incluir custos que você não lembrou. Aqui está o quadro c
 | Custo | Valor | Nota |
 |---|---|---|
 | Taxa CVM do fundo (faixa 1) | ~R$ 3.162/ano | Grátis no 1º ano se criado após abril |
-| Auditoria independente | ~R$ 1.500 (modelo em lote) | Obrigatória |
+| Auditoria independente | ~R$ 3.500 (boutique em lote; faixa R$ 3–5k) | Obrigatória (fundo >90 dias). Mercado ~R$ 11k; ver `guia_auditor_independente.md` |
 | Custódia | R$ 0 (banco absorve — sua decisão) | Despesa do fundo |
 | **Taxa ANBIMA de divulgação do fundo** (bimestral) | ver §5.3 — R$ 65 a R$ 145/bimestre p/ fundos pequenos | Por fundo, por faixa de PL |
 | **Taxa de registro de classe ANBIMA** | R$ 1.207 (classe) / R$ 120,70 (subclasse) | Uma vez, no registro |

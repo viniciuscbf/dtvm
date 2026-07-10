@@ -10,7 +10,7 @@
 **Resposta — quatro camadas de blindagem:**
 1. **A norma protege:** Res. CVM 175 → responsabilidade **subjetiva** (exige dolo/culpa) e **de meio**, não de fim; **sem solidariedade automática** — cada prestador responde pela sua esfera.
 2. **A operação produz prova de diligência:** nenhuma cota publica sem **aprovação formal do gestor**; toda correção vira lançamento com **trilha**; conciliação diária em três frentes.
-3. **O monitoramento é total:** IA vigia preço fora da curva, partes relacionadas e ativo sem lastro em **100% dos fundos, todo dia** — e gera a trilha de auditoria que faltou nos casos punidos (Silverado etc.).
+3. **O monitoramento é total:** IA vigia negócios fora de mercado (self-dealing), partes relacionadas e o lastro na custódia em **100% dos fundos, todo dia** — e gera a trilha de auditoria que faltou nos casos punidos (Silverado etc.).
 4. **O compliance do banco manda:** designa o diretor, aprova os manuais, recebe relatórios, audita quando quiser.
 > **Contrapeso honesto:** quem está no processo sancionador é o nome do banco — por isso desenhamos a operação para ser **blindagem, não risco**.
 
@@ -36,7 +36,7 @@ Seja honesto — reconhecer os pontos frágeis passa mais confiança do que esco
 Não abra o sistema na 1ª reunião. Na técnica, mostre **4 fluxos**, nesta ordem, sempre dizendo "dados simulados":
 1. **Fechamento do dia** (Simulador Master → "passar de dia"): o batch marca ativos, recalcula cota/PL e monta a esteira de todos os fundos. *"O custo marginal de rodar isso para o fundo nº 500 é quase o do nº 5."*
 2. **Aprovação da cota pelo gestor** (portal do gestor): a prévia da cota espera a aprovação formal — nada publica sem ela. *"É a dupla checagem que produz prova de diligência."*
-3. **Monitoramento de fraude / IA** (admin → fraude): as 7 regras, o grafo de partes relacionadas e a triagem de alertas com trilha. *"Vigiamos 100% dos fundos ao custo de software — o que as grandes não fazem em fundo pequeno."*
+3. **Monitoramento de fraude / IA** (admin → fraude): as 14 regras (em 7 categorias), o grafo de partes relacionadas e a triagem de alertas com trilha. *"Vigiamos 100% dos fundos ao custo de software — o que as grandes não fazem em fundo pequeno."*
 4. **Regulatório / informe** (admin): informe diário à CVM, balancete em partidas dobradas, passivo do cotista (come-cotas/IR/IOF). *"Do checklist de abertura ao informe, ponta a ponta."*
 > Feche com a **nota honesta**: "isto é um protótipo com dados simulados; prova a capacidade operacional — não substitui a licença nem a parceria que propomos."
 

@@ -24,28 +24,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // APROVAR solicitação: cadastra no catálogo (sem duplicar código) e marca como Aprovada
     if (!empty($_POST['aprovar'])) {
-        $st = $pdo->prepare("SELECT * FROM solicitacoes_cadastro_ativo WHERE id = ? AND status = 'Solicitado'");
+        $st = $pdo->prepare("SELECT id, fundo_id, codigo, nome, tipo, emissor, indexador, taxa, vencimento FROM solicitacoes_cadastro_ativo WHERE id = ? AND status = 'Solicitado'");
         $st->execute([(int)$_POST['aprovar']]);
         if ($s = $st->fetch()) {
-            com_transacao($pdo, function () use ($pdo, $s, $u) {
-                // ON DUPLICATE KEY: se o código já existir, não duplica (só reafirma dados).
-                $ins = $pdo->prepare(
-                    "INSERT INTO ativos_catalogo (codigo, nome, tipo, emissor, indexador, taxa, vencimento, status)
-                     VALUES (?,?,?,?,?,?,?, 'Ativo')
-                     ON DUPLICATE KEY UPDATE nome=VALUES(nome), emissor=VALUES(emissor),
-                        indexador=VALUES(indexador), taxa=VALUES(taxa), vencimento=VALUES(vencimento)"
-                );
-                $ins->execute([$s['codigo'], $s['nome'], $s['tipo'], $s['emissor'],
-                               $s['indexador'], $s['taxa'], $s['vencimento'] ?: null]);
-                $pdo->prepare("UPDATE solicitacoes_cadastro_ativo
-                                 SET status='Aprovado', motivo=NULL, decidido_por=?, decidido_em=NOW() WHERE id=?")
-                    ->execute([$u['nome'], $s['id']]);
-            });
-            registrar_auditoria($pdo, 'ativo_aprovado', [
-                'entidade' => 'ativos_catalogo', 'entidade_id' => $s['codigo'], 'fundo_id' => $s['fundo_id'] ? (int)$s['fundo_id'] : null,
-                'detalhe' => "Solicitação #{$s['id']} aprovada — {$s['codigo']} cadastrado no catálogo",
-            ]);
-            $msg = "Ativo {$s['codigo']} cadastrado no catálogo. O gestor já pode boletá-lo.";
+            // A administradora pode completar/corrigir na aprovação (essencial p/ pedidos em lote sem categoria).
+            $codigo  = strtoupper(trim($_POST['codigo'] ?? '')) ?: $s['codigo'];
+            $nome    = trim($_POST['nome'] ?? '') ?: $s['nome'];
+            $tipo    = in_array($_POST['tipo'] ?? '', TIPOS_ATIVO, true) ? $_POST['tipo'] : $s['tipo'];
+            $emissor = trim($_POST['emissor'] ?? '') ?: $s['emissor'];
+            $index   = trim($_POST['indexador'] ?? '') ?: $s['indexador'];
+            $taxa    = trim($_POST['taxa'] ?? '') ?: $s['taxa'];
+            $venc    = trim($_POST['vencimento'] ?? '') ?: ($s['vencimento'] ?: '');
+            if (!in_array($tipo, TIPOS_ATIVO, true)) {
+                $msg = "Classifique a categoria de {$s['codigo']} antes de aprovar (pedido em lote sem categoria)."; $msgTipo = 'danger';
+            } else {
+                com_transacao($pdo, function () use ($pdo, $s, $u, $codigo, $nome, $tipo, $emissor, $index, $taxa, $venc) {
+                    $ins = $pdo->prepare(
+                        "INSERT INTO ativos_catalogo (codigo, nome, tipo, emissor, indexador, taxa, vencimento, status)
+                         VALUES (?,?,?,?,?,?,?, 'Ativo')
+                         ON DUPLICATE KEY UPDATE nome=VALUES(nome), emissor=VALUES(emissor),
+                            indexador=VALUES(indexador), taxa=VALUES(taxa), vencimento=VALUES(vencimento)"
+                    );
+                    $ins->execute([$codigo, $nome, $tipo, $emissor, $index, $taxa, $venc !== '' ? $venc : null]);
+                    $pdo->prepare("UPDATE solicitacoes_cadastro_ativo
+                                     SET status='Aprovado', motivo=NULL, codigo=?, nome=?, tipo=?, decidido_por=?, decidido_em=NOW() WHERE id=?")
+                        ->execute([$codigo, $nome, $tipo, $u['nome'], $s['id']]);
+                });
+                registrar_auditoria($pdo, 'ativo_aprovado', [
+                    'entidade' => 'ativos_catalogo', 'entidade_id' => $codigo, 'fundo_id' => $s['fundo_id'] ? (int)$s['fundo_id'] : null,
+                    'detalhe' => "Solicitação #{$s['id']} aprovada — $codigo cadastrado no catálogo",
+                ]);
+                $msg = "Ativo $codigo cadastrado no catálogo. O gestor já pode boletá-lo.";
+            }
         } else { $msg = 'Solicitação não encontrada ou já decidida.'; $msgTipo = 'warning'; }
     }
     // REJEITAR solicitação: exige motivo
@@ -107,8 +117,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // ---- Fila de solicitações pendentes ----
-$fila = $pdo->query("SELECT s.*, f.nome fundo_nome FROM solicitacoes_cadastro_ativo s
-                     LEFT JOIN fundos f ON f.id = s.fundo_id
+$fila = $pdo->query("SELECT s.id, s.fundo_id, s.solicitante, s.codigo, s.nome, s.tipo, s.emissor, s.indexador, s.taxa, s.vencimento, s.detalhe, s.lote, s.anexo_nome, (s.anexo IS NOT NULL) AS tem_anexo, f.nome fundo_nome
+                     FROM solicitacoes_cadastro_ativo s LEFT JOIN fundos f ON f.id = s.fundo_id
                      WHERE s.status='Solicitado' ORDER BY s.criado_em")->fetchAll();
 
 // ---- Catálogo (com filtro por tipo) ----
@@ -147,20 +157,28 @@ page_start('Base de instrumentos', 'Base de instrumentos', $u,
       <tbody>
       <?php foreach ($fila as $s): ?>
         <tr>
-          <td><b><?= e_html($s['codigo']) ?></b><br><span class="text-muted" style="font-size:.78rem"><?= e_html($s['nome']) ?></span></td>
-          <td><?= badge($s['tipo'], 'secondary') ?></td>
+          <td><b><?= e_html($s['codigo']) ?></b><?php if ($s['lote']): ?> <span class="badge bg-info-subtle text-dark border" style="font-size:.6rem">lote</span><?php endif; ?>
+            <br><span class="text-muted" style="font-size:.78rem"><?= e_html($s['nome']) ?></span>
+            <?php if ($s['tem_anexo']): ?><br><a href="../gestor/ativo_anexo.php?id=<?= (int)$s['id'] ?>" target="_blank" style="font-size:.75rem"><i class="bi bi-paperclip"></i> <?= e_html($s['anexo_nome'] ?: 'anexo.pdf') ?></a><?php endif; ?></td>
+          <td><?= $s['tipo'] === 'A classificar' ? '<span class="badge bg-warning text-dark">a classificar</span>' : badge($s['tipo'], 'secondary') ?></td>
           <td style="font-size:.8rem"><?= e_html($s['fundo_nome'] ?: '—') ?><br><span class="text-muted"><?= e_html($s['solicitante']) ?></span></td>
           <td style="font-size:.8rem"><?= e_html($s['indexador'] ?: '—') ?> · <?= e_html($s['taxa'] ?: '—') ?> · <?= $s['vencimento'] ? data_br($s['vencimento']) : '—' ?></td>
           <td class="text-muted" style="font-size:.8rem"><?= e_html($s['detalhe'] ?: '—') ?></td>
           <td>
             <form method="post" class="mb-1">
-              <?= csrf_campo() ?>
-              <input type="hidden" name="aprovar" value="<?= (int)$s['id'] ?>">
-              <button class="btn btn-sm btn-success w-100"><i class="bi bi-check-lg me-1"></i>Aprovar e cadastrar no catálogo</button>
+              <?= csrf_campo() ?><input type="hidden" name="aprovar" value="<?= (int)$s['id'] ?>">
+              <div class="row g-1 mb-1">
+                <div class="col-5"><input class="form-control form-control-sm" name="codigo" value="<?= e_html($s['codigo']) ?>" title="código"></div>
+                <div class="col-7"><select class="form-select form-select-sm" name="tipo" title="categoria"<?= $s['tipo'] === 'A classificar' ? ' required' : '' ?>>
+                  <option value="">categoria…</option>
+                  <?php foreach (TIPOS_ATIVO as $t): ?><option value="<?= e_html($t) ?>" <?= $t === $s['tipo'] ? 'selected' : '' ?>><?= e_html($t) ?></option><?php endforeach; ?>
+                </select></div>
+                <div class="col-12"><input class="form-control form-control-sm" name="nome" value="<?= e_html($s['nome']) ?>" title="nome"></div>
+              </div>
+              <button class="btn btn-sm btn-success w-100"><i class="bi bi-check-lg me-1"></i>Aprovar e cadastrar</button>
             </form>
             <form method="post" class="d-flex gap-1">
-              <?= csrf_campo() ?>
-              <input type="hidden" name="rejeitar" value="<?= (int)$s['id'] ?>">
+              <?= csrf_campo() ?><input type="hidden" name="rejeitar" value="<?= (int)$s['id'] ?>">
               <input class="form-control form-control-sm" name="motivo" placeholder="Motivo da rejeição…" required>
               <button class="btn btn-sm btn-outline-danger" title="Rejeitar"><i class="bi bi-x-lg"></i></button>
             </form>

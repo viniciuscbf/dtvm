@@ -60,14 +60,23 @@ if ($fidGrafo) {
     $nos = array_values($mapa);
 }
 
+// [código, categoria, nome, como dispara (cruzamento de dados + limiar), base legal / caso real]
+// Limiares numéricos são parametrização interna do piloto / convenção de mercado (ANBIMA), não número fixado em lei.
 $regras = [
-    ['R1', 'Preço fora da curva', 'Preço MaM desvia mais de 5% da referência de mercado do ativo (B3/ANBIMA).'],
-    ['R2', 'Parte relacionada', 'CNPJ de contraparte coincide com sócio ou empresa ligada ao gestor do fundo.'],
-    ['R3', 'Movimentação atípica', 'Lançamento acima de 3 desvios-padrão do padrão histórico de movimentações do fundo.'],
-    ['R4', 'Ativo fantasma', 'Posição na carteira sem correspondência na posição reportada pelo custodiante.'],
-    ['R5', 'Timing suspeito', 'Aplicação ou resgate relevante na véspera de remarcação de ativo ilíquido.'],
-    ['R6', 'Concentração de resgates', 'Resgates acima de limite percentual do PL em janela curta de dias.'],
-    ['R7', 'Cota anômala', 'Retorno diário fora de 4 desvios-padrão da série histórica do próprio fundo.'],
+    ['R1', 'Preço & negociação', 'Negócio a preço fora de mercado', 'Preço da boleta do gestor × marcação independente do ativo na data; desvio acima da banda (piloto: 3% p/ líquido, 10% p/ ilíquido). Flagra sobrepreço / self-dealing, sobretudo com contraparte de balcão.', 'Res. CVM 175, Anexo I (adm. verifica o preço) · dever de diligência (PAS CVM — aquisição de CCB, 2024)'],
+    ['R2', 'Preço & negociação', 'Valuation de ilíquido (nível 3) sem lastro', 'Laudo/premissas do gestor para ativo nível 3 (FIP, crédito ilíquido) que destoam de transações comparáveis; a administradora contesta antes de aceitar a marcação.', 'CPC 46 / IFRS 13 (valor justo nível 3) · caso FIP LSH / More Invest — laudo inflado (PAS CVM 2024)'],
+    ['R3', 'Preço & negociação', 'Preço defasado ou remarcação abrupta', 'Mesma taxa/PU repetida além de 2 dias úteis (stale price) ou remarcação abrupta (write-down) sem fato relevante que a justifique.', 'Metodologia ANBIMA (corte 20:30; repetição ≤ 2 d.u. — convenção) · caso Vorcaro / Jade'],
+    ['R4', 'Partes relacionadas', 'Parte relacionada / conflito', 'CNPJ de contraparte ou emissor coincide com o quadro societário do gestor (grafo de vínculos); beneficiário final acima de 25%.', 'Res. CVM 175 (conflito de interesse) · Res. CVM 50, art. 2º, IX (25%)'],
+    ['R5', 'Custódia & lastro', 'Conciliação de custódia (posição sem lastro)', 'Posição interna (boletas do gestor processadas pela controladoria) × posição confirmada pelo custodiante/depositário na conciliação diária; diferença sem lastro retém o fechamento da cota. Para ativo listado o depositário (B3/SELIC) é a fonte autoritativa — a quebra costuma ser falha de liquidação ou boleta fictícia. A versão-fraude com recebível inexistente vive em FIDC.', 'Res. CVM 32 (conciliação diária de custódia) · lastro de recebíveis em FIDC (fora do escopo do piloto — caso Silverado)'],
+    ['R6', 'Enquadramento & liquidez', 'Concentração acima do limite', '% do PL por emissor acima do art. 44: 20% (inst. financeira), 10% (cia aberta / fundo / securitizadora), 5% (PF ou PJ não financeira); sem limite p/ título público federal.', 'Res. CVM 175, Anexo I, art. 44'],
+    ['R7', 'Enquadramento & liquidez', 'Descasamento de liquidez (ativo × passivo)', 'Ativo líquido por janela (bucket D+0, D+1…) menor que o passivo exigível (resgates) na mesma janela; teste de estresse de liquidez.', 'Res. CVM 175 (gestão de liquidez) · Indicador de Resgate em Estresse (CVM/SIN)'],
+    ['R8', 'Passivo & mercado', 'Movimentação atípica', 'Aplicação ou resgate acima de 3 desvios-padrão do padrão histórico de movimentação do fundo.', 'Res. CVM 50, art. 20 (dever de monitorar atipicidades)'],
+    ['R9', 'Passivo & mercado', 'Front-running / timing de remarcação', 'Cotização na véspera de remarcação relevante (aplica antes da alta; resgata antes da baixa), sobretudo por parte relacionada.', 'Caso BB Asset — front-running (multas R$ 6,9 mi) · Res. CVM 50, art. 20'],
+    ['R10', 'Passivo & mercado', 'Late trading', 'Ordem registrada após o horário de corte da cotização, cotizada no mesmo dia em vez de D+1.', 'Corte de cotização (piloto alinhado às 20:30 ANBIMA — convenção) · Res. CVM 175 (taxa de saída / anti-diluição)'],
+    ['R11', 'Passivo & mercado', 'Concentração de resgates', 'Resgates acima de um % do PL em janela curta de dias úteis — risco de corrida e de venda forçada de ativo ilíquido.', 'Res. CVM 175 (gestão de liquidez) · prática de mercado'],
+    ['R12', 'PLD / FT', 'Ida-e-volta e fracionamento (smurfing)', 'Aplicação seguida de resgate em curto intervalo sem racional econômico, ou fracionamento para escapar de comunicação. Gera COS ao COAF (sem valor mínimo), em 24h da conclusão da análise.', 'Res. CVM 50, art. 20, II (c/e/g) · Lei 9.613/98'],
+    ['R13', 'PLD / FT', 'KYC/PLD incompleto, PEP ou beneficiário final', 'Cotista ou contraparte sem KYC/PLD aprovado, PEP não classificado, ou beneficiário final (>25%) não identificado. Estende-se ao KYP / due diligence de contrapartes.', 'Res. CVM 50 (arts. 11–16; Anexo A — PEP) · QDD ANBIMA (KYP)'],
+    ['R14', 'Integridade da cota', 'Cota anômala', 'Retorno diário fora de 4 desvios-padrão da série histórica do próprio fundo — dispara verificação (com frequência é falso positivo legítimo).', 'Controladoria / MaM independente (Res. CVM 175, Anexo I)'],
 ];
 
 page_start('Monitoramento de fraude · IA', 'IA · Fraude', $u,
@@ -82,7 +91,7 @@ page_start('Monitoramento de fraude · IA', 'IA · Fraude', $u,
           count($altas) . ' de severidade alta') ?>
   <?= kpi('Fundos monitorados', (string)(int)$pdo->query("SELECT COUNT(*) FROM fundos WHERE status='Ativo'")->fetchColumn(),
           'bi-eye', 'varredura no batch diário') ?>
-  <?= kpi('Regras ativas', '7', 'bi-cpu', 'R1 a R7 — ver "Como funciona"') ?>
+  <?= kpi('Regras ativas', (string)count($regras), 'bi-cpu', 'R1 a R' . count($regras) . ' — ver "Como funciona"') ?>
 </div>
 
 <ul class="nav nav-tabs mb-3" role="tablist" style="font-size:.88rem">
@@ -146,20 +155,38 @@ page_start('Monitoramento de fraude · IA', 'IA · Fraude', $u,
 
   <div class="tab-pane fade" id="aba-regras">
     <div class="card">
-      <div class="card-header"><i class="bi bi-gear me-1"></i> Motor de regras do piloto (a IA de produção treina em cima desta base)</div>
+      <div class="card-header"><i class="bi bi-gear me-1"></i> Motor de regras do piloto — <?= count($regras) ?> regras determinísticas sobre a base do batch diário</div>
       <div class="card-body p-0">
+        <p class="text-muted px-3 pt-3 mb-2" style="font-size:.82rem">
+          A administradora <b>marca os ativos de forma independente</b> e vê as boletas do gestor, a posição do custodiante, o
+          passivo dos cotistas e o cadastro de contrapartes. O motor cruza essas fontes — a marcação é a <b>régua</b>; o alvo é o
+          comportamento do <b>gestor, do cotista ou da contraparte</b> que destoa dela. Marcação errada, por si, é erro operacional
+          (vai para conciliação/precificação), não fraude.
+        </p>
         <table class="table mb-0">
-          <thead><tr><th>Regra</th><th>Nome</th><th>Como dispara</th></tr></thead>
+          <thead><tr><th>Regra</th><th>Nome</th><th>Como dispara (dado × dado + limiar)</th><th>Base legal / caso</th></tr></thead>
           <tbody>
-          <?php foreach ($regras as [$r, $nome, $desc]): ?>
-            <tr><td><?= badge($r, 'gold') ?></td><td><b><?= $nome ?></b></td><td class="text-muted" style="font-size:.86rem"><?= $desc ?></td></tr>
+          <?php $catAtual = ''; foreach ($regras as [$r, $cat, $nome, $disp, $base]): ?>
+            <?php if ($cat !== $catAtual): $catAtual = $cat; ?>
+              <tr class="table-light"><td colspan="4" class="fw-semibold text-uppercase" style="font-size:.72rem; letter-spacing:.04em"><?= e_html($cat) ?></td></tr>
+            <?php endif; ?>
+            <tr>
+              <td><?= badge($r, 'gold') ?></td>
+              <td style="font-size:.84rem"><b><?= e_html($nome) ?></b></td>
+              <td class="text-muted" style="font-size:.82rem"><?= e_html($disp) ?></td>
+              <td class="text-muted" style="font-size:.76rem"><?= e_html($base) ?></td>
+            </tr>
           <?php endforeach; ?>
           </tbody>
         </table>
       </div>
-      <div class="card-footer text-muted" style="font-size:.78rem">
-        Os alertas nascem destas regras determinísticas; a mesma trilha de dados alimenta modelos de detecção de anomalias — e
-        todo tratamento (quem viu, o que decidiu, quando) fica registrado, o que protege o banco perante a CVM.
+      <div class="card-footer text-muted" style="font-size:.76rem">
+        Os alertas nascem destas regras; a mesma trilha de dados alimenta modelos de detecção de anomalias, e todo tratamento
+        (quem viu, o que decidiu, quando) fica registrado — evidência perante a CVM.
+        <b>Notas de honestidade:</b> os <b>limiares</b> (bandas de preço, nº de desvios, % do PL, horário de corte) são parametrização
+        interna / convenção de mercado, não números fixados em resolução. No PLD, o <b>R$ 50 mil em espécie</b> e o <b>prazo de 45+45 dias</b>
+        são norma bancária (BCB), não da CVM — em fundos o gatilho é a <b>comunicação de operação suspeita por atipicidade</b>, sem valor mínimo.
+        Piloto: dados simulados.
       </div>
     </div>
   </div>

@@ -20,18 +20,20 @@ $f = [
     'taxa_performance' => (float)str_replace(',', '.', $_GET['taxa_perf'] ?? '0') / 100,
 ];
 $html = $ger($f);
-$titulo = htmlspecialchars($_GET['doc'] ?? 'documento', ENT_QUOTES, 'UTF-8');
-$fn = 'modelo_' . preg_replace('/[^a-z0-9]+/i', '_', mb_strtolower($_GET['doc'] ?? 'documento')) . '.html';
+$slug = 'modelo_' . preg_replace('/[^a-z0-9]+/i', '_', mb_strtolower($_GET['doc'] ?? 'documento'));
 
-// ?ver=1 abre no navegador; sem isso, baixa como arquivo
+// ?ver=1 abre no navegador (pré-visualização); sem isso, baixa em .docx (editável no Word)
 if (!isset($_GET['ver'])) {
-    header('Content-Disposition: attachment; filename="' . $fn . '"');
+    enviar_documento_download($html, $slug);
+    exit;
 }
+$titulo = htmlspecialchars($_GET['doc'] ?? 'documento', ENT_QUOTES, 'UTF-8');
 header('Content-Type: text/html; charset=utf-8');
 echo "<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\"><title>$titulo</title>";
 echo "<style>body{font-family:Georgia,'Times New Roman',serif;max-width:840px;margin:24px auto;padding:0 20px;color:#1e293b;line-height:1.5}"
    . "h2{font-size:1.3rem}h3{font-size:1.02rem;margin-top:18px}hr{border-color:#e2e8f0}"
-   . ".doc-rodape{margin-top:24px;font-size:.8rem;color:#64748b;border-top:1px solid #e2e8f0;padding-top:10px}"
-   . ".doc-nota{font-size:.82rem;color:#64748b;background:#f8fafc;border-radius:8px;padding:8px 12px}</style></head><body>";
-echo $html;
+   . "em{color:#b7791f;font-weight:600}"
+   . ".doc-rodape{margin-top:24px;font-size:.8rem;color:#b7791f;border-top:1px solid #e2e8f0;padding-top:10px}"
+   . ".doc-nota{font-size:.82rem;color:#b7791f;background:#fffbeb;border-radius:8px;padding:8px 12px}</style></head><body>";
+echo tpl_realcar_campos($html);
 echo "</body></html>";

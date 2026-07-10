@@ -18,6 +18,7 @@ function menu_itens(array $u): array {
             ['Passivo & Tributação', $b.'admin/passivo.php',       'bi-receipt'],
             ['Onboarding de cotistas', $b.'admin/onboarding_cotista.php', 'bi-person-plus'],
             ['Base de instrumentos', $b.'admin/ativos.php',        'bi-database'],
+            ['Contrapartes',        $b.'admin/contrapartes.php',   'bi-people'],
             ['Suporte',             $b.'admin/tickets.php',        'bi-life-preserver'],
             ['Aberturas de fundos', $b.'admin/aberturas.php',      'bi-rocket-takeoff'],
             ['Classes de cotas',    $b.'admin/classes.php',        'bi-collection'],

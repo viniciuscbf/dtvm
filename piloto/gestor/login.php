@@ -6,7 +6,7 @@ require_once __DIR__ . '/../includes/auth.php';
 
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'gestor')) {
+    if (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'gestor', !empty($_POST['lembrar']))) {
         $u = usuario();
         $meus = fundos_do_usuario($pdo, $u);
         if (!$meus) {
@@ -57,6 +57,10 @@ if (usuario()) { header('Location: ' . (usuario()['perfil'] === 'admin' ? '../ad
         <div class="mb-3">
           <label class="form-label" style="font-size:.8rem">Senha</label>
           <input type="password" name="senha" class="form-control" required>
+        </div>
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" name="lembrar" id="lembrar" value="1">
+          <label class="form-check-label" for="lembrar" style="font-size:.82rem">Continuar conectado neste dispositivo</label>
         </div>
         <button class="btn w-100" style="background:#14b8a6;color:#fff">Entrar no portal</button>
       </form>

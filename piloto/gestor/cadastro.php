@@ -115,12 +115,16 @@ $docs = checklist_documentos($_POST['publico'] ?? 'Investidores em geral');
       <form method="post" enctype="multipart/form-data">
         <div class="secao">1 · Gestora</div>
         <div class="row g-3">
-          <div class="col-md-6"><label class="form-label">Razão social da gestora *</label>
+          <div class="col-md-6"><label class="form-label">Razão social da gestora <span class="text-muted">(ou nome, se gestor pessoa física)</span> *</label>
             <input class="form-control form-control-sm" name="gestora_nome" required value="<?= e_html($_POST['gestora_nome'] ?? '') ?>"></div>
-          <div class="col-md-3"><label class="form-label">CNPJ da gestora *</label>
+          <div class="col-md-3"><label class="form-label">CNPJ <span class="text-muted">(ou CPF, se PF)</span> *</label>
             <input class="form-control form-control-sm" name="gestora_cnpj" required placeholder="00.000.000/0001-00"></div>
-          <div class="col-md-3"><label class="form-label">Registro CVM (gestora) *</label>
+          <div class="col-md-3"><label class="form-label">Registro CVM (ato declaratório) *</label>
             <input class="form-control form-control-sm" name="gestora_cvm" required placeholder="Ato declaratório nº"></div>
+        </div>
+        <div class="alert alert-primary d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 mt-2 mb-0" style="font-size:.85rem">
+          <span><i class="bi bi-mortarboard me-1"></i><b>Ainda não é gestor autorizado pela CVM?</b> Veja o passo a passo (pessoa jurídica ou física) e baixe os modelos.</span>
+          <a href="constituir_gestora.php" class="btn btn-sm btn-primary text-nowrap">Constituir sua gestora →</a>
         </div>
 
         <div class="secao">2 · Responsável e acesso</div>

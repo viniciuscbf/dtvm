@@ -13,6 +13,7 @@
 function bootstrap_seguranca(): void {
     if (session_status() === PHP_SESSION_NONE) {
         $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        @ini_set('session.gc_maxlifetime', (string) (60 * 60 * 24 * 30));  // sessão pode viver até 30 dias ("continuar conectado")
         session_set_cookie_params([
             'lifetime' => 0,
             'path'     => '/',
@@ -22,14 +23,21 @@ function bootstrap_seguranca(): void {
         ]);
         session_start();
     }
-    // Timeout por inatividade (30 min): limpa a sessão e rotaciona o id.
-    $limite = 1800;
+    // Timeout por inatividade: 30 min normalmente; 30 dias se o usuário marcou "continuar conectado".
+    $limite = !empty($_SESSION['lembrar']) ? 60 * 60 * 24 * 30 : 1800;
     $agora  = time();
     if (isset($_SESSION['ultima_atividade']) && ($agora - $_SESSION['ultima_atividade']) > $limite) {
         $_SESSION = [];
         session_regenerate_id(true);
     }
     $_SESSION['ultima_atividade'] = $agora;
+
+    // Sessão "lembrada": renova o cookie persistente a cada requisição (expiração deslizante).
+    if (!empty($_SESSION['lembrar']) && !headers_sent()) {
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        setcookie(session_name(), session_id(), ['expires' => $agora + 60 * 60 * 24 * 30,
+            'path' => '/', 'httponly' => true, 'samesite' => 'Lax', 'secure' => $https]);
+    }
 
     headers_seguranca();
 }

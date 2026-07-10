@@ -49,6 +49,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
         [$ok, $m] = remover_membro($pdo, $fid, (int)($_POST['membro_id'] ?? 0));
         $msg = $m; $msgTipo = $ok ? 'success' : 'warning';
         if ($ok) registrar_auditoria($pdo, 'membro_removido', ['entidade' => 'fundo_membros', 'entidade_id' => (int)($_POST['membro_id'] ?? 0), 'fundo_id' => $fid, 'detalhe' => $m]);
+    } elseif ($fid && $souPrincipal && $acao === 'excluir_conta') {
+        [$ok, $m] = excluir_conta_membro($pdo, $fid, (int)($_POST['membro_id'] ?? 0), (int)$u['id']);
+        $msg = $m; $msgTipo = $ok ? 'success' : 'danger';
+        if ($ok) registrar_auditoria($pdo, 'conta_excluida', ['entidade' => 'usuarios', 'fundo_id' => $fid, 'detalhe' => $m]);
     } else {
         $msg = 'Ação não permitida para o seu papel neste fundo.'; $msgTipo = 'warning';
     }
@@ -170,9 +174,13 @@ page_start('Equipe do fundo', 'Equipe do fundo', $u,
                 <?= csrf_campo() ?><input type="hidden" name="acao" value="transferir"><input type="hidden" name="usuario_id" value="<?= (int)$m['usuario_id'] ?>">
                 <button class="btn btn-sm btn-outline-warning" title="Tornar gestor principal"><i class="bi bi-arrow-left-right"></i></button>
               </form>
-              <form method="post" class="d-inline" onsubmit="return confirm('Remover <?= e_html($m['nome']) ?> do fundo?')">
+              <form method="post" class="d-inline" onsubmit="return confirm('Remover <?= e_html($m['nome']) ?> apenas deste fundo? A conta continua existindo.')">
                 <?= csrf_campo() ?><input type="hidden" name="acao" value="remover"><input type="hidden" name="membro_id" value="<?= (int)$m['id'] ?>">
-                <button class="btn btn-sm btn-outline-danger" title="Remover"><i class="bi bi-person-x"></i></button>
+                <button class="btn btn-sm btn-outline-danger" title="Remover do fundo"><i class="bi bi-person-x"></i></button>
+              </form>
+              <form method="post" class="d-inline" onsubmit="return confirm('EXCLUIR a conta de <?= e_html($m['nome']) ?>?\n\nIsso apaga o login definitivamente (se a conta não estiver em outros fundos). Ação irreversível.')">
+                <?= csrf_campo() ?><input type="hidden" name="acao" value="excluir_conta"><input type="hidden" name="membro_id" value="<?= (int)$m['id'] ?>">
+                <button class="btn btn-sm btn-danger" title="Excluir conta"><i class="bi bi-trash"></i></button>
               </form>
             <?php endif; ?>
           </td>

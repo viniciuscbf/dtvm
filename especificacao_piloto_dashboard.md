@@ -31,7 +31,7 @@
 
 ## O que mudou da v3.0 para a v4.0 (o banco como custodiante)
 
-17. **4º portal — Mesa de Custódia do banco** (`/custodia/`, perfil próprio `custodia`): representa a retaguarda do banco custodiante autorizado pela **Res. CVM 32**. Painel com **contas individualizadas por fundo nas centrais** (SELIC, B3 Depositária, B3 Balcão + conta Reservas/STR do banco); **mensageria RSFN/SPB simulada** (códigos estilo catálogo — SEL1052, STR0008 — com fila, processamento e reprocesso de erro); **instruções & liquidação DVP** (confirmar liquida física+financeira, movimenta o caixa do fundo e registra confirmação na mensageria); **arquivos & extratos** — gera os CSVs diários de posição custodiada e extrato de conta que a administradora usa na conciliação. A divergência do NORD3 (ativo fantasma) atravessa os dois portais, como na vida real.
+17. **4º portal — Mesa de Custódia do banco** (`/custodia/`, perfil próprio `custodia`): representa a retaguarda do banco custodiante autorizado pela **Res. CVM 32**. Painel com **contas individualizadas por fundo nas centrais** (SELIC, B3 Depositária, B3 Balcão + conta Reservas/STR do banco); **mensageria RSFN/SPB simulada** (códigos estilo catálogo — SEL1052, STR0008 — com fila, processamento e reprocesso de erro); **instruções & liquidação DVP** (confirmar liquida física+financeira, movimenta o caixa do fundo e registra confirmação na mensageria); **arquivos & extratos** — gera os CSVs diários de posição custodiada e extrato de conta que a administradora usa na conciliação. A divergência do NORD3 (conciliação de custódia — posição sem lastro) atravessa os dois portais, como na vida real.
 18. **Acessos de cotistas**: checkbox "mostrar tokens revogados" (desmarcado por padrão — a lista mostra só os ativos).
 19. Novo documento de apoio: **`guia_custodia_conexoes.md`** — como o banco vira custodiante (Res. CVM 32), adesões B3/SELIC/RSFN, roadmap pós-licença e análise do sandbox regulatório da CVM. Os demais guias receberam adendos com as correções da pesquisa.
 
@@ -204,20 +204,28 @@ Pipeline de **6 etapas por fundo**: Posição custodiante → Preços (MaM) → 
 
 Painel de alertas priorizados por risco. Cada alerta: fundo, tipo, severidade (Alta/Média/Baixa), **explicação em linguagem natural** ("por que a IA sinalizou"), evidência (números), status e ações reais (Revisar / Escalar ao compliance / Falso positivo — com registro de quem tratou).
 
-**Motor de regras do piloto (7 regras nomeadas):** no piloto a "IA" é um motor de regras + dados semeados para disparar alertas plausíveis. As regras são documentadas na própria tela (aba "Como funciona"), o que na demo mostra método, não mágica:
+**Motor de regras do piloto (14 regras em 7 categorias):** no piloto a "IA" é um motor de regras determinísticas + dados semeados para disparar alertas plausíveis. As regras são documentadas na própria tela (aba "Como funciona"), cada uma com limiar e base legal/caso real — mostra método, não mágica. **Princípio:** a administradora **marca** o ativo (régua/controle); o alvo da detecção é o **gestor/cotista/contraparte**, nunca a própria marcação (marcação errada é erro operacional, não fraude).
 
-| # | Regra | Disparo no piloto |
-|---|---|---|
-| R1 | **Preço fora da curva** | Preço MaM desvia >5% da referência de mercado do ativo |
-| R2 | **Parte relacionada** | CNPJ de contraparte coincide com sócio/ligada do gestor (tabela `partes_relacionadas`) |
-| R3 | **Movimentação atípica** | Lançamento >3 desvios-padrão do padrão histórico do fundo |
-| R4 | **Ativo fantasma** | Posição na carteira sem correspondência na posição do custodiante |
-| R5 | **Timing suspeito** | Aplicação/resgate relevante na véspera de remarcação de ativo ilíquido |
-| R6 | **Concentração de resgates** | Resgates >X% do PL em janela curta (risco de liquidez/insider) |
-| R7 | **Cota anômala** | Retorno diário fora de 4 desvios-padrão da série do fundo |
+| # | Categoria | Regra | Disparo no piloto |
+|---|---|---|---|
+| R1 | Preço & negociação | **Negócio a preço fora de mercado** | preço da boleta do gestor desvia da marcação independente (self-dealing) |
+| R2 | Preço & negociação | **Valuation de ilíquido (nível 3)** | laudo/premissas do gestor destoam de comparáveis — a adm contesta antes de aceitar (caso FIP LSH) |
+| R3 | Preço & negociação | **Preço defasado / remarcação abrupta** | mesma taxa repetida >2 d.u. (stale) ou write-down sem fato (caso Vorcaro) |
+| R4 | Partes relacionadas | **Parte relacionada / conflito** | CNPJ de contraparte/emissor ∈ QSA do gestor (tabela `partes_relacionadas`); BF >25% |
+| R5 | Custódia & lastro | **Conciliação de custódia** | posição interna (boletas) × depositário/custodiante — diferença sem lastro |
+| R6 | Enquadramento & liquidez | **Concentração acima do limite** | % do PL por emissor acima do art. 44 (20/10/5%) |
+| R7 | Enquadramento & liquidez | **Descasamento de liquidez** | ativo líquido por bucket < passivo exigível na mesma janela |
+| R8 | Passivo & mercado | **Movimentação atípica** | aplicação/resgate >3σ do padrão histórico do fundo |
+| R9 | Passivo & mercado | **Front-running / timing** | cotização na véspera de remarcação relevante (caso BB Asset) |
+| R10 | Passivo & mercado | **Late trading** | ordem após o corte de cotização, cotizada no mesmo dia |
+| R11 | Passivo & mercado | **Concentração de resgates** | resgates >X% do PL em janela curta (risco de liquidez) |
+| R12 | PLD / FT | **Ida-e-volta / fracionamento** | aplica-resgata sem lógica; smurfing → COS ao COAF (Res. CVM 50) |
+| R13 | PLD / FT | **KYC/PLD / beneficiário final** | cotista/contraparte sem KYC-PLD aprovado ou BF (>25%) indefinido |
+| R14 | Integridade da cota | **Cota anômala** | retorno diário fora de 4σ da série do fundo (verificação) |
 
 - **Grafo de partes relacionadas:** visualização (canvas simples) dos vínculos gestor → sócios → contrapartes → fundo, com a aresta suspeita em vermelho — a tela mais fotografável da demo.
-- O seed dispara ao menos um alerta de cada tipo principal (R1, R2, R3, R5) em fundos diferentes.
+- O seed dispara **11 alertas** cobrindo as principais categorias (negócio fora de mercado, valuation nível 3, parte relacionada, conciliação de custódia, concentração, movimentação, front-running, PLD ida-e-volta, KYC/PLD, cota anômala), em fundos diferentes — inclusive um caso resolvido como **falso positivo** (para mostrar a trilha de tratamento).
+- **Notas de honestidade** na própria tela: limiares são parametrização/convenção, não lei; e R$ 50k em espécie e 45+45 dias são norma bancária (BCB), não da CVM.
 
 > 💡 Deixar claro internamente: a IA real (modelos sobre a base histórica) vem na fase de produção; o piloto demonstra o **conceito e o fluxo de tratamento** — que é o que o comercial precisa ver. Se perguntarem, a resposta honesta é: "hoje é um motor de regras; a arquitetura já grava tudo que os modelos precisam".
 
@@ -366,7 +374,7 @@ flowchart LR
 
 ---
 
-> **Resumo em uma frase:** o piloto é uma **réplica funcional em PHP + MySQL (XAMPP)** da plataforma da administradora — três perfis com permissões segregadas, área do cliente completa (onboarding, dashboard cota vs CDI, carteira com export real, caixa com previsão de liquidez, cotistas com concentração, performance com memória de cálculo, relatórios, enquadramento medido da carteira, comunicados e chamados) e área do administrador operacional (painel de 8 fundos, batch reprocessável, conciliação com trilha, fila de pendências, motor de alertas de IA com 7 regras e grafo de partes relacionadas, repasses com split 25/75 e simulador de escala, cadastros) — sobre uma base simulada coerente de R$ 210 mi em 8 fundos com 250 dias de histórico. A demo começa na experiência e termina na receita do banco.
+> **Resumo em uma frase:** o piloto é uma **réplica funcional em PHP + MySQL (XAMPP)** da plataforma da administradora — três perfis com permissões segregadas, área do cliente completa (onboarding, dashboard cota vs CDI, carteira com export real, caixa com previsão de liquidez, cotistas com concentração, performance com memória de cálculo, relatórios, enquadramento medido da carteira, comunicados e chamados) e área do administrador operacional (painel de 8 fundos, batch reprocessável, conciliação com trilha, fila de pendências, motor de alertas de IA com 14 regras (7 categorias) e grafo de partes relacionadas, repasses e simulador de escala, cadastros) — sobre uma base simulada coerente de 9 fundos com 250 dias de histórico. A demo começa na experiência e termina na receita do banco.
 
 > **Resumo da v2.0 em uma frase:** o piloto agora reproduz o **dia a dia real** de uma administradora — três portais com autenticação de verdade, constituição de fundo com o checklist da CVM 175 e aprovação documento a documento, batch D-1 com prévia de cota que o **gestor aprova ou rejeita**, correções via lançamentos com trilha e **reprocessamento retroativo com republicação em cascata**, downloads bloqueados até a liberação da administradora, acesso do cotista por **token revogável com defasagem configurável**, PDF da carteira por classe e todos os relatórios navegáveis retroativamente.
 

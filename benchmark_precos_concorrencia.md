@@ -76,13 +76,13 @@ Desde **01/11/2024** (Ofício-Circular 3/2024/CVM/SIN) o fundo pode divulgar a r
 | **Administração fiduciária** | piso **R$ 15–25 mil/mês** (grandes); ~R$ 3–5 mil/mês (simples) | **R$ 100/mês** (0,08% a.a.) | nosso custo por fundo é **software, não trabalho manual** — não precisamos de piso alto para pagar horas de gente |
 | **Custódia** | ~R$ 1.500/mês (~R$ 18 mil/ano) | **R$ 0 no fundo** | **absorvida pelo banco parceiro** — usa a estrutura de instituição que já existe |
 | **Controladoria / escrituração** | embutido na adm | **incluído** | automatizado no mesmo motor de cota |
-| **Auditoria independente** | **~R$ 11 mil/ano** | **~R$ 1,5 mil/ano** *(premissa a confirmar)* | **mesmo auditor em lote**, carteiras padronizadas — dilui o custo fixo entre muitos fundos |
+| **Auditoria independente** | **~R$ 11 mil/ano** (Big Four) | **~R$ 3–5 mil/ano** (boutique) | **boutique registrada na CVM em lote**, carteira simples + dados conciliados = menos horas por fundo. **Não é "carimbo"** (abaixo de ~R$ 3k vira aviltamento). Ver `guia_auditor_independente.md` |
 | **Taxa CVM** (tributo) | ~R$ 3 mil/ano | ~R$ 3 mil/ano | **igual — é tributo, não dá para baratear** (honestidade) |
-| **TOTAL ex-gestão** | **~R$ 50–70 mil/ano** | **~R$ 5,9 mil/ano** | **~10× mais barato** no fundo pequeno |
+| **TOTAL ex-gestão** | **~R$ 50–70 mil/ano** | **~R$ 7,7 mil/ano** | **~7–9× mais barato** no fundo pequeno |
 
-**A leitura:** dos ~R$ 50–70 mil que o mercado cobra num fundo de R$ 1 mi, a esmagadora maioria é o **piso da administração** (trabalho manual) e a **auditoria individual**. Zeramos o primeiro (software + piso de R$ 100) e cortamos o segundo (auditoria em lote), com a custódia absorvida pelo banco. Sobra praticamente só a **taxa CVM**, que é tributo e admitimos que não mexe.
+**A leitura:** dos ~R$ 50–70 mil que o mercado cobra num fundo de R$ 1 mi, a esmagadora maioria é o **piso da administração** (trabalho manual) e a **auditoria individual** (~R$ 11k). Zeramos o primeiro (software + piso de R$ 100) e cortamos o segundo pela metade+ (auditoria **boutique em lote, R$ 3–5k** vs. R$ 11k), com a custódia absorvida pelo banco. Sobra a **taxa CVM** (tributo, não mexe) e a auditoria já reduzida.
 
-> All-in **incluindo gestão** (0,7%): **1,29% de R$ 1 mi ≈ R$ 13 mil/ano** vs. R$ 50–70 mil do mercado. Ver `planilha_custos.md` §7.
+> All-in **incluindo gestão** (0,7%): **1,49% de R$ 1 mi ≈ R$ 15 mil/ano** vs. R$ 50–70 mil do mercado (já com auditoria realista R$ 3–5k). Ver `planilha_custos.md` §7.
 
 ---
 
@@ -96,7 +96,7 @@ Desde **01/11/2024** (Ofício-Circular 3/2024/CVM/SIN) o fundo pode divulgar a r
 
 - **Pisos são negociados** e variam por administrador, tipo e porte do fundo. Os R$ 15–25 mil/mês são reais, mas de **fundos estruturados**; para fundo simples pequeno o piso é menor. Use faixas, não número único.
 - **Não há citação pública nominal** de administrador recusando fundo por PL — o efeito é econômico (custo fixo), não recusa divulgada. Não afirmar "Administrador X recusa fundo < R$ Y".
-- **Auditoria ~R$ 11k** é referência (Big Four); nossa premissa de **R$ 1,5 mil "em lote"** é otimista e carrega **risco de independência** do auditor — ver `planilha_custos.md` §8.
+- **Auditoria ~R$ 11k** é referência (Big Four, fundo simples); o alvo **R$ 3–5k** com **boutique registrada na CVM em lote** é defensável — há **~80 firmas** que já auditam fundos (`guia_auditor_independente.md` + `auditores_candidatos_argus.csv`). **Abaixo de ~R$ 3k = aviltamento de honorários** + risco regulatório; a premissa antiga de R$ 1,2–1,5k foi **descartada**.
 - **Custódia R$ 0 no fundo** depende de o banco absorver (taxa CVM de custodiante ~R$ 38 mil/ano, diluída em escala) — ver `planilha_custos.md` §9.
 - Os PDFs oficiais (CVM/ANBIMA) bloqueiam extração automática; números vêm de regulamentos lidos via navegador e das fontes citadas. **Para a reunião, vale abrir 2–3 regulamentos reais** (Fundos.NET) e citar nome do fundo + piso.
 

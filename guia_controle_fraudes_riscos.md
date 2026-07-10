@@ -72,7 +72,8 @@ graph TB
 | Tipo | Como funciona | Sinal detectável |
 |---|---|---|
 | **Partes relacionadas** | Fundo compra de/vende para empresas ligadas ao gestor | Cruzamento de CNPJs, sócios, endereços |
-| **Precificação inflada** | Ativo ilíquido marcado acima do justo | Preço fora da curva/comitê; laudo otimista |
+| **Valuation de ilíquido inflada (nível 3)** | Ativo sem preço observável marcado acima do justo pelo laudo/premissas do gestor | Laudo destoa de comparáveis; premissas otimistas; a adm contesta antes de aceitar |
+| **Negócio a preço fora de mercado** | Gestor executa compra/venda longe do preço justo (sobrepreço a contraparte) | Preço da boleta desvia da marcação independente; muitas vezes parte relacionada |
 | **Ativos fantasma** | Ativos declarados que não existem ou não batem com o custodiante | Divergência posição sistema × custodiante |
 | **Desvio de recursos** | Saídas financeiras indevidas | Movimentação sem lastro em operação |
 | **Cotização indevida** | Manipular a cota de entrada/saída para beneficiar alguém | Aplicações/resgates em momentos suspeitos |
@@ -138,7 +139,7 @@ graph TB
 
 **Conciliação automática (contra ativos fantasma):** o sistema cruza, diariamente, a posição que você contabiliza com a posição reportada pelo custodiante. **Qualquer divergência é alertada.** Ativo que existe no seu sistema mas não no custodiante (ou vice-versa) é bandeira vermelha imediata. Este controle sozinho teria pegado boa parte das fraudes de "ativos que não existem".
 
-**Checagem de preços fora da curva (contra precificação inflada):** para cada ativo, o sistema compara o preço de marcação com a referência de mercado (ANBIMA/B3) ou com a curva do comitê de crédito. Preço que se desvia além de um limite estatístico é sinalizado para revisão. Para ativos ilíquidos (FIP, crédito), o agente de IA lê o laudo/justificativa e sinaliza premissas "otimistas demais".
+**Checagem de negócio fora de mercado e de valuation de ilíquido (contra self-dealing e laudo inflado):** o sistema compara o **preço executado nas boletas do gestor** com a marcação independente do ativo — desvio além do limite sinaliza sobrepreço/self-dealing (sobretudo com parte relacionada). Para ativos ilíquidos (FIP, crédito nível 3), o agente de IA lê o **laudo/premissas do gestor** e sinaliza quando destoam de transações comparáveis, e a administradora contesta antes de aceitar a marcação. Ponto-chave: a **marcação da própria administradora é a régua/controle, não o alvo** — divergência na marcação de ativo líquido é erro operacional de conciliação, não fraude.
 
 **Grafo de partes relacionadas (contra autofavorecimento):** o sistema mantém um **grafo de entidades** — cruzando CNPJs, sócios, endereços, controladores — para detectar quando um fundo negocia com uma contraparte ligada ao gestor. Cruza com bases públicas (Receita, sócios, listas de sanções, PEPs). Teria levantado a bandeira no caso Silverado (cedentes de fachada ligados à gestora).
 
@@ -156,17 +157,19 @@ No onboarding e continuamente: identificação de beneficiário final, cruzament
 
 ### 3.3 O que o protótipo já entrega hoje (honesto)
 
-O piloto não é slide — a página **Monitoramento de fraude (IA)** (`admin/fraude.php`) já roda um motor real de **7 regras** sobre os dados, cada uma atacando um vetor:
+O piloto não é slide — a página **Monitoramento de fraude (IA)** (`admin/fraude.php`) já roda um motor real de **14 regras (em 7 categorias)** sobre os dados. **Princípio (corrigido):** a administradora **marca** o ativo de forma independente — isso é a régua/controle, não a superfície de fraude. O alvo da detecção é o comportamento do **gestor, cotista ou contraparte** contra essa régua; marcação errada, por si, é erro operacional interno (conciliação/precificação), não fraude.
 
-| Regra | Dispara quando | Vetor que ataca |
+| Categoria | Regras | Dispara quando |
 |---|---|---|
-| **R1 · Preço fora da curva** | marcação desvia > 5% da referência de mercado (B3/ANBIMA) | precificação inflada |
-| **R2 · Parte relacionada** | CNPJ da contraparte coincide com sócio/empresa ligada ao gestor | autofavorecimento |
-| **R3 · Movimentação atípica** | lançamento acima de 3 desvios-padrão do padrão do fundo | desvio / lavagem |
-| **R4 · Ativo fantasma** | posição na carteira sem correspondência no custodiante | ativo inexistente |
-| **R5 · Timing suspeito** | aplicação/resgate relevante na véspera de remarcação de ilíquido | cotização indevida |
-| **R6 · Concentração de resgates** | resgates acima do limite do PL em janela curta | corrida / liquidez |
-| **R7 · Cota anômala** | retorno diário fora de 4 desvios-padrão da série do fundo | smoothing / marcação |
+| **Preço & negociação** | R1 negócio a preço fora de mercado · R2 valuation de ilíquido (nível 3) · R3 preço defasado / remarcação abrupta | boleta do gestor longe da marcação (self-dealing); laudo de ilíquido destoa de comparáveis; preço repetido > 2 d.u. ou write-down sem fato |
+| **Partes relacionadas** | R4 parte relacionada / conflito | CNPJ de contraparte/emissor ∈ QSA do gestor (grafo); beneficiário final > 25% |
+| **Custódia & lastro** | R5 conciliação de custódia | posição interna (boletas) × depositário/custodiante — diferença sem lastro |
+| **Enquadramento & liquidez** | R6 concentração (art. 44) · R7 descasamento ativo × passivo | % do PL por emissor acima do limite (20/10/5%); ativo líquido por bucket < passivo exigível |
+| **Passivo & mercado** | R8 movimentação atípica · R9 front-running / timing · R10 late trading · R11 concentração de resgates | aplicação/resgate > 3σ; cotização na véspera de remarcação; ordem após o corte; resgates > X% do PL em janela curta |
+| **PLD / FT** | R12 ida-e-volta / fracionamento · R13 KYC/PLD / beneficiário final | aplica-resgata sem lógica → COS ao COAF; cotista/contraparte sem KYC-PLD ou BF indefinido |
+| **Integridade da cota** | R14 cota anômala | retorno diário fora de 4σ da série do fundo |
+
+Cada categoria tem um caso real de âncora: **FIP LSH** (valuation nível 3, laudo inflado), **Silverado** (lastro / FIDC), **front-running BB Asset**, **Vorcaro/Jade** (remarcação abrupta). Limiares são parametrização/convenção de mercado, não números de lei.
 
 Acompanham o motor um **grafo de partes relacionadas** (cruza entidades e marca vínculos suspeitos) e uma **triagem de alertas** com trilha de auditoria — *revisar / escalar ao compliance / falso positivo*, registrando **quem tratou, quando e por quê**. **Em produção**, a mesma trilha de dados alimenta modelos de detecção de anomalia (ML) e um agente de IA de revisão documental, e integra KYC/PLD com a comunicação ao COAF. As regras determinísticas são o **piso auditável e explicável**; o ML entra para **priorizar** e achar o que a regra não previu. *(A literatura é clara: anomaly detection ingênuo falha justamente contra o fraudador que "imita o normal" — por isso o desenho é híbrido, com humano no laço.)*
 

@@ -8,7 +8,7 @@ $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_validar()) {
         $erro = 'Sessão expirada. Recarregue a página e tente novamente.';
-    } elseif (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'custodia')) {
+    } elseif (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'custodia', !empty($_POST['lembrar']))) {
         header('Location: index.php'); exit;
     } else {
         $erro = 'Credenciais inválidas.';
@@ -56,6 +56,10 @@ if (usuario()) {
         <div class="mb-3">
           <label class="form-label" style="font-size:.8rem">Senha</label>
           <input type="password" name="senha" class="form-control" required>
+        </div>
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" name="lembrar" id="lembrar" value="1">
+          <label class="form-check-label" for="lembrar" style="font-size:.82rem">Continuar conectado neste dispositivo</label>
         </div>
         <button class="btn w-100" style="background:#3b82f6;color:#fff">Entrar</button>
       </form>

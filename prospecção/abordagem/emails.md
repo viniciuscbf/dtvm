@@ -97,7 +97,7 @@ Olá [Nome], tudo bem? Sou [Seu nome], da Argus. Tenho uma proposta de parceria 
 ## Assinatura padrão
 
 [Seu nome]
-Argus — administração fiduciária de fundos pequenos
+Argus — administração fiduciária e custódia de fundos
 contato@argusdtvm.com.br · argusdtvm.com.br
 [telefone, se quiser]
 

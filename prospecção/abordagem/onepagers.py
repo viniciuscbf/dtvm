@@ -112,7 +112,7 @@ def onepager(cfg):
     rect(s, 0, 0, PW, 2.75, fill=NAVY_DK)
     eye(s, M + 0.28, 0.98, 0.5)
     txt(s, M + 0.62, 0.72, 4, 0.4, "ARGUS", 20, font=SERIF, color=D_TXT, bold=True, char=0.5)
-    txt(s, M + 0.64, 1.2, 6, 0.3, "ADMINISTRAÇÃO FIDUCIÁRIA DE FUNDOS PEQUENOS", 7.5, font=MONO, color=D_MUT, char=1.5)
+    txt(s, M + 0.64, 1.2, 6, 0.3, "ADMINISTRAÇÃO FIDUCIÁRIA E CUSTÓDIA DE FUNDOS", 7.5, font=MONO, color=D_MUT, char=1.5)
     rich(s, M, 1.68, PW - 2*M, 0.9, [([(cfg['titulo'], {'size': 21, 'font': SERIF, 'color': D_TXT})], {'line': 1.06})])
     txt(s, M, 2.42, PW - 2*M, 0.3, cfg['sub'], 10, font=SANS, color=GOLD, italic=True)
 
@@ -159,7 +159,7 @@ def onepager(cfg):
 CFGS = [
     {"arquivo": "Argus_OnePager_Banco_CTVM.pptx",
      "titulo": "Uma nova linha de receita recorrente\npara o seu banco.",
-     "sub": "Administração fiduciária de fundos pequenos — proposta de parceria.",
+     "sub": "Administração fiduciária e custódia de fundos — proposta de parceria.",
      "porque_titulo": "Por que faz sentido para um banco / corretora",
      "valor": ["Receita nova sobre uma estrutura que já existe e já custa.",
                "Custo de entrada ~zero: sem investir em tecnologia nem contratar equipe.",
@@ -168,7 +168,7 @@ CFGS = [
      "partida": "Você já é elegível. Falta só o credenciamento de administrador fiduciário na CVM — prazo legal de 60 dias, com os documentos que entregamos prontos."},
     {"arquivo": "Argus_OnePager_SCD_Fintech.pptx",
      "titulo": "Um novo vertical de fundos — sobre\na estrutura que você já tem.",
-     "sub": "Administração fiduciária de fundos pequenos — proposta de parceria.",
+     "sub": "Administração fiduciária e custódia de fundos — proposta de parceria.",
      "porque_titulo": "Por que faz sentido para uma fintech (SCD/pagamentos)",
      "valor": ["Um produto novo e receita recorrente, sem construir do zero.",
                "Sinergia com a sua base de clientes e com a sua stack tecnológica.",
@@ -177,7 +177,7 @@ CFGS = [
      "partida": "Você já tem capital e tecnologia. Ajudamos a estruturar a licença de administrador fiduciário e o caminho até a custódia (DTVM) — o mapa regulatório já está levantado."},
     {"arquivo": "Argus_OnePager_Financeira.pptx",
      "titulo": "Administração de fundos: uma nova\nreceita para a sua financeira.",
-     "sub": "Administração fiduciária de fundos pequenos — proposta de parceria.",
+     "sub": "Administração fiduciária e custódia de fundos — proposta de parceria.",
      "porque_titulo": "Por que faz sentido para uma financeira (SCFI)",
      "valor": ["Diversificação de receita — recorrente e de baixo custo.",
                "Sobre a estrutura de instituição financeira que você já tem.",

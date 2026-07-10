@@ -354,7 +354,7 @@ def s_cover():
     s = slide(NAVY_DK)
     draw_eye(s, MARGIN + 0.5, 1.45, 1.15, outline=D_TXT, ring=TEAL, pupil=GOLD, highlight=True)
     txt(s, MARGIN + 1.22, 1.08, 6, 0.9, "ARGUS", 33, font=SERIF, color=D_TXT, bold=True, char=1.0)
-    txt(s, MARGIN + 1.25, 1.8, 9, 0.4, "ADMINISTRAÇÃO FIDUCIÁRIA DE FUNDOS PEQUENOS", 9.5,
+    txt(s, MARGIN + 1.25, 1.8, 9, 0.4, "ADMINISTRAÇÃO FIDUCIÁRIA E CUSTÓDIA DE FUNDOS", 9.5,
         font=MONO, color=D_MUT, char=2.0)
     hline(s, MARGIN, 3.0, PW - 2 * MARGIN, color=D_LINE, weight=0.75)
     rich(s, MARGIN, 3.32, 11.2, 2.0, [
@@ -709,7 +709,7 @@ def s_vigilancia_porque():
          "veículo de lavagem · maior acionamento do FGC"),
         ("FIP LSH", "2024",
          "Laudo do único ativo superfaturado; transferência de riqueza via cotas. Precificação de ilíquido como vetor.",
-         "gestor multado em R$ 20 mi"),
+         "sócios multados ~R$ 135 mi · ~R$ 400 mi lesados"),
     ]
     cw = (PW - 2 * MARGIN - 2 * 0.4) / 3
     for i, (t, ano, d, ev) in enumerate(casos):
@@ -722,7 +722,7 @@ def s_vigilancia_porque():
         txt(s, x + 0.28, 5.12, cw - 0.56, 0.5, ev, 9, font=MONO, color=GOLD, char=0.2, spacing=1.18)
     rect(s, MARGIN, 5.95, PW - 2 * MARGIN, 0.66, fill=NAVY_DP, line=D_LINE, radius=0.05, shadow=False)
     txt(s, MARGIN + 0.28, 6.08, PW - 2 * MARGIN - 0.56, 0.45,
-        "Os vetores se repetem: marcação inflada · ativo sem lastro · partes relacionadas · lavagem via cotas · descasamento de liquidez.",
+        "Os vetores se repetem: negócio a preço fora de mercado · ativo sem lastro · partes relacionadas · lavagem via cotas · descasamento de liquidez.",
         11, font=SANS, color=D_TXT, italic=True, spacing=1.1)
     source(s, "CVM — PAS Silverado 19957.006858/2019-25 (2024); imprensa (Banco Master, 2025); CVM (FIP LSH).", dark=True)
 
@@ -730,12 +730,12 @@ def s_vigilancia_como():
     s = slide(PAPER)
     head(s, "A vigilância", "Como vigiamos barato", "O mesmo motor roda para 1 ou 500 fundos.")
     controles = [
-        ("Conciliação diária", "ativo fantasma — posição não bate com o custodiante"),
-        ("Preço fora da curva", "marcação inflada — desvio da referência ANBIMA/B3"),
+        ("Negócio fora de mercado", "self-dealing — boleta do gestor longe da marcação"),
+        ("Valuation de ilíquido", "nível 3 — laudo do gestor contestado antes de aceitar"),
+        ("Conciliação de custódia", "posição interna × depositário — diferença sem lastro"),
         ("Grafo de partes relacionadas", "autonegociação — contraparte ligada ao gestor"),
-        ("Anomalia e timing", "cotização e lavagem — aplica-resgata, padrão atípico"),
-        ("Enquadramento contínuo", "desenquadramento — limite violado no dia"),
-        ("KYC · PLD · COAF", "beneficiário oculto — 24 h para comunicar"),
+        ("Movimentação e timing (PLD)", "front-running, ida-e-volta, COAF — padrão atípico"),
+        ("Enquadramento e liquidez", "limite violado ou descasamento ativo × passivo"),
     ]
     lx = MARGIN; lw = 6.4
     txt(s, lx, 2.55, lw, 0.28, "O QUE RODA TODO DIA, SOZINHO", 9, font=MONO, color=NAVY, char=1.4, bold=True)
@@ -756,7 +756,7 @@ def s_vigilancia_como():
         "e seguros ao mesmo tempo.", 11, font=SERIF, color=GOLD, bold=True, spacing=1.16)
     txt(s, MARGIN, 5.85, PW - 2 * MARGIN, 0.55,
         "Honesto: a IA prioriza alertas e grava a trilha de auditoria — não decide sozinha. Lastro real, conluio e "
-        "documento forjado ainda exigem verificação humana/forense. No protótipo: 7 regras (R1–R7), grafo de vínculos e triagem com trilha.",
+        "documento forjado ainda exigem verificação humana/forense. No protótipo: 14 regras (R1–R14) em 7 categorias, grafo de vínculos e triagem com trilha; limiares são parametrização, não lei.",
         9.5, font=SANS, color=MUTED, italic=True, spacing=1.18)
     source(s, "guia_controle_fraudes_riscos.md; Res. CVM 50/2021 (PLD, arts. 20 e 22); admin/fraude.php do protótipo.")
 
@@ -766,7 +766,7 @@ def s_risco_banco():
     layers = [
         ("A norma protege", "Res. CVM 175: responsabilidade subjetiva (exige dolo/culpa) e de meio, não de fim. Sem solidariedade automática — cada um responde pela sua esfera."),
         ("A operação produz prova", "nenhuma cota publica sem aprovação formal do gestor; toda correção vira lançamento com trilha; conciliação diária em três frentes."),
-        ("O monitoramento é total", "IA lê regulamentos e vigia preços fora da curva, partes relacionadas e ativos sem lastro — em 100% dos fundos, todos os dias."),
+        ("O monitoramento é total", "IA lê regulamentos e vigia negócios fora de mercado, partes relacionadas e o lastro na custódia — em 100% dos fundos, todos os dias."),
         ("O compliance manda", "o compliance do banco designa o diretor, aprova os manuais, recebe relatórios e audita quando quiser. Envolvimento é blindagem."),
     ]
     x0 = MARGIN; cw = (PW - 2 * MARGIN - 3 * 0.35) / 4
@@ -804,7 +804,7 @@ def s_piloto():
         oval(s, mx + 0.32 + i * 0.18, my + 0.3, 0.045, fill=RGBColor(0x3a, 0x4a, 0x5e))
     txt(s, mx + 1.1, my + 0.16, mw - 1.3, 0.3, "ARGUS · PAINEL DO ADMINISTRADOR", 8, font=MONO, color=D_MUT, char=1.0)
     hline(s, mx + 0.3, my + 0.52, mw - 0.6, color=D_LINE, weight=0.5)
-    kpis = [("FUNDOS ATIVOS", "9"), ("COTA D-0", "1,042318"), ("COTISTAS", "130"), ("FECHAMENTO", "9/9 OK")]
+    kpis = [("CICLO DA COTA", "D-0"), ("CONCILIAÇÃO", "3 FRENTES"), ("INFORME CVM", "D+1"), ("ANTIFRAUDE", "14 REGRAS")]
     kw = (mw - 0.6 - 0.3) / 2
     for i, (l, v) in enumerate(kpis):
         col = i % 2; row = i // 2
@@ -1084,7 +1084,7 @@ def s_ax_monitoramento():
     head(s, "Anexo · vigilância", "O que a máquina pega", "Tipologia → sinal automático → onde o humano entra.")
     table(s, MARGIN, 2.8, [3.05, 4.35, PW - 2 * MARGIN - 3.05 - 4.35],
           ["TIPOLOGIA", "SINAL DETECTÁVEL AUTOMÁTICO", "LIMITE — PRECISA DE HUMANO"],
-          [["Marcação inflada", "preço desvia da referência de mercado", "laudo nível 3 depende de avaliador"],
+          [["Negócio fora de mercado", "boleta do gestor desvia da marcação; laudo de ilíquido inflado", "avaliação de nível 3 = laudo independente"],
            ["Ativo sem lastro (FIDC)", "posição não bate; NF-e/SPED; concentração", "existência do crédito = auditoria física"],
            ["Partes relacionadas", "grafo liga a contraparte ao gestor", "vínculo informal, fora do dado"],
            ["Lavagem / laranjas", "aplica-resgata sem lógica; rede de vínculos", "conluio; documento cadastral forjado"],
@@ -1107,10 +1107,10 @@ def s_ax_casos():
            ["Banco Master*", "2023–25", "triangula caixa; ativo de R$ 850 mi vira R$ 10 bi", "fluxo circular; salto de marcação"],
            ["FIP LSH", "2024", "laudo do único ativo superfaturado", "salto de marcação sem evento"],
            ["Front-running BB Asset", "2025", "ordens dos fundos vazadas a familiares", "contraparte e timing recorrentes"],
-           ["GAS · faraó dos bitcoins", "2021", "Ponzi cripto (10%/mês); ~R$ 17 bi em 12 meses", "rendimento impossível"]],
+           ["Vorcaro / Jade*", "2024–25", "ativo zerado após denúncia; write-down tardio", "salto/queda de marcação sem fato"]],
           rh=0.44, csize=9, dsize=10.5)
     txt(s, MARGIN, 6.32, PW - 2 * MARGIN, 0.5,
-        "* Banco Master: caso em apuração (2025–26); mecanismo conforme autoridades e imprensa. Os demais têm decisão da CVM ou do Bacen.",
+        "* Banco Master e Vorcaro/Jade: casos em apuração; mecanismo conforme autoridades e imprensa. Os demais têm decisão da CVM ou do Bacen.",
         9.5, font=SANS, color=MUTED, italic=True, spacing=1.15)
     source(s, "CVM (PAS Silverado 2024; FIP LSH; BB Asset 2025); Bacen; imprensa — ver anexo de Fontes.")
 
@@ -1120,7 +1120,7 @@ def s_ax_pld():
     itens = [
         ("Política e risco", "política de PLD/FT documentada + abordagem baseada em risco (baixo/médio/alto)."),
         ("Conheça o cliente", "KYC e beneficiário final até a pessoa natural; cadastro atualizado em ≤ 5 anos."),
-        ("Monitorar atípicas", "rastrear o rol de operações suspeitas do art. 20, independentemente do valor."),
+        ("Monitorar atípicas", "rastrear o rol do art. 20, sem valor mínimo — o R$ 50 mil em espécie é regra do BCB, não da CVM."),
         ("Comunicar ao COAF", "em até 24 h da conclusão da análise, sob sigilo — sem avisar o comunicado."),
         ("Declaração negativa", "se nada houver a comunicar, declarar à CVM uma vez por ano (até abril)."),
         ("Guardar a prova", "documentação e conclusões à disposição da CVM por no mínimo 5 anos."),

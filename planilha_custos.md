@@ -153,36 +153,36 @@ graph TB
 
 ## 7. Custo de CADA Fundo e o Que Sobra para o Cotista
 
-Esta é a conta que decide se o produto vende. Modelo: fundo RF crédito privado, gestão 0,7%, sua administração (mín. R$ 1.200/ano), **auditoria adaptada R$ 1.500** (auditor parceiro que audita a carteira em lote), **custódia R$ 0** (absorvida pelo banco custodiante), taxa CVM conforme faixa. Premissa: CDI 10,5%, ativos rendendo CDI+1 (11,5% bruto).
+Esta é a conta que decide se o produto vende. Modelo: fundo RF crédito privado, gestão 0,7%, sua administração (mín. R$ 1.200/ano), **auditoria em lote R$ 3.500/ano** (auditor boutique parceiro, carteira simples e dados conciliados — faixa defensável R$ 3–5k; R$ 1,2–1,5k seria aviltamento de honorários, ver `guia_auditor_independente.md` §11), **custódia R$ 0** (absorvida pelo banco custodiante), taxa CVM conforme faixa. Premissa: CDI 10,5%, ativos rendendo CDI+1 (11,5% bruto).
 
 ### 7.1 Regime permanente (com taxa CVM, ano 2+)
 
 | PL do fundo | Custo total % | Líquido % | % do CDI |
 |---|---|---|---|
-| R$ 1 milhão | 1,29% | 10,21% | **97,3%** |
-| R$ 2 milhões | 1,01% | 10,49% | 99,9% |
-| R$ 5 milhões | 0,87% | 10,63% | **101,2%** |
-| R$ 10 milhões | 0,84% | 10,66% | 101,5% |
-| R$ 20 milhões | 0,82% | 10,68% | 101,7% |
+| R$ 1 milhão | 1,49% | 10,01% | **95,3%** |
+| R$ 2 milhões | 1,11% | 10,39% | 98,9% |
+| R$ 5 milhões | 0,91% | 10,59% | **100,9%** |
+| R$ 10 milhões | 0,86% | 10,64% | 101,3% |
+| R$ 20 milhões | 0,83% | 10,67% | 101,6% |
 | R$ 50 milhões | 0,80% | 10,70% | 101,9% |
 
 ### 7.2 Primeiro ano (fundo criado após abril, sem taxa CVM)
 
 | PL do fundo | Custo total % | Líquido % | % do CDI |
 |---|---|---|---|
-| R$ 1 milhão | 0,97% | 10,53% | 100,3% |
-| R$ 2 milhões | 0,85% | 10,64% | 101,4% |
-| R$ 5 milhões | 0,81% | 10,69% | 101,8% |
+| R$ 1 milhão | 1,17% | 10,33% | 98,4% |
+| R$ 2 milhões | 0,95% | 10,55% | 100,5% |
+| R$ 5 milhões | 0,85% | 10,65% | 101,4% |
 
 ```mermaid
 graph LR
-    A[R$1mi<br/>97,3% CDI<br/>caso-limite] --> B[R$2mi<br/>~100% CDI<br/>empata] --> C[R$5mi+<br/>>101% CDI<br/>competitivo]
+    A[R$1mi<br/>95,3% CDI<br/>caso-limite] --> B[R$2-3mi<br/>~99-100% CDI<br/>empata] --> C[R$5mi+<br/>>101% CDI<br/>competitivo]
     style A fill:#5f4b1e,color:#fff
     style B fill:#1e3a5f,color:#fff
     style C fill:#14532d,color:#fff
 ```
 
-> 💡 **Leitura:** com as três alavancas (custódia absorvida, auditoria adaptada, subclasses opcionais), o produto é **competitivo a partir de ~R$ 2 milhões** e entrega acima do CDI de R$ 5 mi em diante. O fundo de R$ 1 mi é caso-limite: fecha bem no 1º ano ou agrupado em subclasses; no regime permanente isolado, fica em 97,3% do CDI.
+> 💡 **Leitura (com auditoria realista R$ 3–5k):** o produto **empata o CDI por volta de R$ 2–3 milhões** e entrega **acima do CDI de R$ 5 mi em diante**. O fundo de R$ 1 mi isolado ficou em **95,3% do CDI** no regime permanente (era 97,3% com a premissa antiga de R$ 1,5k) — para ele a saída é **agrupar via subclasses** (várias carteiras da mesma estratégia dividem **UMA** auditoria, diluindo o custo fixo) ou o alívio do **1º ano** (98,4% do CDI). Trocar a auditoria de R$ 1,5k para R$ 3,5k custou ~2 pontos percentuais de CDI no fundo de R$ 1 mi — é o preço da honestidade (o número baixo demais seria aviltamento e traria risco regulatório). **A alavanca que salva o fundo pequeno não é espremer o auditor, é a subclasse.**
 
 ---
 
@@ -192,7 +192,7 @@ graph LR
 graph TB
     subgraph Alav["Alavancas que viabilizam fundos pequenos"]
         A1[Custodia absorvida pelo banco<br/>custo R$0 p/ o fundo]
-        A2[Auditoria adaptada em lote<br/>~R$1.500/fundo]
+        A2[Auditoria boutique em lote<br/>~R$3.500/fundo faixa 3-5k]
         A3[Subclasses - mesma estrategia<br/>poupa auditoria/contab. duplicada]
     end
     subgraph Risco["O 'se' de cada uma"]
@@ -210,7 +210,7 @@ graph TB
 | Alavanca | Efeito | Risco / limite honesto |
 |---|---|---|
 | **Custódia via banco (R$ 0)** | Remove o maior custo fixo | Depende de o banco se licenciar como custodiante e absorver o custo; só compensa pra ele em escala (a taxa CVM de custodiante é ~R$ 38 mil/ano, diluída entre muitos fundos) |
-| **Auditoria adaptada (R$ 1.500)** | Reduz o 2º maior custo fixo | Independência do auditor é fiscalizada; "carimbo em lote" cria risco regulatório que respinga no banco |
+| **Auditoria boutique em lote (R$ 3–5k)** | Reduz o 2º maior custo fixo (mercado ~R$ 11k) | Preço abaixo de ~R$ 3k vira **aviltamento de honorários** + risco de trabalho raso; a economia legítima vem de **carteira simples + dados conciliados + volume**, não de "carimbo". Ver `guia_auditor_independente.md` |
 | **Subclasses** | Poupa auditoria/contabilidade/registro **duplicados** (NÃO a taxa CVM) | Economia **condicional**: só vale se você consolidaria várias estruturas da mesma estratégia numa só. A taxa CVM segue o PL e não muda. Um grupo por estratégia = classe única, sem ganho |
 
 > ⚠️ **A conta fecha se os três "se" se sustentarem na negociação real.** Cada alavanca é possível, mas nenhuma é automática — e as três são justamente o que o compliance do banco vai examinar.
@@ -235,7 +235,7 @@ graph TB
 | **Nuvem** | Caixa mensal | ~R$ 150–450/mês |
 | **Taxa CVM do fundo** | Despesa do fundo | R$ 3.162/ano por fundo <R$5mi (some no 1º ano; **não** é reduzida por subclasse — segue o PL) |
 | **Taxa CVM admin / ANBIMA** | Some se operar sob o banco | — |
-| **Auditoria** | Despesa do fundo | ~R$ 1.500/fundo (com risco regulatório) |
+| **Auditoria** | Despesa do fundo | ~R$ 3–5k/fundo (boutique registrada na CVM, em lote) |
 
 ---
 

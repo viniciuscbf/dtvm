@@ -27,10 +27,10 @@ require_once __DIR__ . '/includes/auth.php';
 <body>
 <div class="hero">
   <div class="container py-4 d-flex justify-content-between align-items-center">
-    <div class="d-flex align-items-center gap-2">
+    <a href="/" class="d-flex align-items-center gap-2" style="text-decoration:none;color:inherit" title="Voltar ao site">
       <img src="assets/favicon.png" alt="Argus" style="height:32px;width:32px;object-fit:contain">
       <span style="font-weight:700;letter-spacing:2px;font-size:.9rem">ARGUS <span style="font-weight:400;color:var(--gold)">DTVM</span></span>
-    </div>
+    </a>
     <a class="btn btn-sm btn-portal-outline btn" href="gestor/cadastro.php">Constitua seu fundo →</a>
   </div>
 
@@ -43,10 +43,10 @@ require_once __DIR__ . '/includes/auth.php';
           cota diária automatizada com aprovação do gestor, monitoramento de fraude por IA
           e transparência total para o cotista.
         </p>
-        <div class="d-flex gap-4 mt-4 metrica">
-          <div><b>R$ 204 mi</b><br><span class="text-secondary" style="font-size:.75rem">sob administração</span></div>
-          <div><b>8</b><br><span class="text-secondary" style="font-size:.75rem">fundos na plataforma</span></div>
-          <div><b>D-1</b><br><span class="text-secondary" style="font-size:.75rem">cota validada pelo gestor</span></div>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:.34rem .8rem;font-size:.74rem"><i class="bi bi-shield-check me-1" style="color:var(--gold)"></i>Custódia isenta · R$ 0</span>
+          <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:.34rem .8rem;font-size:.74rem"><i class="bi bi-lightning-charge me-1" style="color:var(--gold)"></i>Abertura em dias</span>
+          <span style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:.34rem .8rem;font-size:.74rem"><i class="bi bi-eye me-1" style="color:var(--gold)"></i>Monitoramento antifraude por IA</span>
         </div>
       </div>
 
@@ -98,7 +98,7 @@ require_once __DIR__ . '/includes/auth.php';
   </div>
 
   <div class="container pb-4 text-secondary" style="font-size:.72rem">
-    Ambiente de demonstração local (XAMPP) · nenhum dado real · a cota do dia só é publicada após aprovação do gestor e liberação da administradora.
+    Ambiente de demonstração · nenhum dado real · a cota do dia só é publicada após conferência do gestor e liberação da administradora.
     &nbsp;·&nbsp; <a href="simulador/index.php" style="color:#64748b"><i class="bi bi-joystick"></i> Simulador Master</a>
   </div>
 </div>

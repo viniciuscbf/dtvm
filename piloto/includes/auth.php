@@ -10,7 +10,7 @@ function usuario() {
     return $_SESSION['usuario'] ?? null;
 }
 
-function login_usuario(PDO $pdo, string $email, string $senha, string $perfil): bool {
+function login_usuario(PDO $pdo, string $email, string $senha, string $perfil, bool $lembrar = false): bool {
     $st = $pdo->prepare('SELECT * FROM usuarios WHERE email = ? AND perfil = ?');
     $st->execute([$email, $perfil]);
     $u = $st->fetch();
@@ -18,6 +18,12 @@ function login_usuario(PDO $pdo, string $email, string $senha, string $perfil): 
         session_regenerate_id(true);
         $_SESSION['usuario'] = $u;
         $_SESSION['auth_v'] = AUTH_V;
+        if ($lembrar) {   // "continuar conectado": cookie persistente de 30 dias
+            $_SESSION['lembrar'] = true;
+            $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+            if (!headers_sent()) setcookie(session_name(), session_id(), ['expires' => time() + 60 * 60 * 24 * 30,
+                'path' => '/', 'httponly' => true, 'samesite' => 'Lax', 'secure' => $https]);
+        }
         registrar_auditoria($pdo, 'login_ok', ['ator' => $u['nome'], 'perfil' => $perfil, 'entidade' => 'sessao', 'detalhe' => "Login bem-sucedido ($email)"]);
         return true;
     }

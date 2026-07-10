@@ -48,7 +48,7 @@
 | **Aberturas de fundos** | Status de todos os fundos; por fundo em abertura: etapas operacionais + análise documental (aprovar/rejeitar com motivo) + **Lançar fundo** (só habilita com checklist completo) |
 | **Carteiras** | Exposição agregada da casa por classe/ativo, carteira por fundo e data com desvio vs referência, fila do comitê de precificação, exports |
 | **Pendências** | Fila única de tudo que precisa de humano: erros de batch, cotas rejeitadas, divergências, alertas IA, boletas aguardando aceite, liquidações, eventos, envios atrasados, ofícios, assembleias, preços de comitê, chamados (com resposta inline); comentários operacionais por fundo |
-| **IA · Fraude** | Alertas priorizados com explicação em linguagem natural + evidência; ações (revisar/escalar/falso positivo) com trilha; **grafo de partes relacionadas** (vínculo suspeito tracejado); aba "Como funciona" documenta as 7 regras (R1–R7) |
+| **IA · Fraude** | Alertas priorizados com explicação em linguagem natural + evidência; ações (revisar/escalar/falso positivo) com trilha; **grafo de partes relacionadas** (vínculo suspeito tracejado); aba "Como funciona" documenta as 14 regras (R1–R14) em 7 categorias, com limiar e base legal/caso real |
 | **Repasses** | Apuração 0,08% a.a. com piso R$ 100 por fundo/competência, split **25% banco / 75%**, evolução mensal, instruções de pagamento |
 | **Fundos & Clientes** | Cadastro consultivo (fundos, taxas — gestão/performance definidas pelo gestor no regulamento), usuários com KYC, supervisão de tokens |
 

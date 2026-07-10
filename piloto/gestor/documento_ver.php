@@ -9,14 +9,10 @@ $u = exigir_perfil('gestor', 'admin');
 $doc = documento_para_usuario($pdo, $u, (int)($_GET['id'] ?? 0));
 if (!$doc || $doc['conteudo'] === null) { http_response_code(404); die('Documento não encontrado.'); }
 
-// download como arquivo
+// download como arquivo .docx (editável no Word)
 if (isset($_GET['dl'])) {
-    $fn = preg_replace('/[^A-Za-z0-9._-]+/', '_', $doc['arquivo'] ?: ('documento_' . $doc['id'] . '.html'));
-    header('Content-Type: text/html; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $fn . '"');
-    echo "<!doctype html><html lang=pt-BR><head><meta charset=utf-8><title>" . e_html($doc['nome'])
-       . "</title></head><body style=\"font-family:Georgia,serif;max-width:820px;margin:24px auto;padding:0 16px\">"
-       . $doc['conteudo'] . "</body></html>";
+    $slug = preg_replace('/[^a-z0-9]+/i', '_', mb_strtolower($doc['nome'] ?: ('documento_' . $doc['id'])));
+    enviar_documento_download($doc['conteudo'], $slug);
     exit;
 }
 $voltar = ($u['perfil'] === 'admin') ? 'aberturas.php' : 'abertura.php';
@@ -31,8 +27,9 @@ $voltar = ($u['perfil'] === 'admin') ? 'aberturas.php' : 'abertura.php';
   .doc-wrap{max-width:840px;margin:0 auto;background:#fff;padding:34px 44px;border:1px solid var(--borda);border-radius:12px;font-family:Georgia,'Times New Roman',serif;color:#1e293b;line-height:1.5}
   .doc-wrap h2{font-size:1.3rem;margin-bottom:.3rem} .doc-wrap h3{font-size:1.02rem;margin-top:20px;color:#334155}
   .doc-wrap li{margin:4px 0} .doc-wrap hr{border-color:#e2e8f0}
-  .doc-rodape{margin-top:26px;font-size:.8rem;color:#64748b;border-top:1px solid #e2e8f0;padding-top:12px}
-  .doc-nota{font-size:.82rem;color:#64748b;background:#f8fafc;border-radius:8px;padding:8px 12px}
+  .doc-wrap em{color:#b7791f;font-weight:600}   /* notas/OBS ao gestor em âmbar */
+  .doc-rodape{margin-top:26px;font-size:.8rem;color:#b7791f;border-top:1px solid #e2e8f0;padding-top:12px}
+  .doc-nota{font-size:.82rem;color:#b7791f;background:#fffbeb;border-radius:8px;padding:8px 12px}
   @media print{.noprint{display:none} .doc-wrap{border:0;padding:0}}
 </style>
 </head><body style="background:var(--bg)">
@@ -44,6 +41,6 @@ $voltar = ($u['perfil'] === 'admin') ? 'aberturas.php' : 'abertura.php';
       <button onclick="window.print()" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>Imprimir</button>
     </div>
   </div>
-  <div class="doc-wrap"><?= $doc['conteudo'] ?></div>
+  <div class="doc-wrap"><?= tpl_realcar_campos($doc['conteudo']) ?></div>
 </div>
 </body></html>

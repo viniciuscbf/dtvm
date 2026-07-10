@@ -1,6 +1,9 @@
 <?php
-// Boletagem de operações — o gestor boleta a partir do CATÁLOGO de ativos, com
-// enquadramento PRÉ-TRADE (art. 89) antes do envio; a custódia aceita e liquida (DVP).
+// Boletagem de operações — o gestor boleta a partir do CATÁLOGO de ativos, com enquadramento
+// PRÉ-TRADE (art. 89) antes do envio; a custódia aceita e liquida (DVP).
+//  · Ativo: seletor de categoria → busca com autocomplete (escala a milhares de instrumentos).
+//  · Contraparte: BOLSA (ação/ETF/futuro) = corretora executora + contraparte central B3 (CCP);
+//    BALCÃO (RF privada/OTC) = contraparte bilateral HABILITADA no cadastro, com checagem de limite.
 define('BASE_URL', '../');
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
@@ -13,6 +16,7 @@ exigir_fundo_ativo($fundo);
 $fid = (int)$fundo['id'];
 exigir_permissao($pdo, $u, $fid, 'boletar');
 ensure_catalogo($pdo);
+ensure_contrapartes($pdo);   // cadastro de contrapartes (fora de transação)
 
 $msg = ''; $msgTipo = 'success';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
@@ -39,7 +43,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
     } else {
         $tipo = $cat['tipo'];
 
-        if ($tipo === 'Derivativo') {
+        // 2) resolve a contraparte conforme BOLSA (corretora executora + CCP) vs BALCÃO (bilateral habilitada)
+        $ehBolsa = cp_eh_bolsa($tipo);
+        $cpFK = null; $corrFK = null; $cpTextoSnap = ''; $cpRow = null;
+        if ($ehBolsa) {
+            $corr = ($_POST['corretora_executora_id'] ?? '') ? contraparte_por_id($pdo, (int)$_POST['corretora_executora_id']) : null;
+            if (!$corr || $corr['status'] !== 'Aprovada') {
+                $msg = 'Selecione a corretora executora aprovada — em bolsa a contraparte é a Câmara B3 (CCP), não uma contraparte bilateral.';
+                $msgTipo = 'danger';
+            } else {
+                $corrFK = (int)$corr['id'];
+                $cpTextoSnap = ($corr['nome_fantasia'] ?: $corr['razao_social']) . ' · liq. Câmara B3 (CCP)';
+            }
+        } else {
+            $cpRow = ($_POST['contraparte_id'] ?? '') ? contraparte_por_id($pdo, (int)$_POST['contraparte_id']) : null;
+            if (!$cpRow || $cpRow['status'] !== 'Aprovada') {
+                $msg = 'Selecione uma contraparte habilitada (aprovada). O cadastro/KYC é feito pela administradora em Contrapartes.';
+                $msgTipo = 'danger';
+            } else {
+                $cpFK = (int)$cpRow['id'];
+                $cpTextoSnap = $cpRow['razao_social'];
+            }
+        }
+
+        if ($msgTipo === 'danger') {
+            // erro de contraparte já sinalizado — não segue
+        } elseif ($tipo === 'Derivativo') {
             // Futuro: boletado como qualquer instrumento, mas ABRE POSIÇÃO (sem DVP do principal).
             // "quantidade" = nº de contratos; "preço" = taxa a.a. % (DI1/DAP) OU preço do contrato
             // (DOL/IND) conforme a mecânica; Compra = comprado / Venda = vendido; venc vem do contrato.
@@ -61,10 +90,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
                 $did = abrir_derivativo($pdo, $fid, $codigo, $venc, $contratos, $compradoPu, $preco, $margem, $dataRef);
                 $refTxt = $mec === 'PU' ? ('em PU a ' . number_format($preco, 2, ',', '.') . '% a.a.')
                                         : ('ao preço ' . number_format($preco, 2, ',', '.'));
-                $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, status, criado_por)
-                               VALUES (?,?,?,?,?,?,?,?,?, 'Liquidada', ?)")
+                $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, contraparte_id, corretora_executora_id, status, criado_por)
+                               VALUES (?,?,?,?,?,?,?,?,?,?,?, 'Liquidada', ?)")
                     ->execute([$fid, ($_POST['data_operacao'] ?? '') ?: $dataRef, $operacao, $codigo, 'Derivativo',
-                               $contratos, $preco, $margem, trim($_POST['contraparte'] ?? ''), $u['nome']]);
+                               $contratos, $preco, $margem, $cpTextoSnap, $cpFK, $corrFK, $u['nome']]);
                 registrar_auditoria($pdo, 'derivativo_aberto', ['entidade' => 'derivativo', 'entidade_id' => $did, 'fundo_id' => $fid,
                     'detalhe' => "Boleta $codigo — $contratos contrato(s) " . ($compradoPu ? 'comprado' : 'vendido') . " $refTxt"]);
                 $msg = "Posição em $codigo aberta: $contratos contrato(s) " . ($compradoPu ? 'comprado' : 'vendido') .
@@ -73,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
         } else {
             $valor = $qtd * $preco;
 
-            // 2) venda: precisa ter posição suficiente
+            // 3) venda: precisa ter posição suficiente
             if ($operacao === 'Venda') {
                 $st = $pdo->prepare('SELECT quantidade FROM ativos_carteira WHERE fundo_id = ? AND codigo = ? AND data_ref = ?');
                 $st->execute([$fid, $codigo, ultima_data_carteira($pdo, $fid)]);
@@ -84,7 +113,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
                 }
             }
 
-            // 3) enquadramento PRÉ-TRADE (barra a boleta se violar o mandato)
+            // 4) limite de crédito da contraparte (balcão): compra não pode estourar o teto de exposição
+            if ($msgTipo !== 'danger' && !$ehBolsa && $operacao === 'Compra' && $cpRow && (float)$cpRow['limite_credito'] > 0) {
+                $expo = cp_exposicao($pdo, (int)$cpRow['id']);
+                if ($expo + $valor > (float)$cpRow['limite_credito']) {
+                    $msg = 'Boleta barrada: estoura o limite de crédito da contraparte ' . $cpRow['razao_social'] .
+                           ' (exposição ' . moeda($expo) . ' + ' . moeda($valor) . ' > limite ' . moeda((float)$cpRow['limite_credito']) . ').';
+                    $msgTipo = 'danger';
+                }
+            }
+
+            // 5) enquadramento PRÉ-TRADE (barra a boleta se violar o mandato)
             if ($msgTipo !== 'danger') {
                 $pt = checar_pre_trade($pdo, $fundo, $tipo, $operacao, $valor);
                 if (!$pt['ok']) {
@@ -94,21 +133,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
             }
 
             if ($msgTipo !== 'danger') {
-                com_transacao($pdo, function () use ($pdo, $fid, $operacao, $codigo, $tipo, $qtd, $preco, $valor, $u) {
-                    $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, criado_por)
-                                   VALUES (?,?,?,?,?,?,?,?,?,?)")
+                com_transacao($pdo, function () use ($pdo, $fid, $operacao, $codigo, $tipo, $qtd, $preco, $valor, $cpTextoSnap, $cpFK, $corrFK, $u) {
+                    $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, contraparte_id, corretora_executora_id, criado_por)
+                                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
                         ->execute([$fid, ($_POST['data_operacao'] ?? '') ?: date('Y-m-d'), $operacao, $codigo, $tipo,
-                                   $qtd, $preco, $valor, trim($_POST['contraparte'] ?? ''), $u['nome']]);
+                                   $qtd, $preco, $valor, $cpTextoSnap, $cpFK, $corrFK, $u['nome']]);
                 });
                 registrar_auditoria($pdo, 'boleta_enviada', ['entidade' => 'boleta', 'fundo_id' => $fid,
                     'detalhe' => "$operacao de $codigo — " . moeda($valor) . ' (pré-trade OK)']);
-                $msg = "Boleta de $operacao de $codigo enviada à mesa de custódia (pré-trade OK) — ela valida, liquida (DVP) e a posição entra na carteira.";
+                $onde = $ehBolsa ? 'via ' . e_html($cpTextoSnap) : 'contra ' . e_html($cpTextoSnap);
+                $msg = "Boleta de $operacao de $codigo enviada à mesa de custódia $onde (pré-trade OK) — ela valida, liquida (DVP) e a posição entra na carteira.";
             }
         }
     }
 }
 
 $catalogo = $pdo->query("SELECT * FROM ativos_catalogo WHERE status='Ativo' ORDER BY tipo, codigo")->fetchAll();
+
+// categorias presentes no catálogo (para o seletor)
+$categorias = [];
+foreach ($catalogo as $c) $categorias[$c['tipo']] = true;
+$categorias = array_keys($categorias);
+
+// catálogo em JSON para o autocomplete (código, nome, tipo, vencimento, mecânica do derivativo)
+$catJs = array_map(fn($c) => [
+    'codigo' => $c['codigo'], 'nome' => $c['nome'], 'tipo' => $c['tipo'],
+    'venc' => $c['vencimento'], 'mec' => $c['tipo'] === 'Derivativo' ? deriv_perfil($c['codigo'])[0] : '',
+], $catalogo);
+
+// contrapartes habilitadas: corretoras executoras (bolsa) e contrapartes de balcão
+$corretoras = contrapartes_aprovadas($pdo, 'corretora_executora');
+$balcaoCps = array_values(array_filter(contrapartes_aprovadas($pdo), function ($c) {
+    foreach (['emissor', 'dealer_balcao', 'contraparte_derivativo'] as $p) {
+        if (in_array($p, explode(',', (string)$c['papeis']), true)) return true;
+    }
+    return false;
+}));
 
 $st = $pdo->prepare('SELECT * FROM boletas WHERE fundo_id = ? ORDER BY criado_em DESC LIMIT 30');
 $st->execute([$fid]);
@@ -126,7 +186,7 @@ page_start('Boletar operação', 'Boletar operação', $u,
     <div class="card">
       <div class="card-header"><i class="bi bi-receipt-cutoff me-1"></i> Nova boleta</div>
       <div class="card-body">
-        <form method="post">
+        <form method="post" autocomplete="off">
           <?= csrf_campo() ?><?= nonce_campo() ?>
           <input type="hidden" name="boletar" value="1">
           <div class="row g-2">
@@ -134,26 +194,56 @@ page_start('Boletar operação', 'Boletar operação', $u,
               <select class="form-select form-select-sm" name="operacao"><option>Compra</option><option>Venda</option></select></div>
             <div class="col-6"><label class="form-label" style="font-size:.78rem">Data da operação</label>
               <input type="date" class="form-control form-control-sm" name="data_operacao" value="<?= date('Y-m-d') ?>"></div>
-            <div class="col-12"><label class="form-label" style="font-size:.78rem">Ativo (do catálogo) *</label>
-              <select class="form-select form-select-sm" name="ativo_codigo" required>
-                <option value="">— selecione um instrumento cadastrado —</option>
-                <?php $tipoAtual = ''; foreach ($catalogo as $c):
-                    if ($c['tipo'] !== $tipoAtual) { if ($tipoAtual !== '') echo '</optgroup>'; echo '<optgroup label="' . e_html($c['tipo']) . '">'; $tipoAtual = $c['tipo']; } ?>
-                  <option value="<?= e_html($c['codigo']) ?>" data-tipo="<?= e_html($c['tipo']) ?>" data-venc="<?= e_html($c['vencimento']) ?>" data-mec="<?= $c['tipo'] === 'Derivativo' ? e_html(deriv_perfil($c['codigo'])[0]) : '' ?>"><?= e_html($c['codigo'] . ' · ' . $c['nome']) ?></option>
-                <?php endforeach; if ($tipoAtual !== '') echo '</optgroup>'; ?>
-              </select>
-              <span class="text-muted" style="font-size:.7rem">Não achou o ativo? <a href="ativos.php">Solicite o cadastro no catálogo</a> — não se boleta ativo fora da lista.</span></div>
+
+            <div class="col-12"><label class="form-label" style="font-size:.78rem">Categoria *</label>
+              <select class="form-select form-select-sm" id="categoria" name="categoria" required>
+                <option value="">— escolha a categoria —</option>
+                <?php foreach ($categorias as $t): ?><option value="<?= e_html($t) ?>"><?= e_html($t) ?></option><?php endforeach; ?>
+              </select></div>
+
+            <div class="col-12 position-relative"><label class="form-label" style="font-size:.78rem">Ativo (digite para buscar) *</label>
+              <input class="form-control form-control-sm" id="ativo-busca" placeholder="escolha a categoria primeiro" autocomplete="off" disabled>
+              <input type="hidden" name="ativo_codigo" id="ativo-codigo" required>
+              <div id="sugestoes" class="list-group position-absolute w-100 shadow-sm" style="z-index:20;max-height:230px;overflow-y:auto;display:none"></div>
+              <span class="text-muted" style="font-size:.7rem">Não achou? <a href="ativos.php">Solicite o cadastro no catálogo</a> — não se boleta ativo fora da lista.</span></div>
+
             <div class="col-6"><label class="form-label" id="lbl-qtd" style="font-size:.78rem">Quantidade *</label>
               <input class="form-control form-control-sm" name="quantidade" required placeholder="500"></div>
             <div class="col-6"><label class="form-label" id="lbl-preco" style="font-size:.78rem">Preço unitário (R$) *</label>
               <input class="form-control form-control-sm" name="preco" required placeholder="1.120,50"></div>
+
             <div class="col-12" id="deriv-hint" style="display:none">
               <div class="alert alert-info py-1 px-2 mb-0" style="font-size:.72rem"><i class="bi bi-info-circle me-1"></i>
                 Futuro: <b>Compra</b> = comprado em PU (aposta que os juros caem); <b>Venda</b> = vendido. Sem desembolso do
                 principal — deposita-se margem de garantia e há ajuste diário em caixa. O vencimento vem do contrato.</div>
             </div>
-            <div class="col-12"><label class="form-label" style="font-size:.78rem">Contraparte</label>
-              <input class="form-control form-control-sm" name="contraparte" placeholder="Ex.: XP CTVM, Banco Métrica (emissor)"></div>
+
+            <!-- BOLSA: corretora executora (contraparte central = Câmara B3/CCP) -->
+            <div class="col-12" id="cp-bolsa" style="display:none">
+              <label class="form-label" style="font-size:.78rem">Corretora executora *</label>
+              <select class="form-select form-select-sm" name="corretora_executora_id" disabled>
+                <option value="">— selecione a corretora —</option>
+                <?php foreach ($corretoras as $c): ?>
+                  <option value="<?= (int)$c['id'] ?>"><?= e_html($c['nome_fantasia'] ?: $c['razao_social']) ?></option>
+                <?php endforeach; ?>
+              </select>
+              <div class="alert alert-secondary py-1 px-2 mb-0 mt-1" style="font-size:.72rem"><i class="bi bi-shield-check me-1"></i>
+                Contraparte central: <b>Câmara B3 (CCP)</b> — em bolsa não há contraparte bilateral nominal; a clearing garante e liquida em D+2.</div>
+              <?php if (!$corretoras): ?><div class="text-danger mt-1" style="font-size:.72rem">Nenhuma corretora executora aprovada — a administradora precisa habilitar em Contrapartes.</div><?php endif; ?>
+            </div>
+
+            <!-- BALCÃO: contraparte bilateral habilitada -->
+            <div class="col-12" id="cp-balcao" style="display:none">
+              <label class="form-label" style="font-size:.78rem">Contraparte (habilitada) *</label>
+              <select class="form-select form-select-sm" name="contraparte_id" disabled>
+                <option value="">— selecione a contraparte —</option>
+                <?php foreach ($balcaoCps as $c): ?>
+                  <option value="<?= (int)$c['id'] ?>" data-limite="<?= (float)$c['limite_credito'] ?>"><?= e_html($c['razao_social']) ?><?= $c['rating'] ? ' · ' . e_html($c['rating']) : '' ?></option>
+                <?php endforeach; ?>
+              </select>
+              <div class="mt-1" id="camara-info" style="font-size:.72rem"></div>
+              <?php if (!$balcaoCps): ?><div class="text-danger mt-1" style="font-size:.72rem">Nenhuma contraparte de balcão aprovada — solicite o cadastro à administradora em Contrapartes.</div><?php endif; ?>
+            </div>
           </div>
           <button class="btn btn-dark btn-sm w-100 mt-3"><i class="bi bi-send me-1"></i>Validar (pré-trade) e enviar à custódia</button>
         </form>
@@ -213,19 +303,83 @@ page_start('Boletar operação', 'Boletar operação', $u,
     </table>
   </div>
 </div>
+
 <script>
 (function () {
-  var sel = document.querySelector('select[name="ativo_codigo"]');
+  var CAT = <?= json_encode($catJs, JSON_UNESCAPED_UNICODE) ?>;
+  var BOLSA = ['Ação', 'ETF', 'Derivativo'];
+  var cat = document.getElementById('categoria');
+  var busca = document.getElementById('ativo-busca');
+  var codigo = document.getElementById('ativo-codigo');
+  var sug = document.getElementById('sugestoes');
   var lq = document.getElementById('lbl-qtd'), lp = document.getElementById('lbl-preco'), hint = document.getElementById('deriv-hint');
-  if (!sel || !lq || !lp || !hint) return;
-  function upd() {
-    var o = sel.options[sel.selectedIndex];
-    var deriv = o && o.getAttribute('data-tipo') === 'Derivativo';
+  var cpBolsa = document.getElementById('cp-bolsa'), cpBalcao = document.getElementById('cp-balcao');
+  var selCorr = cpBolsa.querySelector('select'), selCp = cpBalcao.querySelector('select');
+  var camaraInfo = document.getElementById('camara-info');
+
+  function ehBolsa(t) { return BOLSA.indexOf(t) >= 0; }
+  function camaraDe(t) { return t === 'Título Público' ? 'SELIC' : (ehBolsa(t) ? 'Câmara B3 (CCP)' : 'B3 Balcão (CETIP)'); }
+
+  function labelsDe(item) {
+    var deriv = item && item.tipo === 'Derivativo';
     lq.textContent = deriv ? 'Nº de contratos *' : 'Quantidade *';
-    lp.textContent = deriv ? (o.getAttribute('data-mec') === 'PRECO' ? 'Preço do contrato *' : 'Taxa a.a. (%) *') : 'Preço unitário (R$) *';
+    lp.textContent = deriv ? (item.mec === 'PRECO' ? 'Preço do contrato *' : 'Taxa a.a. (%) *') : 'Preço unitário (R$) *';
     hint.style.display = deriv ? 'block' : 'none';
   }
-  sel.addEventListener('change', upd); upd();
+
+  // alterna a seção de contraparte conforme a categoria (bolsa vs balcão)
+  function togglaContraparte() {
+    var t = cat.value, bolsa = ehBolsa(t);
+    cpBolsa.style.display = t && bolsa ? 'block' : 'none';
+    cpBalcao.style.display = t && !bolsa ? 'block' : 'none';
+    selCorr.disabled = !(t && bolsa);          // select desabilitado não é enviado
+    selCp.disabled = !(t && !bolsa);
+    if (t && !bolsa) camaraInfo.innerHTML = '<span class="text-muted"><i class="bi bi-bank me-1"></i>Registro/liquidação: <b>' + camaraDe(t) + '</b> · contraparte bilateral — risco de crédito é do fundo.</span>';
+  }
+
+  function fecharSug() { sug.style.display = 'none'; sug.innerHTML = ''; }
+
+  function render(lista) {
+    sug.innerHTML = '';
+    if (!lista.length) { fecharSug(); return; }
+    lista.slice(0, 12).forEach(function (it) {
+      var a = document.createElement('button');
+      a.type = 'button';
+      a.className = 'list-group-item list-group-item-action py-1';
+      a.style.fontSize = '.8rem';
+      a.innerHTML = '<b>' + it.codigo + '</b> <span class="text-muted">· ' + it.nome + '</span>';
+      a.onclick = function () {
+        codigo.value = it.codigo; busca.value = it.codigo + ' · ' + it.nome;
+        labelsDe(it); fecharSug();
+      };
+      sug.appendChild(a);
+    });
+    sug.style.display = 'block';
+  }
+
+  function buscar() {
+    var t = cat.value, q = busca.value.trim().toLowerCase();
+    codigo.value = busca.value.trim().toUpperCase();  // permite digitar o código direto
+    if (!t) { fecharSug(); return; }
+    var base = CAT.filter(function (it) { return it.tipo === t; });
+    var lista = q ? base.filter(function (it) {
+      return it.codigo.toLowerCase().indexOf(q) >= 0 || (it.nome || '').toLowerCase().indexOf(q) >= 0;
+    }) : base;
+    render(lista);
+  }
+
+  cat.addEventListener('change', function () {
+    busca.disabled = !cat.value;
+    busca.value = ''; codigo.value = '';
+    busca.placeholder = cat.value ? 'digite código ou nome…' : 'escolha a categoria primeiro';
+    labelsDe(null); togglaContraparte(); fecharSug();
+    if (cat.value) busca.focus();
+  });
+  busca.addEventListener('input', buscar);
+  busca.addEventListener('focus', buscar);
+  document.addEventListener('click', function (e) {
+    if (e.target !== busca && !sug.contains(e.target)) fecharSug();
+  });
 })();
 </script>
 <?php page_end();

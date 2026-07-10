@@ -389,7 +389,7 @@ for fid, *_ in FUNDOS:
         status, mensagem = 'OK', 'Executado sem ocorrências'
         if fid == 7:
             if i == 1:
-                status, mensagem = 'Erro', 'Preço de NORD3 indisponível na fonte primária — aguardando comitê de precificação'
+                status, mensagem = 'Erro', 'Cotação de fechamento de NORD3 não recebida da B3 — reprocessar; marcar pelo último preço de mercado até a B3 publicar'
             elif i > 1:
                 status, mensagem = 'Pendente', 'Aguardando etapa anterior'
         if fid == 5 and i == 5:
@@ -402,7 +402,7 @@ w()
 
 w('-- ---------- log_processamento ----------')
 logs = [
-    (7, 'Preços', 'ERRO', 'NORD3 sem preço na B3 há 4 pregões — encaminhado ao comitê de precificação'),
+    (7, 'Preços', 'ERRO', 'NORD3 sem cotação de fechamento na B3 no dia — marcada pelo último preço de mercado; reprocessar quando a B3 publicar'),
     (7, 'Posição', 'INFO', 'Posição do custodiante importada: 9 ativos'),
     (5, 'ANBIMA', 'WARN', 'Webservice ANBIMA com latência alta — reenvio automático programado'),
     (2, 'Cota', 'WARN', 'Prévia v1 REJEITADA pelo gestor: preço da DEB VALE29 divergente'),
@@ -460,34 +460,64 @@ qtd_cust = int(NORD3['qtd'] * 0.83)
 dif_qtd = NORD3['qtd'] - qtd_cust
 dif_val = dif_qtd * NORD3['mam']
 alertas = [
-    (7, 'R1', 'Preço fora da curva', 'Alta',
-     f"O preço de marcação de NORD3 (R$ {br(NORD3['mam'])}) está 8,2% acima da referência de mercado (R$ {br(NORD3['ref'])}). "
-     f"O ativo é precificado por comitê e não tem negócio na B3 há 4 pregões — combinação clássica de remarcação artificial.",
-     f"MaM R$ {br(NORD3['mam'])} × referência R$ {br(NORD3['ref'])} · desvio +8,2% · limiar da regra: 5% · "
-     f"posição: R$ {br(NORD3['valor'] / 1000, 0)} mil ({br(NORD3['pct'], 1)}% do PL)", 'Aberto'),
-    (7, 'R4', 'Ativo fantasma', 'Alta',
-     f"A carteira registra {br(NORD3['qtd'], 0)} ações NORD3, mas a posição reportada pelo custodiante contém apenas {br(qtd_cust, 0)}. "
-     f"Não há lastro documental para {br(dif_qtd, 0)} ações — divergência classificada como suspeita na conciliação.",
-     f"Carteira {br(NORD3['qtd'], 0)} × custodiante {br(qtd_cust, 0)} · diferença {br(dif_qtd, 0)} ações ≈ R$ {br(dif_val / 1000, 0)} mil", 'Aberto'),
-    (3, 'R2', 'Parte relacionada', 'Alta',
-     'A contraparte XYZ Securitizadora, que originou o CRI URBE28 comprado pelo fundo, tem como sócio majoritário Carlos Mendes — que também é sócio da Lumen Gestão de Recursos, gestora do fundo. Operação entre partes relacionadas sem divulgação.',
-     'CNPJ da securitizadora ↔ quadro societário da gestora · ver grafo de vínculos', 'Aberto'),
-    (1, 'R3', 'Movimentação atípica', 'Média',
-     f'Resgate de R$ 2,85 milhões em {d_atipica.strftime("%d/%m/%Y")} — 3,8 desvios-padrão acima do padrão histórico de movimentações do fundo (média R$ 180 mil). Pode ser legítimo (investidor institucional), mas o padrão exige verificação.',
-     'Valor R$ 2.850.000 · média histórica R$ 180 mil · z-score 3,8 · limiar da regra: 3,0', 'Aberto'),
-    (2, 'R5', 'Timing suspeito', 'Média',
-     'Aplicação relevante de cotista na véspera da remarcação positiva da DEB LIGHT27 (precificada por comitê). O padrão aplicação → remarcação → ganho imediato pode indicar uso de informação privilegiada sobre a ata do comitê.',
-     'Aplicação R$ 620 mil em D-1 · remarcação +2,4% em D0 · ganho imediato ≈ R$ 14,9 mil', 'Em revisão'),
-    (4, 'R6', 'Concentração de resgates', 'Baixa',
-     'Resgates somaram 11,7% do PL em janela de 5 dias úteis. Abaixo do nível crítico, mas acima da banda normal do fundo — monitorando risco de liquidez e possível movimento coordenado.',
-     'Resgates R$ 2,1 mi / PL R$ 18 mi em 5 d.u. · limiar de atenção: 10%', 'Aberto'),
+    (3, 'R1', 'Negócio a preço fora de mercado', 'Alta',
+     "O fundo comprou o CRI URBE28 a R$ 1.140,00 — 12,7% acima da marcação de referência da administradora na data "
+     "(R$ 1.011,50). A administradora marca o ativo de forma independente; pagar acima dessa referência numa compra drena "
+     "o fundo em favor da contraparte. A originadora é a XYZ Securitizadora, parte relacionada ao gestor (ver R4).",
+     "Preço da boleta de compra R$ 1.140,00 × marcação de referência R$ 1.011,50 · sobrepreço +12,7% · "
+     "banda p/ ilíquido: 10% · contraparte XYZ Securitizadora (balcão, parte relacionada)", 'Aberto'),
+    (3, 'R2', 'Valuation de ilíquido (nível 3) sem lastro', 'Alta',
+     "Após comprar o CRI URBE28 acima do mercado (ver R1), o gestor propôs elevar a marcação do papel a R$ 1.050 com base "
+     "em laudo cujas premissas não batem com transações comparáveis (~R$ 990) de risco e prazo equivalentes. Elevar a "
+     "marcação mascararia a perda da compra e inflaria a cota. Por ser ativo nível 3 (sem preço observável) e com emissor "
+     "parte relacionada, a administradora manteve a marcação independente (~R$ 1.011) e reteve a proposta, pedindo reforço documental.",
+     "Laudo do gestor R$ 1.050 × comparáveis ~R$ 990 · marcação independente da adm. R$ 1.011 · ativo nível 3 (CPC 46/IFRS 13) · "
+     "emissor parte relacionada · proposta retida pela controladoria", 'Em revisão'),
+    (3, 'R4', 'Parte relacionada / conflito', 'Alta',
+     'A contraparte XYZ Securitizadora, que originou o CRI URBE28 comprado pelo fundo, tem como sócio majoritário Carlos Mendes (71%) — '
+     'que também é sócio da Lumen Gestão de Recursos (62%), gestora do fundo. Operação entre partes relacionadas sem divulgação; '
+     'beneficiário final comum acima de 25%.',
+     'CNPJ da securitizadora ↔ QSA da gestora · Carlos Mendes 71% XYZ / 62% Lumen · beneficiário final comum >25% · ver grafo de vínculos', 'Aberto'),
+    (7, 'R5', 'Conciliação de custódia (sem lastro)', 'Alta',
+     'O gestor lançou a compra de 5.668 ações NORD3 (≈ R$ 55,8 mil) que a conciliação diária não encontrou na posição '
+     'confirmada pelo custodiante/B3 — os livros mostram 33.337 e a custódia 27.669. É boleta não liquidada ou lançamento sem '
+     'lastro: a conciliação reteve o fechamento da cota até esclarecer a origem. Como o papel é listado, a B3 é a fonte '
+     'autoritativa e a diferença tende a ser falha de liquidação; persistindo sem lastro, escala para fraude.',
+     'Livros 33.337 × custodiante/B3 27.669 · diferença 5.668 ações ≈ R$ 55.789 · conciliação diária (Res. CVM 32) · boleta não confirmada · fechamento retido', 'Aberto'),
+    (7, 'R6', 'Concentração acima do limite', 'Média',
+     'NORD3 representa 25,2% do PL do fundo — acima do limite de 10% por emissor companhia aberta (art. 44). A concentração, '
+     'somada à divergência de custódia (ver R5) e à baixa liquidez do papel, eleva o risco. Gestor notificado para reenquadrar; '
+     'desenquadramento comunicável à CVM se não sanado no prazo.',
+     'NORD3 25,2% do PL × limite 10% (cia aberta, art. 44 Anexo I) · enquadramento em aberto · liquidez baixa (small cap)', 'Aberto'),
+    (4, 'R8', 'Movimentação atípica', 'Média',
+     'Resgate de R$ 377,2 mil — muito acima do padrão histórico de movimentação do fundo (3,4 desvios). Pode ser legítimo '
+     '(investidor institucional reduzindo posição), mas o valor exige verificação e, se confirmada a atipicidade, análise para eventual comunicação ao COAF.',
+     'Resgate R$ 377.203 · média histórica R$ 95 mil · z-score 3,4 · limiar da regra: 3,0σ', 'Aberto'),
+    (2, 'R9', 'Front-running / timing de remarcação', 'Média',
+     'Aplicação relevante de cotista na véspera de uma remarcação positiva de ativo de crédito do fundo. O padrão '
+     'aplicação → remarcação → ganho imediato pode indicar uso de informação sobre a precificação. O motor cruza o passivo '
+     '(cotização) com o calendário de remarcação; sob revisão para descartar coincidência.',
+     'Aplicação R$ 620 mil em D-1 · remarcação +2,4% em D0 · ganho imediato ≈ R$ 14,9 mil · referência: caso BB Asset (front-running)', 'Em revisão'),
+    (2, 'R12', 'Ida-e-volta / fracionamento (PLD)', 'Média',
+     'Cotista aplicou e resgatou montante equivalente em poucos dias, sem movimentação intermediária nem racional econômico — '
+     'padrão de "ida e volta" que dá aparência lícita a recursos. Sinal de alerta de PLD; em análise para eventual comunicação '
+     'de operação suspeita ao COAF.',
+     'Aplicação R$ 285 mil → resgate R$ 280 mil em 4 dias · sem operação intermediária · Res. CVM 50 art. 20 · COS sem valor mínimo, COAF em 24h', 'Aberto'),
+    (4, 'R11', 'Concentração de resgates', 'Baixa',
+     'Resgates somaram 11,7% do PL em 5 dias úteis — acima da banda normal do fundo, abaixo do nível crítico. Monitorando '
+     'liquidez: o ativo conversível na janela precisa cobrir o passivo exigível; risco de venda forçada de ativo menos líquido se o ritmo acelerar.',
+     'Resgates R$ 2,1 mi / PL R$ 18 mi em 5 d.u. · limiar de atenção: 10% · teste de liquidez por bucket (D+0, D+1)', 'Aberto'),
+    (1, 'R13', 'KYC/PLD incompleto / beneficiário final', 'Baixa',
+     'Bloco de cotistas do fundo com KYC/PLD ainda "Pendente" e sem confirmação de beneficiário final. O cadastro primário é '
+     'do distribuidor, mas a administradora, no monitoramento residual do passivo, sinaliza para regularização e classificação de PEP antes de novas movimentações.',
+     '12 cotistas com KYC/PLD pendente · beneficiário final (>25%) não confirmado · Res. CVM 50 arts. 11-16 · classificação PEP pendente', 'Aberto'),
 ]
 linhas = []
 for fid, regra, tipo, sev, expl, evid, status in alertas:
     linhas.append(f"({fid}, {s(LB.isoformat())}, {s(regra)}, {s(tipo)}, {s(sev)}, {s(expl)}, {s(evid)}, {s(status)}, NULL, NULL, NULL)")
-linhas.append(f"(5, {s(DIAS[-12].isoformat())}, 'R7', 'Cota anômala', 'Baixa', "
-              f"'Retorno diário de +0,9% destoou da série histórica do fundo (4,2σ). Verificado: reprecificação legítima de posição vendida em dólar após feriado nos EUA.', "
-              f"'Retorno +0,9% · σ diário 0,21% · z-score 4,2', 'Falso positivo', {s(ADMIN)}, "
+linhas.append(f"(5, {s(DIAS[-12].isoformat())}, 'R14', 'Cota anômala', 'Baixa', "
+              f"'Retorno diário de +0,9% destoou da série histórica do fundo (4,2σ). Verificado: reprecificação legítima de posição vendida em dólar após feriado nos EUA — sem indício de irregularidade.', "
+              f"'Retorno +0,9% · σ diário 0,21% · z-score 4,2 · verificação concluída', 'Falso positivo', {s(ADMIN)}, "
               f"{s(DIAS[-11].isoformat() + ' 09:35:00')}, 'Reprecificação legítima pós-feriado; documentação anexada ao dossiê do fundo')")
 w('INSERT INTO alertas_fraude (fundo_id, data_ref, regra, tipo, severidade, explicacao, evidencia, status, tratado_por, tratado_em, justificativa) VALUES')
 w(',\n'.join(linhas) + ';')

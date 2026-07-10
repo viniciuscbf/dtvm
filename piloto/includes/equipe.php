@@ -268,6 +268,37 @@ function remover_membro(PDO $pdo, int $fid, int $membroId): array {
     return [true, 'Membro removido do fundo.'];
 }
 
+/** Exclui a CONTA de um membro (não só o vínculo). Salvaguardas: não pode ser o principal, nem
+ *  você mesmo, nem uma conta que seja principal de OUTRO fundo. Se a conta estiver em outros fundos
+ *  (como membro), apenas a desliga deste fundo; se este for o único vínculo, apaga a conta. */
+function excluir_conta_membro(PDO $pdo, int $fid, int $membroId, int $atorUsuarioId): array {
+    $st = $pdo->prepare("SELECT * FROM fundo_membros WHERE id=? AND fundo_id=?");
+    $st->execute([$membroId, $fid]);
+    $m = $st->fetch();
+    if (!$m) return [false, 'Membro não encontrado.'];
+    if ($m['papel'] === 'principal') return [false, 'Não é possível excluir o gestor principal — transfira a gestão antes.'];
+    $uid = (int)$m['usuario_id'];
+    if ($uid === $atorUsuarioId) return [false, 'Você não pode excluir a sua própria conta.'];
+    $st = $pdo->prepare("SELECT COUNT(*) FROM fundo_membros WHERE usuario_id=? AND papel='principal' AND fundo_id<>?");
+    $st->execute([$uid, $fid]);
+    if ((int)$st->fetchColumn() > 0) return [false, 'Essa conta é gestora principal de outro fundo — não pode ser excluída por aqui.'];
+    $st = $pdo->prepare("SELECT COUNT(*) FROM fundo_membros WHERE usuario_id=? AND fundo_id<>?");
+    $st->execute([$uid, $fid]);
+    $outros = (int)$st->fetchColumn();
+    $st = $pdo->prepare("SELECT nome FROM usuarios WHERE id=?"); $st->execute([$uid]); $nome = (string)$st->fetchColumn();
+    if ($outros > 0) {
+        $pdo->prepare("DELETE FROM fundo_membros WHERE id=?")->execute([$membroId]);
+        return [true, 'Membro removido deste fundo. A conta foi mantida porque participa de outros fundos.'];
+    }
+    com_transacao($pdo, function () use ($pdo, $uid) {
+        $pdo->prepare("DELETE FROM fundo_membros WHERE usuario_id=?")->execute([$uid]);
+        try { $pdo->prepare("DELETE FROM usuario_fundos WHERE usuario_id=?")->execute([$uid]); } catch (Throwable $e) {}
+        try { $pdo->prepare("DELETE FROM senha_resets WHERE usuario_id=?")->execute([$uid]); } catch (Throwable $e) {}
+        $pdo->prepare("DELETE FROM usuarios WHERE id=?")->execute([$uid]);
+    });
+    return [true, 'Conta de ' . ($nome ?: 'membro') . ' excluída definitivamente.'];
+}
+
 // ---------------- Recuperação de senha (simulada) ----------------
 
 /** Cria um token de reset para o e-mail (se existir) e devolve [token|null, usuario|null].

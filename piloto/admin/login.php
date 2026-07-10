@@ -6,7 +6,7 @@ require_once __DIR__ . '/../includes/auth.php';
 
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'admin')) {
+    if (login_usuario($pdo, trim($_POST['email'] ?? ''), $_POST['senha'] ?? '', 'admin', !empty($_POST['lembrar']))) {
         header('Location: index.php'); exit;
     }
     $erro = 'Credenciais inválidas.';
@@ -49,6 +49,10 @@ if (usuario()) { header('Location: ' . (usuario()['perfil'] === 'admin' ? 'index
         <div class="mb-3">
           <label class="form-label" style="font-size:.8rem">Senha</label>
           <input type="password" name="senha" class="form-control" required>
+        </div>
+        <div class="mb-3 form-check">
+          <input type="checkbox" class="form-check-input" name="lembrar" id="lembrar" value="1">
+          <label class="form-check-label" for="lembrar" style="font-size:.82rem">Continuar conectado neste dispositivo</label>
         </div>
         <button class="btn btn-dark w-100">Entrar</button>
       </form>

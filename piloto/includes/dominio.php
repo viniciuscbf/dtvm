@@ -227,6 +227,10 @@ function ensure_catalogo(PDO $pdo): void {
         decidido_por VARCHAR(120), decidido_em DATETIME NULL,
         INDEX idx_sol_status (status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    // Anexo (.pdf) da solicitação e marca de cadastro em lote — DDL lazy, fora de transação.
+    ddl_portavel($pdo, "ALTER TABLE solicitacoes_cadastro_ativo ADD COLUMN IF NOT EXISTS anexo LONGBLOB NULL");
+    ddl_portavel($pdo, "ALTER TABLE solicitacoes_cadastro_ativo ADD COLUMN IF NOT EXISTS anexo_nome VARCHAR(200) NULL");
+    ddl_portavel($pdo, "ALTER TABLE solicitacoes_cadastro_ativo ADD COLUMN IF NOT EXISTS lote TINYINT DEFAULT 0");
 
     if ((int)$pdo->query("SELECT COUNT(*) FROM ativos_catalogo")->fetchColumn() === 0) {
         $ativos = [
@@ -685,6 +689,7 @@ function ensure_dominio(PDO $pdo): void {
     ensure_equipe($pdo);
     ensure_batch($pdo);
     ensure_regulamento($pdo);
+    ensure_contrapartes($pdo);
 }
 
 require_once __DIR__ . '/marcacao.php';     // motor de marcação por indexador (usa fonte_por_tipo, definido acima)
@@ -696,6 +701,7 @@ require_once __DIR__ . '/regulamento.php';  // gerador de regulamento (fundo/cla
 require_once __DIR__ . '/passivo.php';      // passivo do cotista, come-cotas/IR/IOF, livro de passivos (Lei 14.754)
 require_once __DIR__ . '/contabilidade.php';// partidas dobradas, diário/razão, balancete
 require_once __DIR__ . '/templates_docs.php';// minutas dos documentos do fundo (Res. CVM 175), guardadas por fundo
+require_once __DIR__ . '/contrapartes.php'; // cadastro/habilitação de contrapartes (KYC/limite) e câmara por tipo de ativo
 // Grafo de carga COMPLETO: com passivo/contabilidade aqui, qualquer função de domínio fica
 // disponível em toda página (via a cadeia layout→helpers→dominio) — some a classe de bug
 // "Call to undefined function" por ordem de include. (simulador.php fica de fora: é o 2º site.)
