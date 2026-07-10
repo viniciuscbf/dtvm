@@ -33,6 +33,19 @@ function ddl_portavel(PDO $pdo, string $sql): void {
     }
 }
 
+// ---------------- Política de senha ----------------
+/** Valida senha forte: mín. 8, ao menos 1 maiúscula, 1 número e 1 caractere especial. Retorna [ok, msg]. */
+function senha_valida(string $s): array {
+    if (mb_strlen($s) < 8)                     return [false, 'A senha precisa ter ao menos 8 caracteres.'];
+    if (!preg_match('/[A-ZÀ-Þ]/u', $s))        return [false, 'A senha precisa ter ao menos uma letra maiúscula.'];
+    if (!preg_match('/\d/', $s))               return [false, 'A senha precisa ter ao menos um número.'];
+    if (!preg_match('/[^\p{L}\p{N}]/u', $s))   return [false, 'A senha precisa ter ao menos um caractere especial.'];
+    return [true, ''];
+}
+// Espelho client-side de senha_valida (atributos do input de senha).
+const SENHA_PATTERN = '(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}';
+const SENHA_TITLE   = 'Mínimo 8 caracteres, com ao menos uma letra maiúscula, um número e um caractere especial.';
+
 // ---------------- Registry de classes de ativo (fonte ÚNICA da verdade) ----------------
 // Antes, listas de tipos viviam espalhadas (marcacao, helpers, boletas) e adicionar uma
 // classe exigia caçar todas. Aqui há UM mapa tipo→grupo; o resto pergunta a estas funções.
@@ -651,7 +664,13 @@ function ensure_fund_types(PDO $pdo): void {
  *  • Código de RUNTIME (transacional) NUNCA deve chamar ensure_*; assuma que as tabelas
  *    já existem. Para ALTER portável entre MariaDB/MySQL, use ddl_portavel().
  */
+/** Coluna que guarda o conteúdo dos documentos/minutas gerados por fundo (templates). */
+function ensure_documentos_conteudo(PDO $pdo): void {
+    ddl_portavel($pdo, "ALTER TABLE documentos_abertura ADD COLUMN IF NOT EXISTS conteudo LONGTEXT NULL");
+}
+
 function ensure_dominio(PDO $pdo): void {
+    ensure_documentos_conteudo($pdo);
     ensure_provisao($pdo);
     ensure_passivos($pdo);
     ensure_catalogo($pdo);
@@ -676,6 +695,7 @@ require_once __DIR__ . '/batch.php';        // processamento em lote (fechamento
 require_once __DIR__ . '/regulamento.php';  // gerador de regulamento (fundo/classe/subclasse) dirigido por schema
 require_once __DIR__ . '/passivo.php';      // passivo do cotista, come-cotas/IR/IOF, livro de passivos (Lei 14.754)
 require_once __DIR__ . '/contabilidade.php';// partidas dobradas, diário/razão, balancete
+require_once __DIR__ . '/templates_docs.php';// minutas dos documentos do fundo (Res. CVM 175), guardadas por fundo
 // Grafo de carga COMPLETO: com passivo/contabilidade aqui, qualquer função de domínio fica
 // disponível em toda página (via a cadeia layout→helpers→dominio) — some a classe de bug
 // "Call to undefined function" por ordem de include. (simulador.php fica de fora: é o 2º site.)

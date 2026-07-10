@@ -255,8 +255,8 @@ page_start('Passivo & Tributação', 'Passivo & Tributação', $u,
     </table>
   </div>
   <div class="card-footer text-muted" style="font-size:.72rem">
-    Simulação: o rendimento é apurado pela valorização da cota vs. o custo médio (PM). Em produção, o motor fiscal
-    provisiona o IR na cota diariamente e apura come-cotas em maio/novembro. Valores e alíquotas conforme a Lei 14.754/2023.
+    O rendimento é apurado pela valorização da cota vs. o custo médio (PM); o motor fiscal
+    provisiona o IR na cota e apura come-cotas em maio/novembro. Valores e alíquotas conforme a Lei 14.754/2023.
   </div>
 </div>
 

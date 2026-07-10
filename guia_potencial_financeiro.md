@@ -129,7 +129,9 @@ flowchart LR
 
 ---
 
-## 4. COMO VOCÊ É REMUNERADO — a estrutura 75/25 (e por que você NÃO tem sociedade sobre o fundo)
+## 4. COMO VOCÊ É REMUNERADO — a estrutura de receita (e por que você NÃO tem sociedade sobre o fundo)
+
+> **ESTRUTURA ATUALIZADA (2026-07-09):** a divisão vigente é **50% banco / 50% Argus no início**, com **opção de a Argus recomprar 35 pontos percentuais por R$ 2 milhões (corrigidos pelo IPCA), passando a 15% banco / 85% Argus**. O banco (administrador de fato) remunera a Argus como **prestadora de tecnologia/operação** — repasse admitido pela **Res. CVM 175, art. 118, §1º**. ⚠️ **As tabelas de projeção deste guia (§2, §3) foram calculadas na proporção anterior (75/25) — use-as como ordem de grandeza e releia as colunas "Você/Banco" com a nova divisão.** Fundamentação em `due_diligence_juridica.md`.
 
 Esta é a parte que você disse não entender bem, então vou ser bem claro, porque há uma confusão comum aqui.
 
@@ -149,7 +151,7 @@ graph TB
 
 ### 4.2 O que você TEM: participação na receita de administração
 
-O que se divide **não é o fundo — é a receita da atividade de administração** (a taxa de administração que o fundo paga pelo serviço). Essa receita é gerada pela prestação do serviço de administração fiduciária, e é ela que se reparte **75% você / 25% banco**.
+O que se divide **não é o fundo — é a receita da atividade de administração** (a taxa de administração que o fundo paga pelo serviço). Essa receita é gerada pela prestação do serviço de administração fiduciária, e é ela que se reparte entre você e o banco (ver **nota de estrutura atualizada** no início da §4: **50/50 no início, opção de recompra até 85/15**).
 
 **Duas formas de estruturar isso na prática** (a definir com advogado/contador):
 

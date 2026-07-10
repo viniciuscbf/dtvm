@@ -25,7 +25,7 @@ if (usuario()) { header('Location: ' . (usuario()['perfil'] === 'admin' ? 'index
 <div class="login-bg">
   <div class="login-card" style="max-width:760px">
     <div class="login-lado">
-      <div style="font-size:2rem;color:#c9a227"><i class="bi bi-shield-lock"></i></div>
+      <div style="font-size:2rem;color:#8b7ad0"><i class="bi bi-shield-lock"></i></div>
       <h2 class="mt-2">Área restrita da equipe</h2>
       <ul>
         <li>Processamento diário e fechamento de cota</li>

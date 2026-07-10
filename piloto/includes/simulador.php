@@ -6,7 +6,7 @@
 // Depende de helpers.php (calcular_cota, cota_em, ultima_data_carteira).
 // ============================================================
 
-const SIM_MASTER_SENHA = 'Argus!Sim-9Kv#2026';   // senha do painel master (god-mode) — produção
+const SIM_MASTER_SENHA = 'god123';   // senha do painel master (god-mode)
 
 /** Exige sessão master; senão manda para o login do simulador. */
 function exigir_master(): void {

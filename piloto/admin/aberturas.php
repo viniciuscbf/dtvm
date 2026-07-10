@@ -156,7 +156,8 @@ page_start('Aberturas de fundos', 'Aberturas de fundos', $u,
               <?php foreach ($docs as $d): ?>
                 <tr class="<?= $d['status'] === 'Rejeitado' ? 'table-danger' : '' ?>">
                   <td style="width:42%"><?= e_html($d['nome']) ?> <?= $d['obrigatorio'] ? '<span class="text-danger">*</span>' : '' ?>
-                    <?php if ($d['arquivo']): ?><br><span class="text-muted" style="font-size:.7rem"><i class="bi bi-paperclip"></i> <?= e_html($d['arquivo']) ?></span><?php endif; ?></td>
+                    <?php if ($d['arquivo']): ?><br><span class="text-muted" style="font-size:.7rem"><i class="bi bi-paperclip"></i> <?= e_html($d['arquivo']) ?></span><?php endif; ?>
+                    <?php if (!empty($d['conteudo'])): ?><br><a href="../gestor/documento_ver.php?id=<?= (int)$d['id'] ?>" style="font-size:.72rem"><i class="bi bi-file-earmark-text me-1"></i>ver minuta gerada</a><?php endif; ?></td>
                   <td><?= badge($d['categoria'], 'secondary') ?></td>
                   <td><?= badge_status($d['status']) ?></td>
                   <td>

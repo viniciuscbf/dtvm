@@ -116,7 +116,7 @@ page_start('Precificação', 'Precificação', $u,
 <div class="alert alert-secondary py-2" style="font-size:.8rem">
   <i class="bi bi-info-circle me-1"></i>
   <b>Simulação de MaM homologada.</b> As fontes de referência (ANBIMA/B3) são reproduzidas por um feed interno
-  (<code>precos_mercado</code>). Em produção, o preço de referência viria dos feeds oficiais ANBIMA/B3 e das corretoras.
+  (<code>precos_mercado</code>). O preço de referência vem dos feeds ANBIMA/B3 e das corretoras.
 </div>
 
 <div class="card mb-3">

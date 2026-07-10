@@ -1,6 +1,6 @@
 /* Helpers de gráfico (Chart.js) e grafo de partes relacionadas */
 
-const CORES = ['#14b8a6', '#c9a227', '#3b82f6', '#ef4444', '#8b5cf6', '#f97316', '#22c55e', '#64748b'];
+const CORES = ['#14b8a6', '#6a50ac', '#4a6dc0', '#ef4444', '#8b5cf6', '#f59e0b', '#22c55e', '#64748b'];
 
 /* ------------------------------------------------------------------
    Date pickers — turbina TODO input[type=date] com o Flatpickr (pt-BR).
@@ -80,7 +80,7 @@ function iniciarGraficoCota(canvasId, baseUrl, fundoId, periodoInicial = '12m') 
     if (chart) chart.destroy();
     chart = graficoLinha(canvasId, d.labels, [
       { label: 'Fundo (base 100)', data: d.fundo, cor: '#14b8a6', fill: true },
-      { label: 'CDI (base 100)', data: d.cdi, cor: '#c9a227', borderDash: [6, 4] }
+      { label: 'CDI (base 100)', data: d.cdi, cor: '#94a3b8', borderDash: [6, 4] }
     ]);
   }
   document.querySelectorAll('[data-periodo]').forEach(btn => {
@@ -132,12 +132,12 @@ function desenharGrafo(canvasId, nos, arestas) {
   });
 
   // nós
-  const corTipo = { gestora: '#c9a227', fundo: '#14b8a6', contraparte: '#3b82f6', pessoa: '#8b5cf6' };
+  const corTipo = { gestora: '#6a50ac', fundo: '#14b8a6', contraparte: '#4a6dc0', pessoa: '#8b5cf6' };
   nos.forEach((n, i) => {
     const p = pos[n.id];
     ctx.beginPath();
     ctx.arc(p.x, p.y, i === 0 ? 26 : 20, 0, Math.PI * 2);
-    ctx.fillStyle = n.suspeito ? '#7f1d1d' : '#14243a';
+    ctx.fillStyle = n.suspeito ? '#7f1d1d' : '#241a52';
     ctx.fill();
     ctx.lineWidth = 2.5;
     ctx.strokeStyle = n.suspeito ? '#ef4444' : (corTipo[n.tipo] || '#64748b');

@@ -180,7 +180,7 @@ function pdf_carteira(array $fundo, array $ativos, string $data, string $geradoP
     $pdf->linhaTexto([[$cX, 'PATRIMÔNIO LÍQUIDO', 'L', 0, [0.06, 0.10, 0.17]], [$cRes - 120, $fmt($totalGeral + $caixa), 'R', 120, [0.06, 0.10, 0.17]]], 10.5, true);
     $pdf->avancar(12);
     $pdf->linhaTexto([[$cX, '* ativo precificado por comitê (sem fonte primária líquida).', 'L', 0, [0.45, 0.48, 0.53]]], 7.5);
-    $pdf->linhaTexto([[$cX, 'Documento gerado pela plataforma da administradora — piloto com dados simulados. Não é documento oficial.', 'L', 0, [0.45, 0.48, 0.53]]], 7.5);
+    $pdf->linhaTexto([[$cX, 'Minuta gerada pela plataforma — não substitui revisão jurídica nem registro na CVM.', 'L', 0, [0.45, 0.48, 0.53]]], 7.5);
 
     return $pdf->saida();
 }

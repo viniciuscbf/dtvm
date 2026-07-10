@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /piloto/
+
+Sitemap: https://argusdtvm.com.br/sitemap.xml

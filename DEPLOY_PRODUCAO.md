@@ -90,7 +90,7 @@ session.use_strict_mode = 1
 - [ ] Testar que `.../piloto/includes/` e `.../piloto/sql/schema.sql` respondem **403/404**.
 - [ ] Confirmar redirecionamento `http → https` e `www → sem-www`.
 - [ ] Conferir cabeçalhos com https://securityheaders.com (deve pontuar bem).
-- [ ] **Trocar as senhas demo** (`demo123`, `master123`) — ver seção 6.
+- [ ] **Trocar as senhas demo** (`demo123` nos portais; Simulador Master em `god123`) — ver seção 6.
 - [ ] Decidir sobre a exposição pública do login demo e do Simulador Master (seção 6).
 - [ ] Backup automático do banco habilitado no host.
 
@@ -98,7 +98,7 @@ session.use_strict_mode = 1
 
 Hoje, para facilitar a demonstração, o sistema:
 - **imprime as credenciais na tela de login** (ex.: `admin@administradora.com.br — demo123`);
-- expõe o **Simulador Master** (senha `master123`) por um link discreto no rodapé — ele "passa o dia",
+- expõe o **Simulador Master** (senha `god123`) por um link discreto no rodapé — ele "passa o dia",
   marca ativos e gera cotas (poder total sobre o ambiente).
 
 Num site público isso precisa de uma escolha (ver seção 8):

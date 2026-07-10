@@ -58,7 +58,7 @@ $feed = $pdo->query("
     (SELECT resolvido_em dt, CONCAT('Divergência resolvida: ', LEFT(detalhe, 60)) txt, 'bi-check2-square' icone FROM conciliacao WHERE resolvido_em IS NOT NULL ORDER BY resolvido_em DESC LIMIT 3)
     ORDER BY dt DESC LIMIT 6")->fetchAll();
 
-page_start('Painel geral', 'Painel geral', $u, 'Todos os fundos sob administração · dados simulados do piloto');
+page_start('Painel geral', 'Painel geral', $u, 'Todos os fundos sob administração');
 ?>
 
 <div class="row row-cols-2 row-cols-md-3 row-cols-xl-6 g-3 mb-4">

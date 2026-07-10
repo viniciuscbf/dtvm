@@ -146,7 +146,7 @@ page_start('Performance', 'Performance', $u,
             <tr><td>PL de referência</td><td class="text-end"><?= moeda_compacta($fundo['pl_atual']) ?></td></tr>
             <tr class="table-light"><td><b>Performance provisionada</b></td><td class="text-end"><b><?= moeda($valorPerf) ?></b></td></tr>
           </table>
-          <p class="text-muted mb-0" style="font-size:.75rem">Cálculo simplificado do piloto. Em produção segue a metodologia do regulamento, com linha d'água por cotista.</p>
+          <p class="text-muted mb-0" style="font-size:.75rem">O cálculo segue a metodologia definida no regulamento, com linha d'água por cotista.</p>
         <?php endif; ?>
       </div>
     </div>

@@ -93,6 +93,7 @@ function page_start(string $titulo, string $ativo, array $u, string $subtitulo =
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" rel="stylesheet">
+<link rel="icon" type="image/png" href="<?= $b ?>assets/favicon.png">
 <link href="<?= $b ?>assets/css/style.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
@@ -102,10 +103,10 @@ function page_start(string $titulo, string $ativo, array $u, string $subtitulo =
 <div class="app-wrap">
   <aside class="sidebar">
     <div class="brand">
-      <i class="bi bi-bank2"></i>
+      <img src="<?= $b ?>assets/favicon.png" class="brand-mark" alt="Argus">
       <div>
         <div class="brand-name">ARGUS</div>
-        <div class="brand-sub">DTVM · piloto · dados simulados</div>
+        <div class="brand-sub">Administração Fiduciária</div>
       </div>
     </div>
     <div class="perfil-chip chip-<?= $perfilCor ?>">

@@ -72,9 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <p class="mb-1" style="font-size:.8rem">Ou use a chave temporária:</p>
           <code style="font-size:.9rem;background:#0f172a;color:#e2e8f0;padding:3px 8px;border-radius:5px;word-break:break-all"><?= e_html($chaveSim) ?></code>
         </div>
-        <div class="alert alert-warning py-2 mb-0" style="font-size:.76rem">
-          <b>Piloto:</b> não há servidor de e-mail — por isso o conteúdo aparece aqui. Em produção este e-mail seria
-          entregue na caixa do gestor e a chave <b>não</b> apareceria na tela.
+        <div class="alert alert-info py-2 mb-0" style="font-size:.76rem">
+          O link de redefinição de senha aparece abaixo para você concluir a recuperação.
         </div>
       </div>
       <div class="modal-footer">

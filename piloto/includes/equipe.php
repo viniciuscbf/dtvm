@@ -293,7 +293,7 @@ function validar_reset_senha(PDO $pdo, string $token): ?array {
 
 /** Efetiva a nova senha e marca o token como usado. Retorna [ok, msg]. */
 function redefinir_senha(PDO $pdo, string $token, string $novaSenha): array {
-    if (strlen($novaSenha) < 6) return [false, 'A senha precisa ter ao menos 6 caracteres.'];
+    [$okS, $msgS] = senha_valida($novaSenha); if (!$okS) return [false, $msgS];
     $r = validar_reset_senha($pdo, $token);
     if (!$r) return [false, 'Link de redefinição inválido ou expirado.'];
     com_transacao($pdo, function () use ($pdo, $r, $novaSenha) {

@@ -1,6 +1,6 @@
 # Controle de Fraudes e Riscos — Como a Administradora Monitora
 
-> **Documento de trabalho — v0.1**
+> **Documento de trabalho — v0.2** (jul/2026 — ampliado com mais casos datados, a base de PLD/lavagem e o mapeamento honesto do que o protótipo já faz)
 > Os principais tipos de fraude e risco em fundos de investimento, com **casos reais recentes**, e como a sua administradora monitora isso de forma eficiente para muitos fundos usando **agentes de IA, tratamento de dados e cálculos sofisticados**. É a base do argumento de que você **reduz o risco do banco**.
 >
 > **Aviso:** casos citados são públicos (decisões CVM/notícias). Não substitui parecer de compliance/jurídico. As técnicas de monitoramento descritas são o desenho proposto — a implementação deve seguir os manuais aprovados.
@@ -33,6 +33,24 @@ No caso do FIP LSH, a CVM apontou <cite index="172-1">sobrevalorização do laud
 
 > ⚠️ **A lição:** em ativos sem preço de mercado (FIP, crédito ilíquido), a **precificação inflada** é o vetor de fraude — infla-se o valor para vender cotas caras ou mascarar perdas. Monitorar a razoabilidade dos preços é essencial.
 
+### 1.4 Mais casos — o mesmo punhado de padrões
+
+Os vetores se repetem década após década. Amostra ampliada (datas/valores conforme CVM, Bacen e imprensa de referência; casos recentes **ainda em apuração** estão marcados):
+
+| Caso | Ano | Mecanismo | Sinal que os dados pegariam |
+|---|---|---|---|
+| **Silverado / Florim** (FIDCs Maximum) | fraude 2013–16; julg. **2024** | ~90% da carteira sem lastro; notas frias de empresas de fachada ligadas à gestora | verificação de lastro; grafo cedente↔gestor; cruzar NF-e/SPED |
+| **Banco Cruzeiro do Sul** | 2012 | ~320 mil contratos de consignado **falsos** cedidos a FIDCs; banco era cotista subordinado dos próprios fundos | existência de CPF/contrato; cedente = cotista subordinado (parte relacionada) |
+| **Banco Panamericano** | 2010 | carteiras **vendidas** mas não baixadas do balanço — receita reconhecida em dobro (~R$ 2,5 bi) | reconciliação cessão × receita reconhecida |
+| **Banco BVA** (FIDCs) | 2012 | dinheiro cobrado dos sacados não repassado ao fundo (o banco era o próprio agente de cobrança) | razão recolhido ÷ repassado por período |
+| **Banco Master / Reag** | 2023–25 (*em apuração*) | triangulação banco→fachada→fundo→ativo inflado→garantia de volta; captação a 140% do CDI | fluxo circular de caixa; salto de marcação (R$ 850 mi → R$ 10 bi); contrapartes recém-abertas; CPFs inexistentes |
+| **FIP LSH** (More Invest) | julg. 2024 | laudo do único ativo superfaturado (valor justo nível 3) | salto de marcação sem evento de mercado; laudo × auditor |
+| **Front-running BB Asset** | julg. **2025** | operador vazava as ordens dos fundos a familiares, que se posicionavam antes | contraparte recorrente na ponta oposta, com timing suspeito |
+| **GAS / "faraó dos bitcoins"** | 2021 | Ponzi com roupagem de cripto (até 10%/mês); ~R$ 17 bi movimentados em 12 meses | rendimento impossível; entradas novas financiando saques antigos |
+| **Americanas** (risco sacado) | 2023 | dívida bancária escondida na conta "fornecedores" (~R$ 20 bi) — atingiu fundos de crédito | dívida no SCR/Bacen × balanço da empresa |
+
+O denominador comum é quase sempre a **precificação de um ativo ilíquido/sem preço observável** (o Tipo 2 do mapa abaixo), que vira o esconderijo dos demais. E onde o **administrador fiduciário falha na diligência**, a fraude do gestor passa — e é o nome do banco que entra no processo sancionador.
+
 ---
 
 ## 2. OS PRINCIPAIS TIPOS DE FRAUDE E RISCO (o mapa)
@@ -60,6 +78,29 @@ graph TB
 | **Cotização indevida** | Manipular a cota de entrada/saída para beneficiar alguém | Aplicações/resgates em momentos suspeitos |
 | **Lavagem de dinheiro** | Fundo como veículo de recursos ilícitos | Padrões atípicos de aplicação/resgate; beneficiário final oculto |
 | **Desenquadramento oculto** | Violar a política sem reportar | Enquadramento automático contínuo |
+
+---
+
+## 2A. LAVAGEM DE DINHEIRO (PLD/FT) — O QUE A NORMA EXIGE
+
+Fraude engana o cotista; **lavagem** usa o fundo como lavanderia. No mercado de valores mobiliários a lavagem ocorre sobretudo nas fases de **ocultação e integração** (o dinheiro em geral já entra bancarizado) — a vulnerabilidade é a **opacidade da cadeia** cotista → classe → fundo → beneficiário final.
+
+**Tipologias típicas (e o sinal de alerta correspondente na norma):**
+- **Cotistas laranjas / atuação por terceiros** — titular de fachada esconde o dono real. *(Res. CVM 50/2021, art. 20, II-"d" e "c".)*
+- **Aplica-resgata rápido (round-trip)** — gera um extrato "limpo" sem propósito econômico. *(art. 20, II-"g" e "e".)*
+- **Fracionamento (smurfing)** — parcelas abaixo do limiar para escapar da comunicação automática. *(antídoto no art. 20, §1º-I e §2º: monitorar **independentemente do valor** e analisar operações **conexas/mesmo grupo**.)*
+- **Fundos exclusivos/reservados** e **estruturas offshore/feeders** — camadas para ocultar o beneficiário final. *(art. 20, I-"b" e IV; Guia ANBIMA PLD/FTP 2025: dever de esforço para chegar ao beneficiário final, sobretudo em classe exclusiva ≥ 25% das cotas.)*
+- **Integralização de cotas com ativos** fora de preço de mercado. *(art. 20, II-"k" e "h".)*
+- **PEP e beneficiário final oculto** — exigem **diligência reforçada**.
+
+**As obrigações do administrador (ele é sujeito obrigado — Res. CVM 50/2021):**
+- **Política de PLD/FT** documentada e **abordagem baseada em risco** — classificar clientes e produtos/canais em baixo/médio/alto risco. *(arts. 4º e 5º.)*
+- **KYC e identificação do beneficiário final** até a pessoa natural; atualização cadastral em ≤ 5 anos. *(arts. 11–17.)*
+- **Monitoramento e seleção** de operações atípicas (o rol do art. 20).
+- **Comunicação ao COAF em até 24 horas** da conclusão da análise, sob **sigilo** (vedado avisar o comunicado); comunicação de boa-fé **não gera responsabilidade**. *(art. 22.)*
+- **Declaração negativa** anual (até o último dia útil de abril) e **guarda de documentos por ≥ 5 anos**. *(arts. 23 e 26.)*
+
+> 💡 O PLD **não é acessório** — é obrigação legal do administrador, com prazo de 24 h e trilha exigível pela CVM. Uma plataforma que já nasce com KYC, monitoramento e trilha embutidos transforma essa obrigação de um **custo de equipe** numa **função de software** — o mesmo movimento que baratece tudo o resto.
 
 ---
 
@@ -110,6 +151,24 @@ graph TB
 ### 3.2 KYC/PLD reforçado (contra lavagem)
 
 No onboarding e continuamente: identificação de beneficiário final, cruzamento com listas de sanções/PEPs, monitoramento de operações atípicas, e reporte ao COAF quando aplicável. É obrigação do administrador (banco) — você opera.
+
+---
+
+### 3.3 O que o protótipo já entrega hoje (honesto)
+
+O piloto não é slide — a página **Monitoramento de fraude (IA)** (`admin/fraude.php`) já roda um motor real de **7 regras** sobre os dados, cada uma atacando um vetor:
+
+| Regra | Dispara quando | Vetor que ataca |
+|---|---|---|
+| **R1 · Preço fora da curva** | marcação desvia > 5% da referência de mercado (B3/ANBIMA) | precificação inflada |
+| **R2 · Parte relacionada** | CNPJ da contraparte coincide com sócio/empresa ligada ao gestor | autofavorecimento |
+| **R3 · Movimentação atípica** | lançamento acima de 3 desvios-padrão do padrão do fundo | desvio / lavagem |
+| **R4 · Ativo fantasma** | posição na carteira sem correspondência no custodiante | ativo inexistente |
+| **R5 · Timing suspeito** | aplicação/resgate relevante na véspera de remarcação de ilíquido | cotização indevida |
+| **R6 · Concentração de resgates** | resgates acima do limite do PL em janela curta | corrida / liquidez |
+| **R7 · Cota anômala** | retorno diário fora de 4 desvios-padrão da série do fundo | smoothing / marcação |
+
+Acompanham o motor um **grafo de partes relacionadas** (cruza entidades e marca vínculos suspeitos) e uma **triagem de alertas** com trilha de auditoria — *revisar / escalar ao compliance / falso positivo*, registrando **quem tratou, quando e por quê**. **Em produção**, a mesma trilha de dados alimenta modelos de detecção de anomalia (ML) e um agente de IA de revisão documental, e integra KYC/PLD com a comunicação ao COAF. As regras determinísticas são o **piso auditável e explicável**; o ML entra para **priorizar** e achar o que a regra não previu. *(A literatura é clara: anomaly detection ingênuo falha justamente contra o fraudador que "imita o normal" — por isso o desenho é híbrido, com humano no laço.)*
 
 ---
 

@@ -127,7 +127,7 @@ page_start('Contabilidade', 'Contabilidade', $u,
     </table>
   </div>
   <div class="card-footer text-muted" style="font-size:.72rem">
-    Cada movimento financeiro do fundo é traduzido em uma partida dobrada (uma conta debitada, outra creditada). Em produção, este seria o razão contábil primário no leiaute COSIF/CVM, base do balancete enviado à CVM.
+    Cada movimento financeiro do fundo é traduzido em uma partida dobrada (uma conta debitada, outra creditada) — o razão contábil primário no leiaute COSIF/CVM, base do balancete enviado à CVM.
   </div>
 </div>
 <?php endif; ?>

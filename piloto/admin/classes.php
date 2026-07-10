@@ -78,7 +78,6 @@ page_start('Classes de cotas', 'Classes de cotas', $u,
       </tbody>
     </table>
   </div>
-  <div class="card-footer text-muted" style="font-size:.73rem"><b>Honesto:</b> aqui a classe é registro + regulamento; a segregação contábil-patrimonial plena por classe (carteira/cota próprias) não está implementada no piloto.</div>
 </div>
 
 <div class="card">

@@ -34,11 +34,14 @@ mindmap
       Auditoria por conta do fundo
     Parceria Bancária
       Banco pequeno com licenca DTVM
-      Divisao de resultado ~20%
+      Receita 50/50 - opcao Argus recompra ate 15/85
     Captacao de Fundos
-      Fundos de 1 a 10 milhoes
-      Assessorias criando fundos proprios
-      Meta 200 milhoes de PL
+      Fase 1 - fundos pequenos
+        Clubes viram fundo - subclasse socio vs publico
+        Assessores com veiculo proprio agil
+        Gestores fatiam em classes/subclasses por cliente
+      Fase 2 - fundos medios 50 a 800 mi
+      Meta 200 milhoes de PL na Fase 1
 ```
 
 ---
@@ -105,7 +108,7 @@ O resultado **depende fortemente do tamanho médio dos fundos**, porque o mínim
 
 > ⚠️ **Ponto frágil nº 2 — a meta de "R$ 700k de lucro" precisa de premissas explícitas (e ficou ainda mais apertada com o mínimo de R$ 100).**
 > Note o paradoxo: no Cenário A (fundos minúsculos) a receita bruta parece maior, mas o **custo operacional também explode**, porque são 200 fundos para operar, auditar e fiscalizar — cada um com seu overhead. No Cenário B a receita é menor mas o custo é menor.
-> **Atenção ao número:** com o mínimo em R$ 100, mesmo o cenário de maior receita bruta (Cenário A) gera **R$ 240 mil brutos** — ou seja, cerca de **um terço** da meta de R$ 700k de **lucro**, e isso **antes** de descontar custos operacionais e a fatia (~20%) do banco parceiro. Para atingir R$ 700k de lucro seria necessário um PL total **muito maior** que R$ 200 mi, ou um PL médio por fundo bem acima de R$ 1,5 mi (onde o percentual passa a superar o mínimo), ou uma combinação dos dois. Esta conta precisa de uma planilha de custos detalhada (ver Seção 7). **Cada redução do mínimo (de R$ 500 → R$ 200 → R$ 100) torna o produto mais atraente para quem abre o fundo, mas derruba proporcionalmente a receita por fundo pequeno** — do mínimo original de R$ 500, a receita por fundo pequeno caiu 80%. Isso empurra a meta de lucro para um PL total substancialmente maior e reforça a pergunta central: qual é o PL médio por fundo que faz a conta fechar?
+> **Atenção ao número:** com o mínimo em R$ 100, mesmo o cenário de maior receita bruta (Cenário A) gera **R$ 240 mil brutos** — ou seja, cerca de **um terço** da meta de R$ 700k de **lucro**, e isso **antes** de descontar custos operacionais e a fatia do banco parceiro (50% no início; 15% se a Argus exercer a opção de recompra). Para atingir R$ 700k de lucro seria necessário um PL total **muito maior** que R$ 200 mi, ou um PL médio por fundo bem acima de R$ 1,5 mi (onde o percentual passa a superar o mínimo), ou uma combinação dos dois. Esta conta precisa de uma planilha de custos detalhada (ver Seção 7). **Cada redução do mínimo (de R$ 500 → R$ 200 → R$ 100) torna o produto mais atraente para quem abre o fundo, mas derruba proporcionalmente a receita por fundo pequeno** — do mínimo original de R$ 500, a receita por fundo pequeno caiu 80%. Isso empurra a meta de lucro para um PL total substancialmente maior e reforça a pergunta central: qual é o PL médio por fundo que faz a conta fechar?
 
 ### 3.3 Viabilidade na ótica do cotista — o produto é vendável?
 
@@ -209,7 +212,7 @@ flowchart TD
     Q -->|Nao — caso da startup| Parceria[Parceria com banco<br/>que tem/obtem a licenca]
     Q -->|Sim| Direto[Opera direto<br/>— exige capital de IF]
     Parceria --> Modelo[Startup = tecnologia + operacao<br/>Banco = licenca + responsabilidade]
-    Modelo --> Split[Divisao de resultado<br/>~20% para o banco<br/>sujeito a negociacao]
+    Modelo --> Split[Receita 50/50 no inicio<br/>opcao Argus recompra ate 15/85<br/>por R$ 2 mi corrigidos IPCA]
     style Parceria fill:#1e3a5f,color:#fff
     style Direto fill:#7f1d1d,color:#fff
 ```
@@ -218,8 +221,8 @@ flowchart TD
 
 | Parte | Aporta | Recebe |
 |---|---|---|
-| Startup | Tecnologia, operação, captação de fundos | ~80% do resultado da operação (proposto) |
-| Banco parceiro (DTVM) | Licença, responsabilidade regulatória, "assina embaixo" | ~20% do resultado (proposto, negociável) |
+| Startup (Argus) | Tecnologia, operação e originação — **prestadora de serviço** contratada pelo banco | Remunerada por parcela da taxa (Res. 175 art. 118 §1º): **50%** no início, até **85%** se exercer a opção |
+| Banco parceiro (DTVM) | **Administrador de fato**: licença, diretores, **decisão, controle e responsabilidade** | **50%** no início; **15%** + **R$ 2 mi (IPCA)** se a Argus exercer a opção de recompra de 35 p.p. |
 
 > ⚠️ **Ponto frágil nº 4 — o desafio comercial mais difícil do plano.**
 > Um banco que empresta sua licença de DTVM assume **responsabilidade regulatória e reputacional** pela operação da startup. Se a startup errar (erro de enquadramento, fraude de um gestor não detectada), **é o banco que responde perante a CVM e os cotistas**. Bancos pequenos tendem a ser *conservadores* com risco regulatório, não arrojados. Convencer um a topar é o gargalo central — e não é resolvido por preço baixo (que até piora a percepção de risco). Este é o item que mais precisa de validação de mercado real (conversas com bancos) antes de qualquer construção.
@@ -253,18 +256,31 @@ graph LR
 - **Alvo:** bancos menores e regionais/municipais, que não têm operação própria de administração fiduciária e poderiam ver na parceria uma nova linha de receita.
 - **Necessário mapear:** o que exatamente um banco precisa para se habilitar/operar como DTVM, para que a startup possa **auxiliá-lo na empreitada** (due diligence regulatória, requisitos de capital, estrutura).
 - **Processo:** reuniões com dezenas de bancos até conversão.
-- **Oferta:** ~20% do resultado da operação para o banco (negociável).
+- **Oferta:** **50%** da receita de administração para o banco no início (muito acima do que uma administradora tradicional dá a um parceiro), com **opção** de a Argus recomprar 35 p.p. por **R$ 2 mi (IPCA)**, deixando o banco com 15%.
 
 > ⚠️ **Nota:** por que um banco pequeno que *não tem* DTVM toparia montar uma (processo caro e demorado, com capital regulatório) para hospedar a operação de um terceiro? A proposta é mais realista se mirar bancos que **já possuem** a licença e a subutilizam, do que bancos que teriam que obtê-la do zero. Vale segmentar os alvos entre "já tem licença" e "teria que obter".
 
-### 6.2 Desafio 2 — Captar os fundos
+### 6.2 Desafio 2 — Captar os fundos: os quatro segmentos-alvo
 
-- **Argumento de venda:** não há hoje opção barata e viável para abrir um fundo pequeno — a startup seria essa opção.
-- **Argumento de venda (agilidade):** *deploy* rápido de fundos — colocar um fundo para operar em prazo muito menor que o convencional, e encerrá-lo com baixo atrito quando não faz mais sentido. Reduz o custo de tentar e desmonta a principal barreira psicológica de quem hesita em abrir um fundo próprio.
-- **Canal criativo:** estimular **assessorias de investimento** a criarem seus próprios fundos, usando a plataforma como viabilizador.
-- **Meta:** somar fundos de R$ 1 mi, R$ 5 mi, R$ 8 mi até atingir ~R$ 200 mi de PL agregado.
+A captação **não é genérica** ("achar fundos pequenos"). Ela mira **quatro segmentos concretos**, com um gancho específico para cada um. Três atuam **agora** (fundos pequenos); o quarto é um **segundo passo**, quando a operação já estiver calibrada.
 
-> ⚠️ **Ponto de atenção regulatório:** assessorias/consultorias e a criação de fundos próprios esbarram em regras da CVM sobre quem pode gerir e distribuir. O desenho desse canal precisa de validação jurídica para não cruzar linhas de captação/gestão irregular.
+**Argumento transversal (vale para os três primeiros):** hoje não há opção barata e viável para abrir e operar um fundo pequeno, e o *deploy* é ágil — colocar o fundo de pé em prazo muito menor que o convencional e encerrá-lo com baixo atrito. Isso reduz o custo (e o medo) de tentar.
+
+#### Fase 1 — fundos pequenos (R$ 1–10 mi), agora
+
+**1. Clubes de investimento que querem virar fundo.** Clubes (até 50 participantes, público restrito) que já provaram a estratégia e querem captar do **público em geral**. Migram para fundo — e a estrutura de **subclasses** permite que os **sócios fundadores fiquem numa subclasse com taxa de gestão menor** que a do público novo (mesmo portfólio de ativos, passivo diferente). Gancho concreto: *"cresça captando do público sem punir quem começou com você"*.
+
+**2. Assessores de investimento (AAI) que precisam de um veículo ágil.** Escritórios que hoje alocam o capital dos clientes **ordem a ordem**. Com um fundo próprio, concentram esse capital num **único veículo**, gerido de forma unificada, barata e rápida de constituir — em vez de replicar a mesma alocação em dezenas de contas.
+> ⚠️ **Fronteira regulatória:** o AAI **não pode gerir nem administrar** (CVM). O desenho legítimo é o AAI como **distribuidor/originador** de um fundo cujo **gestor é habilitado** (próprio ou parceiro). Precisa de validação jurídica para não cruzar a linha de gestão/distribuição irregular.
+
+**3. Gestores que fatiam uma estratégia em vários veículos sob medida — o multiplicador de captação.** Este é o segmento de **maior alavancagem**. Um mesmo gestor pode oferecer a sua seleção de ativos sob **benchmarks e condições diferentes para cada perfil de cliente**: um veículo que mede *alpha* contra o **Ibovespa + S&P 500**, outro contra **Ibovespa + CDI**, outro com **taxa/carência** distinta, outro para **público qualificado vs. varejo**. Cada tipo de cliente encontra o veículo que lhe cabe → **a captação total do gestor cresce muito**, porque ele deixa de perder o cliente que não se encaixava no fundo único.
+> A mecânica: **classe** separa **ativos** (estratégias/exposições genuinamente distintas, cada uma com CNPJ próprio); **subclasse** separa **passivo** (público, taxas, benchmark de performance, carência) sobre o **mesmo portfólio**. Na estrutura tradicional, cada veículo desses seria um **fundo novo e caro**; na plataforma, o **custo marginal é quase zero** — é isso que torna o "fundo sob medida por cliente" economicamente possível. (Detalhe e limites em `guia_estruturas_classes_subclasses.md`; **subclasse não dilui taxa CVM** — a economia é de auditoria/contabilidade quando se consolidaria várias estruturas da mesma estratégia.)
+
+#### Fase 2 — fundos médios (R$ 50–800 mi), o segundo passo
+
+**4. Fundos médios, com a operação já calibrada e experiente.** Depois de dezenas de fundos pequenos rodando — e a parceria com o banco madura —, subir de ticket. A lógica é poderosa: **uma infraestrutura barata o suficiente para viabilizar um fundo de R$ 1 milhão barateia *enormemente* um fundo de R$ 200 milhões**, onde a mesma automação rende uma economia de custo muito maior em valor absoluto. **Teto natural (~R$ 800 mi):** acima disso, o fundo já tem escala para **negociar taxas baixas diretamente** com os grandes administradores e corretoras famosas — não é nosso alvo. O *sweet spot* é o médio "órfão de preço": grande demais para ser ignorado, pequeno demais para ter poder de barganha.
+
+**Meta:** somar os fundos das quatro portas — ~R$ 200 mi de PL agregado na Fase 1, escalando com os médios na Fase 2.
 
 ---
 
@@ -277,7 +293,7 @@ graph LR
 ```mermaid
 graph TD
     PL[PL sob administracao<br/>R$ 200 milhoes] --> Rec[Receita bruta anual]
-    Rec --> Split[menos ~20% banco parceiro]
+    Rec --> Split[menos fatia do banco<br/>50% inicio / 15% pos-opcao]
     Split --> Custos[menos custos operacionais]
     Custos --> Lucro[Lucro liquido<br/>META: ~R$ 700k?]
     style Lucro fill:#14532d,color:#fff
@@ -286,7 +302,7 @@ graph TD
 
 ### 7.2 Custos a mapear (checklist)
 
-- [ ] Divisão de resultado com banco parceiro (~20%)
+- [ ] Divisão de resultado com banco parceiro (50% início → 15% pós-opção de recompra de R$ 2 mi IPCA)
 - [ ] Equipe (operação, compliance, atendimento, tecnologia)
 - [ ] Desenvolvimento e manutenção dos sistemas
 - [ ] Infraestrutura de nuvem / dados

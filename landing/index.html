@@ -5,7 +5,50 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Argus · Custódia e Administração de Fundos</title>
 <meta name="description" content="A infraestrutura que torna fundos pequenos viáveis: administração e custódia de fundos a custo marginal baixo, do licenciamento à cota diária.">
-<link rel="icon" href="assets/favicon.svg">
+<link rel="icon" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
+<link rel="canonical" href="https://argusdtvm.com.br/">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#17123a">
+<meta name="author" content="Argus">
+<meta name="keywords" content="administração fiduciária, fundos de investimento, fundos pequenos, DTVM, custódia de fundos, abertura de fundo, administradora de fundos, clube de investimento, assessor de investimento">
+
+<!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Argus">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://argusdtvm.com.br/">
+<meta property="og:title" content="Argus · Custódia e Administração de Fundos">
+<meta property="og:description" content="A infraestrutura que torna fundos pequenos viáveis: administração e custódia a custo marginal baixo, do licenciamento à cota diária.">
+<meta property="og:image" content="https://argusdtvm.com.br/assets/og-image.png">
+<meta property="og:image:secure_url" content="https://argusdtvm.com.br/assets/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Argus — administração fiduciária e custódia de fundos">
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Argus · Custódia e Administração de Fundos">
+<meta name="twitter:description" content="A infraestrutura que torna fundos pequenos viáveis — do licenciamento à cota diária.">
+<meta name="twitter:image" content="https://argusdtvm.com.br/assets/og-image.png">
+<meta name="twitter:image:alt" content="Argus — administração fiduciária e custódia de fundos">
+
+<!-- Dados estruturados (SEO) -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Argus",
+  "url": "https://argusdtvm.com.br/",
+  "logo": "https://argusdtvm.com.br/assets/og-image.png",
+  "image": "https://argusdtvm.com.br/assets/og-image.png",
+  "description": "Administração fiduciária de fundos de investimento pequenos, a custo marginal baixo — do licenciamento à cota diária.",
+  "areaServed": "BR",
+  "email": "contato@argusdtvm.com.br"
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -14,15 +57,15 @@
    PALETA — TROQUE AS CORES AQUI (um lugar só)
    ============================================================ */
 :root{
-  --c-brand:   #123a5e;   /* azul-petróleo principal */
-  --c-brand-2: #2bb6a3;   /* verde-teal (gradiente)  */
-  --c-accent:  #e0b13a;   /* dourado (detalhes/CTA)  */
-  --c-ink:     #0f1f33;   /* texto principal         */
+  --c-brand:   #6a50ac;   /* roxo (marca)            */
+  --c-brand-2: #1fc0ef;   /* ciano (gradiente)       */
+  --c-accent:  #4a6dc0;   /* azul (detalhes)         */
+  --c-ink:     #2b3232;   /* texto grafite           */
   --c-muted:   #5b6b7f;   /* texto secundário        */
   --c-bg:      #ffffff;   /* fundo claro             */
-  --c-soft:    #f3f7fa;   /* fundo de seções         */
-  --c-line:    #e6edf3;   /* linhas/bordas           */
-  --c-dark:    #0a1a2c;   /* fundo escuro (hero)     */
+  --c-soft:    #f4f5fb;   /* fundo de seções         */
+  --c-line:    #e7e8f2;   /* linhas/bordas           */
+  --c-dark:    #17123a;   /* fundo escuro (hero) — índigo profundo */
 
   --grad: linear-gradient(135deg, var(--c-brand), var(--c-brand-2));
   --radius: 16px;
@@ -70,7 +113,7 @@ header.nav.scrolled{background:rgba(255,255,255,.82);backdrop-filter:blur(12px);
 .hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(ellipse at 60% 0%,#000,transparent 75%)}
 .hero-in{position:relative;display:grid;grid-template-columns:1.1fr .9fr;gap:3rem;align-items:center;padding-top:2.5rem}
 .hero h1{font-size:clamp(2.2rem,4.4vw,3.6rem);font-weight:800;margin:.9rem 0 1rem}
-.hero h1 .hl{background:linear-gradient(90deg,var(--c-brand-2),var(--c-accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero h1 .hl{background:linear-gradient(90deg,var(--c-brand),var(--c-brand-2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero p.lead{font-size:1.14rem;color:rgba(255,255,255,.8);max-width:34rem}
 .hero .cta-row{display:flex;gap:1rem;margin-top:2rem;flex-wrap:wrap}
 .hero .micro{margin-top:1.6rem;color:rgba(255,255,255,.55);font-size:.85rem;display:flex;gap:1.3rem;flex-wrap:wrap}
@@ -86,7 +129,7 @@ header.nav.scrolled{background:rgba(255,255,255,.82);backdrop-filter:blur(12px);
 .mock-kpi{background:rgba(255,255,255,.06);border-radius:10px;padding:.6rem .7rem}
 .mock-kpi .v{font-family:var(--font-title);font-weight:700;font-size:1.05rem}
 .mock-kpi .l{font-size:.68rem;color:rgba(255,255,255,.6)}
-.mock-kpi .up{color:#5fe3c0}
+.mock-kpi .up{color:#1fc0ef}
 
 /* ============================ métricas ============================ */
 .metrics{background:var(--c-bg);border-bottom:1px solid var(--c-line)}
@@ -134,7 +177,7 @@ section{padding:5.5rem 0}
 .plat-visual{background:var(--c-dark);border-radius:20px;padding:1.4rem;color:#fff;box-shadow:var(--shadow)}
 .plat-visual .row{display:flex;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:.9rem}
 .plat-visual .row:last-child{border:0}
-.plat-visual .pill{font-size:.72rem;padding:.15rem .6rem;border-radius:999px;background:rgba(95,227,192,.18);color:#8ff0d8}
+.plat-visual .pill{font-size:.72rem;padding:.15rem .6rem;border-radius:999px;background:rgba(31,192,239,.16);color:#a9e8fb}
 
 /* CTA final */
 .final{background:var(--c-dark);color:#fff;text-align:center;border-radius:26px;padding:4rem 2rem;position:relative;overflow:hidden}
@@ -147,10 +190,6 @@ section{padding:5.5rem 0}
 footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);font-size:.9rem}
 .foot-in{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
 .foot-in img{height:34px}
-/* acesso discreto ao god-mode/simulador — presente, mas sem destaque */
-.foot-sim{display:inline-flex;align-items:center;gap:.4rem;font-size:.74rem;color:var(--c-muted);opacity:.45;border:1px solid var(--c-line);border-radius:999px;padding:.28rem .7rem;transition:opacity .2s, border-color .2s}
-.foot-sim:hover{opacity:1;border-color:var(--c-brand-2)}
-.foot-sim svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2}
 
 /* reveal */
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease, transform .7s ease}
@@ -172,7 +211,7 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
 <!-- ===================== NAV ===================== -->
 <header class="nav" id="nav">
   <div class="wrap nav-in">
-    <a class="brand" href="#top"><img src="assets/logo.svg" alt="" data-logo></a>
+    <a class="brand" href="#top"><img src="assets/logo.png" alt="" data-logo></a>
     <nav class="nav-links">
       <a class="lnk" href="#solucao">Solução</a>
       <a class="lnk" href="#como">Como funciona</a>
@@ -194,9 +233,9 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
   <div class="hero-grid"></div>
   <div class="wrap hero-in">
     <div>
-      <span class="eyebrow">Administração Fiduciária · Custódia · Fundos de R$ 1–10 mi</span>
-      <h1>Fundos pequenos, <span class="hl">finalmente viáveis</span>.</h1>
-      <p class="lead">A infraestrutura que roda administração e custódia de fundos a <b>custo marginal baixo</b> — do licenciamento à cota diária. Torna possível o fundo de R$ 1 a 10 milhões que a administração tradicional, com mínimos de R$ 3 a 8 mil por mês, hoje inviabiliza.</p>
+      <span class="eyebrow">Administração Fiduciária · Custódia · Baixo Custo</span>
+      <h1>Administração de fundos por <span class="hl">uma fração do custo</span>.</h1>
+      <p class="lead">A infraestrutura que roda administração e custódia de fundos a <b>custo marginal baixo</b> — do licenciamento à cota diária. Onde a administração tradicional cobra mínimos de milhares de reais por mês, a nossa taxa é <b>0,08% a.a. com piso de R$ 100</b>: viabiliza o fundo pequeno e barateia enormemente o médio.</p>
       <div class="cta-row">
         <a class="btn btn-primary" data-piloto href="#">Acessar o piloto
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
@@ -214,8 +253,8 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
         <span class="mock-tag">Custo da administração por tamanho de fundo</span>
       </div>
       <div style="display:flex;gap:1rem;font-size:.68rem;color:rgba(255,255,255,.7);margin-bottom:.3rem">
-        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:2px;background:#5fe3c0;display:inline-block"></i>Plataforma</span>
-        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:0;border-top:2px dashed #e0b13a;display:inline-block"></i>Tradicional</span>
+        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:2px;background:#1fc0ef;display:inline-block"></i>Plataforma</span>
+        <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:0;border-top:2px dashed #9b86d6;display:inline-block"></i>Tradicional</span>
       </div>
       <canvas id="cotaChart" width="520" height="158"></canvas>
       <div style="font-size:.6rem;color:rgba(255,255,255,.55);text-align:center;margin:.15rem 0 .1rem;line-height:1.3">
@@ -312,7 +351,7 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
       </div>
     </div>
     <div class="plat-visual reveal">
-      <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:#8ff0d8;margin-bottom:.5rem">O ciclo de um dia</div>
+      <div style="font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;color:#a9e8fb;margin-bottom:.5rem">O ciclo de um dia</div>
       <div class="row"><span>Batch D‑1 · precifica e concilia</span><span class="pill">automático</span></div>
       <div class="row"><span>Prévia de cota · enviada ao gestor</span><span class="pill">aguarda gestor</span></div>
       <div class="row"><span>Aprovação do gestor · dupla checagem</span><span class="pill">obrigatória</span></div>
@@ -341,14 +380,10 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
 <!-- ===================== FOOTER ===================== -->
 <footer>
   <div class="wrap foot-in">
-    <img src="assets/logo.svg" alt="" data-logo>
+    <img src="assets/logo.png" alt="" data-logo>
     <div>© <span id="ano"></span> <span data-marca>Argus</span> · <span data-email>contato@argusdtvm.com.br</span></div>
-    <div style="font-size:.8rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <div style="font-size:.8rem">
       Plataforma de demonstração. Não constitui oferta nem parecer jurídico.
-      <a class="foot-sim" data-simulador href="#" title="Acesso interno — simulador master">
-        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h3M8.5 10.5v3M15 11h.01M18 13h.01"/></svg>
-        Simulador
-      </a>
     </div>
   </div>
 </footer>
@@ -360,7 +395,6 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
 const CONFIG = {
   marca: 'Argus',
   pilotoURL:    '/piloto/',              // <-- URL do piloto quando hospedar (ex.: https://app.suaempresa.com.br/)
-  simuladorURL: '/piloto/simulador/',    // <-- god-mode / simulador master (acesso discreto no rodapé)
   email:  'contato@argusdtvm.com.br'     // <-- seu e-mail profissional
 };
 
@@ -369,7 +403,6 @@ document.title = CONFIG.marca + ' · Custódia e Administração de Fundos';
 document.querySelectorAll('[data-marca]').forEach(e=>e.textContent=CONFIG.marca);
 document.querySelectorAll('[data-email]').forEach(e=>e.textContent=CONFIG.email);
 document.querySelectorAll('[data-piloto]').forEach(e=>e.setAttribute('href',CONFIG.pilotoURL));
-document.querySelectorAll('[data-simulador]').forEach(e=>e.setAttribute('href',CONFIG.simuladorURL));
 document.querySelectorAll('[data-mailto]').forEach(e=>e.setAttribute('href','mailto:'+CONFIG.email));
 document.getElementById('ano').textContent = new Date().getFullYear();
 
@@ -437,16 +470,16 @@ document.querySelectorAll('.card').forEach(c=>{
     xt.forEach(([v,l])=>ctx.fillText(l, X(iDe(v)), H-padB+5));
     const count=Math.floor(prog*n);
     // área sob a plataforma
-    const grad=ctx.createLinearGradient(0,padT,0,H-padB);grad.addColorStop(0,'rgba(43,182,163,.32)');grad.addColorStop(1,'rgba(43,182,163,0)');
+    const grad=ctx.createLinearGradient(0,padT,0,H-padB);grad.addColorStop(0,'rgba(31,192,239,.32)');grad.addColorStop(1,'rgba(31,192,239,0)');
     ctx.beginPath();ctx.moveTo(X(0),H-padB);
     for(let i=0;i<count;i++)ctx.lineTo(X(i),Y(plat[i]));
     ctx.lineTo(X(Math.max(count-1,0)),H-padB);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
     // tradicional — tracejada dourada, altíssima nos fundos pequenos
-    ctx.beginPath();ctx.lineWidth=2;ctx.strokeStyle='#e0b13a';ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.lineWidth=2;ctx.strokeStyle='#9b86d6';ctx.setLineDash([5,4]);
     for(let i=0;i<count;i++){const x=X(i),y=Y(trad[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
     ctx.stroke();ctx.setLineDash([]);
     // plataforma — teal sólida, colada no piso
-    ctx.beginPath();ctx.lineWidth=2.4;ctx.strokeStyle='#5fe3c0';ctx.lineJoin='round';
+    ctx.beginPath();ctx.lineWidth=2.4;ctx.strokeStyle='#1fc0ef';ctx.lineJoin='round';
     for(let i=0;i<count;i++){const x=X(i),y=Y(plat[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
     ctx.stroke();
     if(prog<1){prog+=0.02;requestAnimationFrame(draw);}

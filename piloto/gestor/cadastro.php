@@ -27,13 +27,15 @@ function checklist_documentos(string $publicoAlvo): array {
     ];
 }
 
+ensure_documentos_conteudo($pdo);   // garante a coluna de conteúdo das minutas (fora de transação)
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
     $senha = $_POST['senha'] ?? '';
     $nomeFundo = trim($_POST['fundo_nome'] ?? '');
-    if (strlen($senha) < 6) {
-        $erro = 'A senha precisa ter ao menos 6 caracteres.';
+    [$okSenha, $msgSenha] = senha_valida($senha);
+    if (!$okSenha) {
+        $erro = $msgSenha;
     } elseif (!$email || !$nomeFundo) {
         $erro = 'Preencha os campos obrigatórios.';
     } else {
@@ -66,6 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $arq = $_FILES['doc_' . $i]['name'] ?? '';
                 $ins->execute([$fid, $cat, $nome, $obr, $arq ? 'Recebido' : 'Pendente', $arq ?: null]);
             }
+            // gera as minutas dos documentos do fundo (Res. CVM 175) e as guarda por fundo
+            gerar_e_salvar_templates($pdo, $fid);
             // etapas do processo de abertura
             $etapas = ['Cadastro', 'Documentos', 'Análise KYC/PLD', 'Registro CVM', 'CNPJ Receita', 'Conta custodiante', 'Fundo apto'];
             $ins = $pdo->prepare("INSERT INTO onboarding_etapas (fundo_id, ordem, etapa, status, data_conclusao, responsavel) VALUES (?,?,?,?,?,?)");
@@ -95,7 +99,7 @@ $docs = checklist_documentos($_POST['publico'] ?? 'Investidores em geral');
 <div class="container py-4" style="max-width:980px">
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="d-flex align-items-center gap-2">
-      <i class="bi bi-bank2" style="color:#c9a227;font-size:1.3rem"></i>
+      <img src="../assets/favicon.png" alt="Argus" style="height:28px;width:28px;object-fit:contain">
       <b style="letter-spacing:1px">ADMINISTRADORA</b>
       <span class="text-muted" style="font-size:.8rem">· constituição de fundo</span>
     </div>
@@ -129,8 +133,8 @@ $docs = checklist_documentos($_POST['publico'] ?? 'Investidores em geral');
             <input type="email" class="form-control form-control-sm" name="email" required value="<?= e_html($_POST['email'] ?? '') ?>"></div>
           <div class="col-md-2"><label class="form-label">Telefone</label>
             <input class="form-control form-control-sm" name="telefone"></div>
-          <div class="col-md-4"><label class="form-label">Senha de acesso * <span class="text-muted">(mín. 6, guardada com hash bcrypt)</span></label>
-            <input type="password" class="form-control form-control-sm" name="senha" required minlength="6"></div>
+          <div class="col-md-4"><label class="form-label">Senha de acesso * <span class="text-muted">(mín. 8, com maiúscula, número e símbolo)</span></label>
+            <input type="password" class="form-control form-control-sm" name="senha" required minlength="8" pattern="<?= SENHA_PATTERN ?>" title="<?= SENHA_TITLE ?>"></div>
         </div>
 
         <div class="secao">3 · O fundo</div>
@@ -152,7 +156,7 @@ $docs = checklist_documentos($_POST['publico'] ?? 'Investidores em geral');
         </div>
         <p class="text-muted mt-2 mb-0" style="font-size:.75rem">
           <b>Gestão e performance são escolhas suas</b>, pactuadas no regulamento do fundo — a plataforma não as padroniza.
-          A única taxa fixa da plataforma é a de <b>administração: 0,08% a.a. com piso de R$ 100/mês</b>.</p>
+          A <b>administração fiduciária</b> custa <b>0,08% a.a. com piso de R$ 100/mês</b>, e a <b>custódia é gratuita para o fundo</b> (absorvida pela administradora) — é o que torna o fundo viável.</p>
 
         <div class="secao">4 · Documentação exigida</div>
         <p class="text-muted" style="font-size:.8rem">Anexe o que já tiver — o que faltar entra como pendência e pode ser enviado depois.
@@ -162,7 +166,12 @@ $docs = checklist_documentos($_POST['publico'] ?? 'Investidores em geral');
           <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-1" style="font-size:.84rem">
             <span><i class="bi bi-file-earmark-text me-2 text-muted"></i><?= e_html($nome) ?>
               <?= $obr ? '<span class="text-danger">*</span>' : '<span class="text-muted" style="font-size:.72rem">(opcional)</span>' ?></span>
-            <input type="file" name="doc_<?= $i ?>" class="form-control form-control-sm" style="max-width:300px">
+            <div class="d-flex gap-2 align-items-center flex-shrink-0">
+              <?php if (tpl_gerador_por_nome($nome)): ?>
+                <button type="button" class="btn btn-sm btn-outline-secondary text-nowrap" onclick='baixarModelo(<?= htmlspecialchars(json_encode($nome), ENT_QUOTES) ?>)' title="Baixar modelo preenchido com os dados já digitados"><i class="bi bi-download me-1"></i>modelo</button>
+              <?php endif; ?>
+              <input type="file" name="doc_<?= $i ?>" class="form-control form-control-sm" style="max-width:250px">
+            </div>
           </div>
         <?php endforeach; ?>
 
@@ -174,7 +183,18 @@ $docs = checklist_documentos($_POST['publico'] ?? 'Investidores em geral');
       </form>
     </div>
   </div>
-  <p class="text-muted mt-3" style="font-size:.72rem">Piloto: os arquivos não são armazenados — apenas o nome entra no checklist. Em produção, upload seguro com verificação e trilha de auditoria.</p>
+  <p class="text-muted mt-3" style="font-size:.72rem">As minutas dos documentos do fundo são geradas automaticamente e ficam disponíveis para consulta e download no acompanhamento da abertura.</p>
 </div>
+<script>
+function baixarModelo(nome){
+  var f = document.forms[0], v = function(n){ return f[n] ? f[n].value : ''; };
+  var q = new URLSearchParams({
+    doc: nome, nome_fundo: v('fundo_nome'), gestora: v('gestora_nome'),
+    classe: v('classe'), benchmark: v('benchmark'), publico: v('publico'),
+    condominio: v('condominio'), taxa_gestao: v('taxa_gestao'), taxa_perf: v('taxa_perf')
+  });
+  window.open('template_modelo.php?' + q.toString(), '_blank');
+}
+</script>
 </body>
 </html>

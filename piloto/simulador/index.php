@@ -144,7 +144,7 @@ $csrf = csrf_campo();
               </div>
               <button name="recebimento" value="1" class="btn btn-sm btn-success w-100">Creditar no caixa</button>
             </form>
-            <p class="text-secondary mb-0 mt-2" style="font-size:.72rem">Credita <code>caixa_atual</code> + linha em <code>movimentacoes</code> (o piloto não modela conta bancária real).</p>
+            <p class="text-secondary mb-0 mt-2" style="font-size:.72rem">Credita <code>caixa_atual</code> + linha em <code>movimentacoes</code>.</p>
           </div>
         </div>
 

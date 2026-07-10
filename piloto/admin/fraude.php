@@ -71,7 +71,7 @@ $regras = [
 ];
 
 page_start('Monitoramento de fraude · IA', 'IA · Fraude', $u,
-    'Motor de vigilância que roda sobre todos os fundos, todos os dias — o que as grandes não oferecem para fundos pequenos');
+    'Motor de vigilância que roda sobre todos os fundos, todos os dias — o que a administração tradicional não faz com esse rigor');
 ?>
 
 <?php if ($msg): ?><div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i><?= e_html($msg) ?></div><?php endif; ?>
@@ -134,7 +134,7 @@ page_start('Monitoramento de fraude · IA', 'IA · Fraude', $u,
       <div class="card-body">
         <canvas id="grafo-partes"></canvas>
         <div class="d-flex gap-3 mt-2 flex-wrap" style="font-size:.78rem">
-          <span><span class="semaforo" style="background:#c9a227"></span>gestora</span>
+          <span><span class="semaforo" style="background:#6a50ac"></span>gestora</span>
           <span><span class="semaforo" style="background:#14b8a6"></span>fundo</span>
           <span><span class="semaforo" style="background:#3b82f6"></span>contraparte</span>
           <span><span class="semaforo" style="background:#8b5cf6"></span>pessoa física</span>
@@ -158,9 +158,8 @@ page_start('Monitoramento de fraude · IA', 'IA · Fraude', $u,
         </table>
       </div>
       <div class="card-footer text-muted" style="font-size:.78rem">
-        No piloto, os alertas nascem destas regras determinísticas sobre os dados simulados. Em produção, a mesma trilha de
-        dados alimenta modelos de detecção de anomalias — e todo tratamento (quem viu, o que decidiu, quando) fica registrado,
-        que é o que protege o banco perante a CVM.
+        Os alertas nascem destas regras determinísticas; a mesma trilha de dados alimenta modelos de detecção de anomalias — e
+        todo tratamento (quem viu, o que decidiu, quando) fica registrado, o que protege o banco perante a CVM.
       </div>
     </div>
   </div>

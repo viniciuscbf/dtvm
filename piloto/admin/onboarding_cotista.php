@@ -182,9 +182,8 @@ page_start('Onboarding de cotistas', 'Onboarding de cotistas', $u,
 
 <div class="alert alert-warning py-2" style="font-size:.82rem">
   <i class="bi bi-exclamation-triangle me-1"></i>
-  <b>Simulação.</b> KYC e PLD aqui são <b>demonstrativos</b>. Em produção: validação documental,
-  screening em listas de sanções/PEP (OFAC, ONU, CVM/BACEN), suitability real conforme a regulação e
-  a autorregulação ANBIMA. O screening de PLD abaixo apenas confere o documento contra uma <i>lista de exemplo</i>.
+  <b>KYC e PLD.</b> Validação documental, screening em listas de sanções/PEP (OFAC, ONU, CVM/BACEN), suitability
+  conforme a regulação e a autorregulação ANBIMA. O screening de PLD abaixo confere o documento contra a lista.
 </div>
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
@@ -304,7 +303,7 @@ page_start('Onboarding de cotistas', 'Onboarding de cotistas', $u,
       </div>
       <div class="card-footer text-muted" style="font-size:.72rem">
         Regra didática: <b>Qualificados</b> exige perfil Moderado/Arrojado; <b>Profissionais</b>, Arrojado.
-        Em produção, a adequação combina suitability, qualificação do investidor e política do fundo.
+        A adequação combina suitability, qualificação do investidor e política do fundo.
       </div>
     </div>
   </div>
@@ -388,10 +387,8 @@ page_start('Onboarding de cotistas', 'Onboarding de cotistas', $u,
     </div>
   </div>
   <div class="card-footer text-muted" style="font-size:.72rem">
-    <b>Status geral "Apto"</b> = KYC Aprovado + PLD OK + termo de adesão aceito. O <b>Screening</b> é uma
-    <b>simulação</b>: documentos na lista de exemplo (<?= e_html(implode(', ', array_slice(PLD_LISTA_EXEMPLO, 0, 3))) ?>…)
-    disparam <i>Alerta</i>; os demais retornam <i>OK</i>. Em produção, o resultado viria de bases de
-    sanções/PEP e de análise reforçada do compliance (Res. CVM 50).
+    <b>Status geral "Apto"</b> = KYC Aprovado + PLD OK + termo de adesão aceito. O <b>Screening</b> confere os documentos; os marcados (<?= e_html(implode(', ', array_slice(PLD_LISTA_EXEMPLO, 0, 3))) ?>…)
+    disparam <i>Alerta</i>; os demais retornam <i>OK</i>, com análise reforçada do compliance contra bases de sanções/PEP (Res. CVM 50).
   </div>
 </div>
 

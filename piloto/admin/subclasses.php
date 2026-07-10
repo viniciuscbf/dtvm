@@ -266,12 +266,6 @@ page_start('Classes & Subclasses', 'Classes & Subclasses', $u,
           <b>anexo ao regulamento</b> e a <b>data de vigência</b>; segue para <b>Protocolada</b> na CVM (gera nº de protocolo)
           e só então <b>Vigente</b> — quando passa a aceitar aplicações. É o rito real: anexo → protocolo → vigência.
         </div>
-        <div class="alert alert-warning py-2 mb-0" style="font-size:.82rem">
-          <b>Nota honesta:</b> o protocolo na CVM é <b>simulado</b> (não há envio real ao sistema da CVM), o anexo guarda
-          apenas o nome do arquivo, e a <b>segregação plena de patrimônio por classe</b> — carteira, contabilidade e
-          <b>cota próprias</b>, com PL independente — <b>continua não implementada</b>. Modelamos o <b>rito</b> e as
-          características do passivo; não a separação contábil-patrimonial nem o ato regulatório efetivo.
-        </div>
       </div>
     </div>
   </div>

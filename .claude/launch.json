@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "landing",
-      "runtimeExecutable": "php",
+      "runtimeExecutable": "C:/xampp/php/php.exe",
       "runtimeArgs": ["-S", "127.0.0.1:8088", "-t", "landing"],
       "port": 8088
     },
@@ -12,6 +12,12 @@
       "runtimeExecutable": "C:/xampp/php/php.exe",
       "runtimeArgs": ["-S", "127.0.0.1:8099", "-t", "."],
       "port": 8099
+    },
+    {
+      "name": "piloto-static",
+      "runtimeExecutable": "C:/xampp/php/php.exe",
+      "runtimeArgs": ["-S", "127.0.0.1:8097", "-t", "piloto"],
+      "port": 8097
     }
   ]
 }

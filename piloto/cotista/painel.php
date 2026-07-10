@@ -70,7 +70,7 @@ if ($dataCart) {
 <body>
 <nav style="background:var(--navy)" class="py-2 px-4 d-flex justify-content-between align-items-center">
   <div class="d-flex align-items-center gap-2 text-white">
-    <i class="bi bi-bank2" style="color:#c9a227"></i>
+    <img src="../assets/favicon.png" alt="Argus" style="height:26px;width:26px;object-fit:contain">
     <b style="font-size:.85rem;letter-spacing:1px">PORTAL DO COTISTA</b>
   </div>
   <div class="d-flex align-items-center gap-3">
@@ -125,7 +125,7 @@ if ($dataCart) {
 document.addEventListener('DOMContentLoaded', () => {
   graficoLinha('graf', <?= json_encode($labels) ?>, [
     { label: 'Fundo', data: <?= json_encode($fundoBase) ?>, cor: '#14b8a6', fill: true },
-    { label: '<?= e_html($fundo['benchmark']) ?>', data: <?= json_encode($cdiBase) ?>, cor: '#c9a227', borderDash: [6,4] }
+    { label: '<?= e_html($fundo['benchmark']) ?>', data: <?= json_encode($cdiBase) ?>, cor: '#94a3b8', borderDash: [6,4] }
   ]);
   graficoRosca('graf-classe', <?= json_encode(array_keys($porClasse)) ?>,
     <?= json_encode(array_map(fn($v) => round($v, 2), array_values($porClasse))) ?>);

@@ -28,9 +28,8 @@ require_once __DIR__ . '/includes/auth.php';
 <div class="hero">
   <div class="container py-4 d-flex justify-content-between align-items-center">
     <div class="d-flex align-items-center gap-2">
-      <i class="bi bi-bank2" style="font-size:1.5rem;color:var(--gold)"></i>
+      <img src="assets/favicon.png" alt="Argus" style="height:32px;width:32px;object-fit:contain">
       <span style="font-weight:700;letter-spacing:2px;font-size:.9rem">ARGUS <span style="font-weight:400;color:var(--gold)">DTVM</span></span>
-      <span class="text-secondary" style="font-size:.7rem">· piloto · dados simulados</span>
     </div>
     <a class="btn btn-sm btn-portal-outline btn" href="gestor/cadastro.php">Constitua seu fundo →</a>
   </div>
@@ -38,7 +37,7 @@ require_once __DIR__ . '/includes/auth.php';
   <div class="container my-auto py-5">
     <div class="row align-items-center g-5">
       <div class="col-lg-5">
-        <h1 style="font-size:2.1rem;color:#fff">A administradora fiduciária desenhada para <span style="color:var(--gold)">fundos pequenos</span></h1>
+        <h1 style="font-size:2.1rem;color:#fff">A administradora fiduciária desenhada para <span style="color:var(--gold)">rodar em escala</span></h1>
         <p class="text-secondary mt-3" style="font-size:.95rem">
           Taxa de administração de 0,08% a.a. com piso de R$ 100/mês. Abertura padronizada,
           cota diária automatizada com aprovação do gestor, monitoramento de fraude por IA
@@ -75,7 +74,7 @@ require_once __DIR__ . '/includes/auth.php';
           </div>
           <div class="col-md-6 col-lg-3">
             <div class="portal-card">
-              <div class="portal-icone" style="background:rgba(201,162,39,.18);color:#eeda9a"><i class="bi bi-shield-lock"></i></div>
+              <div class="portal-icone" style="background:rgba(106,80,172,.2);color:#b6a4e0"><i class="bi bi-shield-lock"></i></div>
               <h6 style="color:#fff">Administradora</h6>
               <p class="text-secondary" style="font-size:.78rem">Área restrita da equipe: processamento diário, conciliação,
                  aprovações de abertura, lançamentos e monitoramento de fraude.</p>

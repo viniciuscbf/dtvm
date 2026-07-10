@@ -614,11 +614,6 @@ page_start('FIP / Private Equity', 'FIP / Private Equity', $u,
           <li><b>Trava anti-conflito:</b> a remuneração de administrador/gestor <b>não</b> pode ser calculada sobre ajustes de valor
               justo de investimentos <b>ainda não vendidos</b>; DFs auditadas por auditor registrado na CVM (envio em até 90 dias).</li>
         </ul>
-        <div class="alert alert-warning py-2 mb-0" style="font-size:.8rem">
-          <b>No piloto:</b> o laudo é um registro simplificado (valor + método + texto) que <b>eleva o PL</b> na cota. O
-          <b>cálculo do modelo</b> (DCF/múltiplos), o parecer do avaliador independente e o fluxo de aprovação do comitê
-          são <b>descritos, não executados</b>.
-        </div>
       </div>
     </div>
   </div>
@@ -658,7 +653,7 @@ page_start('FIP / Private Equity', 'FIP / Private Equity', $u,
       pela MP 1.137/2022. <b>IOF:</b> aplicação/resgate em FIP costuma ser IOF-título zero; ingresso de capital estrangeiro (4373) IOF-câmbio zero.
     </div>
     <div class="alert alert-warning py-2 mb-0" style="font-size:.8rem">
-      <b>No piloto:</b> o motor aplica <b>15% flat</b> no evento de saída e <b>não</b> roda come-cotas para o FIP (coerente com o
+      O motor aplica <b>15% flat</b> no evento de saída e <b>não</b> roda come-cotas para o FIP (coerente com o
       caso <b>entidade de investimento</b>). O <b>teste de enquadramento</b> (90% / influência), o controle de <b>subcontas</b> de
       diferimento e a distinção estrangeiro/paraíso fiscal são <b>descritos, não calculados</b>.
     </div>

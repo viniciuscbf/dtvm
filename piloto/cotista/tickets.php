@@ -104,7 +104,7 @@ if (!empty($_GET['id'])) {
 <body>
 <nav style="background:var(--navy)" class="py-2 px-4 d-flex justify-content-between align-items-center">
   <div class="d-flex align-items-center gap-2 text-white">
-    <i class="bi bi-bank2" style="color:#c9a227"></i>
+    <img src="../assets/favicon.png" alt="Argus" style="height:26px;width:26px;object-fit:contain">
     <b style="font-size:.85rem;letter-spacing:1px">PORTAL DO COTISTA</b>
   </div>
   <div class="d-flex align-items-center gap-3">

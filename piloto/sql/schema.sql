@@ -257,6 +257,7 @@ CREATE TABLE documentos_abertura (
   status ENUM('Pendente','Recebido','Aprovado','Rejeitado') DEFAULT 'Pendente',
   arquivo VARCHAR(200) NULL,          -- nome do arquivo enviado (upload simulado)
   motivo VARCHAR(300) NULL,           -- motivo de rejeição
+  conteudo LONGTEXT NULL,             -- conteúdo do documento/minuta gerado pela plataforma (NULL = anexo externo)
   atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (fundo_id) REFERENCES fundos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

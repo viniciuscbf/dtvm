@@ -4,6 +4,8 @@
 > As diferenças, exigências e burocracias entre **(A) abrir um CNPJ próprio para atuar em parceria com o banco** e **(B) ser contratado/vinculado diretamente ao banco** (por exemplo, como diretor da área de administração fiduciária). Cobre: se você precisa ser contratado, qual cargo teria, o que cada caminho exige, e uma recomendação.
 >
 > **Aviso:** baseado na Resolução CVM 21 e normas correlatas (jul/2026). A escolha tem efeitos societários, tributários e trabalhistas — valide com advogado e contador antes de decidir.
+>
+> **ESTRUTURA DE RECEITA ATUALIZADA (2026-07-09):** os exemplos "75/25" ao longo deste documento predatam a divisão vigente. A atual é **50% banco / 50% Argus no início**, com **opção de a Argus recomprar 35 p.p. por R$ 2 mi (corrigidos pelo IPCA) → 15% banco / 85% Argus**. O banco (administrador de fato: decide, controla, responde) remunera a Argus como **prestadora de tecnologia/operação** (Res. CVM 175, art. 118, §1º). Leia os "75%" abaixo como a lógica de "parceiro externo recebe a maior parte", com os novos percentuais. Ver `due_diligence_juridica.md`.
 
 ---
 

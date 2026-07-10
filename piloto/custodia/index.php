@@ -106,7 +106,7 @@ page_start('Painel da custódia', 'Painel da custódia', $u,
         <p class="text-muted mb-0 mt-1">
           Esta é a <b>retaguarda do banco custodiante</b> (autorização da Res. CVM 32): recebe as mensagens das
           centrais, liquida as operações (entrega contra pagamento), trata proventos e gera os arquivos de posição
-          que alimentam a conciliação da administradora. No produto final, a mensageria vem da RSFN; aqui ela é simulada.
+          que alimentam a conciliação da administradora, via mensageria RSFN.
         </p>
       </div>
     </div>

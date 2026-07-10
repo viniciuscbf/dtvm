@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
   graficoBarras('graf-receita',
     <?= json_encode(array_column($evolucao, 'competencia')) ?>,
     [{ label: 'Administradora (75%)', data: <?= json_encode(array_map(fn($e) => round((float)$e['receita'] - (float)$e['banco'], 2), $evolucao)) ?>, cor: '#14b8a6' },
-     { label: 'Banco parceiro (25%)', data: <?= json_encode(array_map(fn($e) => round((float)$e['banco'], 2), $evolucao)) ?>, cor: '#c9a227' }],
+     { label: 'Banco parceiro (25%)', data: <?= json_encode(array_map(fn($e) => round((float)$e['banco'], 2), $evolucao)) ?>, cor: '#6a50ac' }],
     true);
 });
 </script>

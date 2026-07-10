@@ -162,7 +162,7 @@ page_start('Aprovação de cota', 'Aprovação de cota', $u,
   </div>
 </div>
 <p class="text-muted mt-3" style="font-size:.78rem"><i class="bi bi-info-circle me-1"></i>
-Fluxo real reproduzido no piloto: a controladoria precifica, bate a carteira e fecha a prévia de D-1 → você
+Fluxo: a controladoria precifica, bate a carteira e fecha a prévia de D-1 → você
 <b>confere</b> (a carteira e os relatórios do dia já ficam disponíveis como PRÉVIA justamente para isso) e aprova
 (publica — vira OFICIAL) ou rejeita apontando a divergência → a controladoria corrige via lançamentos,
 <b>reprocessa</b> (nova versão) e reenvia.</p>

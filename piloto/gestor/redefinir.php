@@ -38,14 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="alert alert-danger py-2" style="font-size:.85rem"><i class="bi bi-x-circle me-1"></i>
           Link inválido ou expirado. Peça um novo em <a href="recuperar.php">Recuperar senha</a>.</div>
       <?php else: ?>
-        <p class="text-muted" style="font-size:.85rem">Conta: <b><?= e_html($reset['email']) ?></b>. Escolha uma nova senha (mín. 6 caracteres).</p>
+        <p class="text-muted" style="font-size:.85rem">Conta: <b><?= e_html($reset['email']) ?></b>. Escolha uma nova senha (mín. 8, com maiúscula, número e símbolo).</p>
         <?php if ($erro): ?><div class="alert alert-danger py-2" style="font-size:.82rem"><?= e_html($erro) ?></div><?php endif; ?>
         <form method="post">
           <?= csrf_campo() ?>
           <input type="hidden" name="token" value="<?= e_html($token) ?>">
           <div class="mb-3">
             <label class="form-label" style="font-size:.8rem">Nova senha</label>
-            <input type="password" name="senha" class="form-control" required minlength="6" autofocus>
+            <input type="password" name="senha" class="form-control" required minlength="8" pattern="<?= SENHA_PATTERN ?>" title="<?= SENHA_TITLE ?>" autofocus>
           </div>
           <button class="btn w-100" style="background:#14b8a6;color:#fff">Salvar nova senha</button>
         </form>

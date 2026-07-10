@@ -45,7 +45,7 @@ Sessões antigas são invalidadas automaticamente (revalidação no banco a cada
 
 ## Simulador Master (painel de controle) — `/simulador/`
 
-Segundo site, à parte da plataforma, para **conduzir a simulação** (senha própria — demo `master123`, independente dos portais). Acesse por **http://localhost/piloto/simulador/** ou pelo link no rodapé da landing.
+Segundo site, à parte da plataforma, para **conduzir a simulação** (senha `god123`, separada dos portais). Acesse por **http://localhost/piloto/simulador/** ou pelo link no rodapé da landing.
 
 - **Passar de dia** — o "hoje" é hipotético; o master avança para o próximo dia útil, gerando novos preços (renda variável varia, renda fixa acretem CDI), recalculando cota/PL e montando a esteira de processamento de todos os fundos;
 - **Reset** — recria o schema e recarrega o `seed.sql` (volta ao estado de fábrica; apaga aplicações, resgates, tributos e avanços de dia);

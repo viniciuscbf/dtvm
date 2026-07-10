@@ -12,6 +12,7 @@ $fid = (int)$fundo['id'];
 
 if ($fundo['status'] === 'Ativo') { header('Location: index.php'); exit; }
 
+ensure_documentos_conteudo($pdo);   // garante a coluna de conteúdo das minutas (fora de transação)
 $st = $pdo->prepare('SELECT * FROM onboarding_etapas WHERE fundo_id = ? ORDER BY ordem');
 $st->execute([$fid]);
 $etapas = $st->fetchAll();
@@ -20,7 +21,14 @@ $st = $pdo->prepare("SELECT * FROM documentos_abertura WHERE fundo_id = ? ORDER 
 $st->execute([$fid]);
 $docs = $st->fetchAll();
 
-// reenvio de documento pendente/rejeitado (upload simulado)
+// garante que as minutas dos documentos do fundo (categoria "Fundo") existam e estejam guardadas
+if (array_filter($docs, fn($d) => $d['categoria'] === 'Fundo' && empty($d['conteudo']))) {
+    gerar_e_salvar_templates($pdo, $fid);
+    $st->execute([$fid]);
+    $docs = $st->fetchAll();
+}
+
+// reenvio de documento pendente/rejeitado
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['reenviar_doc'])) {
     $arq = $_FILES['arquivo']['name'] ?? '';
     if ($arq) {
@@ -43,6 +51,30 @@ page_start('Abertura do fundo', 'Visão geral', $u,
     <b>Solicitação recebida!</b> Seu acesso foi criado. Acompanhe abaixo cada etapa e o status de análise dos documentos.</div>
 <?php elseif (isset($_GET['enviado'])): ?>
   <div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i>Documento reenviado — entrou na fila de análise da administradora.</div>
+<?php endif; ?>
+
+<?php $minutas = array_filter($docs, fn($d) => !empty($d['conteudo'])); ?>
+<?php if ($minutas): ?>
+<div class="card mb-3 border-success">
+  <div class="card-header"><i class="bi bi-file-earmark-text me-1"></i> Minutas dos documentos do fundo — geradas pela plataforma
+    <span class="text-muted float-end" style="font-size:.74rem">preenchidas com os dados do seu fundo · Res. CVM 175</span></div>
+  <div class="card-body">
+    <p class="text-muted" style="font-size:.82rem;margin-bottom:.7rem">Estas minutas já vêm prontas para consulta e download. Revise com seu advogado antes do registro na CVM.</p>
+    <div class="row g-2">
+      <?php foreach ($minutas as $d): ?>
+        <div class="col-md-6">
+          <div class="d-flex justify-content-between align-items-center border rounded p-2" style="font-size:.85rem">
+            <span class="text-truncate me-2"><i class="bi bi-file-earmark-text me-2 text-muted"></i><?= e_html($d['nome']) ?></span>
+            <span class="d-flex gap-1 flex-shrink-0">
+              <a href="documento_ver.php?id=<?= (int)$d['id'] ?>" class="btn btn-sm btn-outline-primary" title="Ver"><i class="bi bi-eye"></i></a>
+              <a href="documento_ver.php?id=<?= (int)$d['id'] ?>&dl=1" class="btn btn-sm btn-outline-secondary" title="Baixar"><i class="bi bi-download"></i></a>
+            </span>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</div>
 <?php endif; ?>
 
 <div class="row g-3">
@@ -98,6 +130,7 @@ page_start('Abertura do fundo', 'Visão geral', $u,
             <tr class="<?= $d['status'] === 'Rejeitado' ? 'table-danger' : '' ?>">
               <td><?= e_html($d['nome']) ?> <?= $d['obrigatorio'] ? '<span class="text-danger">*</span>' : '' ?>
                 <?php if ($d['arquivo']): ?><br><span class="text-muted" style="font-size:.72rem"><i class="bi bi-paperclip"></i> <?= e_html($d['arquivo']) ?></span><?php endif; ?>
+                <?php if (!empty($d['conteudo'])): ?><br><a href="documento_ver.php?id=<?= (int)$d['id'] ?>" style="font-size:.74rem"><i class="bi bi-file-earmark-text me-1"></i>ver minuta gerada</a><?php endif; ?>
                 <?php if ($d['status'] === 'Rejeitado' && $d['motivo']): ?><br><span class="text-danger" style="font-size:.75rem"><i class="bi bi-x-circle"></i> <?= e_html($d['motivo']) ?></span><?php endif; ?>
               </td>
               <td><?= badge($d['categoria'], 'secondary') ?></td>
