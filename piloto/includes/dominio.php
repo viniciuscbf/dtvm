@@ -360,6 +360,26 @@ const TEMAS_TICKET = [
     'Abertura / alteração de fundo', 'Outros',
 ];
 
+/** CONTA DE ACESSO do cotista (login por e-mail/senha — substitui os tokens por link):
+ *  uma conta pode estar vinculada a POSIÇÕES em vários fundos (cotistas.conta_id).
+ *  A transparência da carteira é política GLOBAL do fundo (fundos.transparencia),
+ *  definida pelo gestor: realtime | delay_1m | delay_3m | off. */
+function ensure_contas_cotista(PDO $pdo): void {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS cotista_contas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nome VARCHAR(150) NOT NULL,
+        documento VARCHAR(24) NOT NULL,
+        email VARCHAR(120) NOT NULL UNIQUE,
+        senha_hash VARCHAR(255) NOT NULL,
+        status ENUM('Ativa','Bloqueada') DEFAULT 'Ativa',
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+        ultimo_acesso DATETIME NULL,
+        INDEX idx_cc_doc (documento)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    ddl_portavel($pdo, "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS conta_id INT NULL");
+    ddl_portavel($pdo, "ALTER TABLE fundos ADD COLUMN IF NOT EXISTS transparencia VARCHAR(12) DEFAULT 'delay_1m'");
+}
+
 /** Posição custodiada — fonte INDEPENDENTE da carteira da administradora (para conciliação real). */
 function ensure_posicao_custodiante(PDO $pdo): void {
     $pdo->exec("CREATE TABLE IF NOT EXISTS posicao_custodiante (
@@ -682,6 +702,8 @@ function ensure_dominio(PDO $pdo): void {
     ensure_posicao_custodiante($pdo);
     ensure_precos($pdo);
     ensure_kyc_cotista($pdo);
+    ensure_ordens_passivo($pdo);
+    ensure_contas_cotista($pdo);
     ensure_subclasses($pdo);
     ensure_fund_types($pdo);
     ensure_derivativos($pdo);

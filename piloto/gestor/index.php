@@ -32,10 +32,14 @@ $st = $pdo->prepare("SELECT COUNT(*) FROM fechamentos WHERE fundo_id = ? AND sta
 $st->execute([$fid]);
 $previasPendentes = (int)$st->fetchColumn();
 
-// tokens de cotistas ativos
-$st = $pdo->prepare("SELECT COUNT(*) FROM tokens_acesso WHERE fundo_id = ? AND status = 'Ativo'");
-$st->execute([$fid]);
-$tokensAtivos = (int)$st->fetchColumn();
+// cotistas com conta de acesso ao portal (vinculada e ativa)
+$tokensAtivos = 0;
+try {
+    $st = $pdo->prepare("SELECT COUNT(*) FROM cotistas c JOIN cotista_contas cc ON cc.id = c.conta_id
+                         WHERE c.fundo_id = ? AND cc.status = 'Ativa'");
+    $st->execute([$fid]);
+    $tokensAtivos = (int)$st->fetchColumn();
+} catch (Throwable $t) { /* tabela lazy pode não existir ainda */ }
 
 [$enqOk, $violadas] = situacao_enquadramento($pdo, $fundo);
 $st = $pdo->prepare('SELECT * FROM comunicados WHERE fundo_id = ? OR fundo_id IS NULL ORDER BY data_pub DESC LIMIT 3');

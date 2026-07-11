@@ -66,10 +66,10 @@ require_once __DIR__ . '/includes/auth.php';
             <div class="portal-card">
               <div class="portal-icone" style="background:rgba(59,130,246,.18);color:#93c5fd"><i class="bi bi-person-badge"></i></div>
               <h6 style="color:#fff">Portal do Cotista</h6>
-              <p class="text-secondary" style="font-size:.78rem">Veja a evolução do fundo contra o benchmark e a composição
-                 da carteira. Acesso simples: apenas o token fornecido pelo gestor.</p>
-              <a class="btn btn-sm btn-portal w-100" href="cotista/index.php">Acessar com token</a>
-              <span class="d-block text-center mt-2 text-secondary" style="font-size:.72rem">sem cadastro, sem senha</span>
+              <p class="text-secondary" style="font-size:.78rem">Posição consolidada de todos os seus fundos, aplicação e
+                 resgate pelo portal, extrato fiscal e canal direto com o gestor.</p>
+              <a class="btn btn-sm btn-portal w-100" href="cotista/index.php">Entrar</a>
+              <a class="d-block text-center mt-2 text-secondary" style="font-size:.72rem" href="cotista/index.php">primeira vez? crie seu cadastro</a>
             </div>
           </div>
           <div class="col-md-6 col-lg-3">

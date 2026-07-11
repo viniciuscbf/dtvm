@@ -1530,7 +1530,7 @@ INSERT INTO usuario_fundos (usuario_id, fundo_id) VALUES (2,1),(2,9),(3,4),(4,7)
 
 -- ---------- tokens_acesso (UUIDs fixos p/ demo) ----------
 INSERT INTO tokens_acesso (fundo_id, token, nivel, descricao, status, criado_por, criado_em, revogado_em) VALUES
-(1, '3f2a1c9e-8b47-4d10-9e2f-6a5d4c3b2a19', 'realtime', 'Holding Miradouro (institucional)', 'Ativo', 'Ricardo Nunes', '2026-06-15 10:20:00', NULL),
+(1, '3f2a1c9e-8b47-4d10-9e2f-6a5d4c3b2a19', 'realtime', 'Ricardo Alves (pessoa física)', 'Ativo', 'Ricardo Nunes', '2026-06-15 10:20:00', NULL),
 (1, '7c9e4b2a-1f3d-4e8c-a6b5-0d9f8e7c6b5a', 'delay_1m', 'Família Azevedo', 'Ativo', 'Ricardo Nunes', '2026-05-25 15:05:00', NULL),
 (1, 'a1b2c3d4-e5f6-4789-8abc-def012345678', 'delay_3m', 'Investidor pessoa física — teste', 'Revogado', 'Ricardo Nunes', '2026-04-13 09:00:00', '2026-06-22 11:30:00'),
 (4, '9d8c7b6a-5e4f-4321-b0a9-8c7d6e5f4a3b', 'delay_3m', 'Cotistas do clube (visão padrão)', 'Ativo', 'Luísa Andrade', '2026-06-08 14:45:00', NULL);
@@ -2385,4 +2385,34 @@ SELECT fundo_id, data_ref, codigo, tipo, quantidade,
             ELSE 'B3 Depositária' END
 FROM ativos_carteira WHERE data_ref = '2026-07-03';
 UPDATE posicao_custodiante SET quantidade = 27669 WHERE fundo_id = 7 AND codigo = 'NORD3' AND data_ref = '2026-07-03';
+
+-- ---------- portal do cotista: vínculo do token, conta cadastrada e ordens de exemplo ----------
+-- Token realtime do fundo 1 vira o portal do cotista Ricardo Alves (habilita aplicar/resgatar).
+UPDATE tokens_acesso SET cotista_id = 1 WHERE token = '3f2a1c9e-8b47-4d10-9e2f-6a5d4c3b2a19';
+-- Conta bancária CADASTRADA do cotista (mesma titularidade): origem esperada da aplicação
+-- e destino obrigatório do resgate (prática de PLD).
+UPDATE cotistas SET banco = 'Banco Aurora S.A. (030)', agencia = '0001', conta = '48.732-1',
+                    pix_chave = 'ricardo.alves@email.com.br' WHERE id = 1;
+-- Ordens de exemplo (a fila que a administradora vê):
+--  · Pix RECEBIDO com titularidade OK (pronto p/ cotizar);
+--  · TED aguardando pagamento;
+--  · resgate solicitado (sai líquido de IR/IOF p/ a conta cadastrada).
+INSERT INTO ordens_passivo (fundo_id, cotista_id, tipo, valor, metodo, txid, pagador_doc, status, criado_em) VALUES
+(1, 1, 'Aplicação', 100000.00, 'Pix', 'A7F3B2C914D85E60A1B2C3D4', '***.172.911-**', 'Recebida', '2026-07-03 09:12:00'),
+(1, 1, 'Aplicação', 25000.00, 'TED', NULL, NULL, 'Aguardando pagamento', '2026-07-03 10:40:00'),
+(1, 1, 'Resgate', 15000.00, NULL, NULL, NULL, 'Solicitado', '2026-07-03 11:02:00');
+
+-- ---------- CONTA DE ACESSO do cotista (login e-mail/senha; multi-fundo) ----------
+-- Demo: Ricardo Alves — senha Cotista@123 — com posições no fundo 1 e no fundo 2.
+INSERT INTO cotista_contas (id, nome, documento, email, senha_hash, status, criado_em) VALUES
+(1, 'Ricardo Alves', '***.172.911-**', 'ricardo.alves@email.com.br',
+ '$2y$10$HRgZ/xd2XJ2VtL9hwMuEuOncQUvL4CFNu/WlZNQp2YAKdA1J/rzqq', 'Ativa', '2026-06-15 10:20:00');
+UPDATE cotistas SET conta_id = 1 WHERE id = 1;
+-- segundo vínculo: a posição 44 (fundo 2) passa a ser do mesmo Ricardo (visão consolidada multi-fundo)
+UPDATE cotistas SET nome = 'Ricardo Alves', documento = '***.172.911-**', conta_id = 1,
+                    banco = 'Banco Aurora S.A. (030)', agencia = '0001', conta = '48.732-1',
+                    pix_chave = 'ricardo.alves@email.com.br' WHERE id = 44;
+-- transparência GLOBAL por fundo (política do gestor p/ o portal): fundo 1 tempo real; fundo 2 defasada 3m
+UPDATE fundos SET transparencia = 'realtime' WHERE id = 1;
+UPDATE fundos SET transparencia = 'delay_3m' WHERE id = 2;
 

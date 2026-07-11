@@ -28,7 +28,7 @@ Escopo **fora** (não implementar sem pedido): FIDC, FII. Sempre manter as **not
 - gestor principal: `gestor@auroracapital.com.br` (fundos 1 e 9) · outros: `gestor@horizonteinvest.com.br`, `gestor@atlascapital.com.br`, `gestor@novafronteira.com.br`
 - **funcionário sem fundo** (demo de convite/equipe): `analista@auroracapital.com.br`
 - custódia: `custodia@bancoparceiro.com.br`
-- cotista (token, fundo 1): `3f2a1c9e-8b47-4d10-9e2f-6a5d4c3b2a19`
+- cotista (CONTA e-mail/senha — tokens foram aposentados): `ricardo.alves@email.com.br` / `Cotista@123` (multi-fundo: posições nos fundos 1 e 2)
 - Simulator Master (2º site, `piloto/simulador/`): senha `god123` (god-mode, separada dos portais demo123)
 
 ## Estrutura
@@ -39,7 +39,7 @@ dtvm/
 └─ piloto/
    ├─ config/db.php                           # conexão PDO
    ├─ includes/                               # TODA a lógica (ver abaixo)
-   ├─ admin/ (24) gestor/ (24) cotista/ (4) custodia/ (6) simulador/ (3)   # portais
+   ├─ admin/ (24) gestor/ (24) cotista/ (7) custodia/ (6) simulador/ (3)   # portais
    ├─ api/                                     # endpoints JSON (alertas, carteira_export, cota_historico, relatorio)
    ├─ sql/schema.sql · seed.sql               # reset de fábrica
    └─ assets/ · index.php · logout.php
@@ -54,7 +54,7 @@ dtvm/
 - **Estilo:** comentários em pt-BR, Bootstrap 5, `e_html()` sempre no output. Combine com o código ao redor.
 
 ## Onde cada coisa mora (`includes/`)
-- `auth.php` — sessão, login, `exigir_perfil`, `fundos_do_usuario`/`fundo_do_usuario`, token do cotista (`exigir_token`). `fundos_do_usuario` lê `fundo_membros` (Ativo) com **fallback** para `usuario_fundos` e `usuarios.fundo_id`.
+- `auth.php` — sessão, login, `exigir_perfil`, `fundos_do_usuario`/`fundo_do_usuario`. **Conta do cotista** (substituiu o token): `login_conta_cotista`, `exigir_conta_cotista`, `fundos_da_conta` (vínculos via `cotistas.conta_id`), `data_corte_transparencia`/`rotulo_transparencia` (política GLOBAL `fundos.transparencia`: realtime/delay_1m/delay_3m/off). `exigir_token` legado ainda existe mas nenhuma página usa. `fundos_do_usuario` lê `fundo_membros` (Ativo) com **fallback** para `usuario_fundos` e `usuarios.fundo_id`.
 - `seguranca.php` — CSRF, headers, cookie de sessão, timeout.
 - `dominio.php` — infra central: `com_transacao`, nonce, dia útil/feriados, provisão de despesas, `caixa_na_data`, `total_cotas_na_data`, e a maioria dos `ensure_*` (catálogo, tickets, KYC, subclasses, tipos de fundo, posição custodiante, preços).
 - `helpers.php` — `calcular_cota`, `carteira`, badges, formatação, `fundos_do_usuario` helpers.
@@ -71,7 +71,7 @@ dtvm/
 - `simulador.php` — "passar de dia" do Simulator Master (marca ativos, ajusta derivativos, gera cotas). `layout.php` — sidebar/menu por perfil (menu do gestor é **filtrado por permissão** via `permissao_de_menu()`). `pdf.php` — geração de PDF.
 
 ## Modelo de acesso (importante)
-- Perfis: `admin`, `gestor`, `custodia`. Cotista **não tem usuário** — entra por token.
+- Perfis: `admin`, `gestor`, `custodia`. Cotista tem **conta própria** (`cotista_contas`, e-mail+senha bcrypt, senha forte via `senha_valida` — que retorna **tupla `[bool,msg]`**): autocadastro em `cotista/index.php` ou acesso criado pelo gestor em `gestor/acessos.php` (senha provisória exibida uma vez). Uma conta enxerga N fundos via `cotistas.conta_id`. Páginas: `home` (consolidado), `painel` (por fundo), `movimentar`, `tickets`, `dados` (conta bancária + trocar senha), `sair`. Transparência da carteira é **política global por fundo** (`fundos.transparencia`), não por cotista; a posição própria é sempre visível.
 - Gestor: conta pode começar **sem fundo**; cria o 1º em `gestor/novo_fundo.php` (vira **principal**; todo fundo tem ≥1 principal). Convida contas por `account_id` em `gestor/equipe.php`; membro entra **sem permissões** até o principal liberar por checkbox (permissões de **visão** e **ação**). Páginas de gestor têm gate `exigir_permissao(...)` e o menu esconde o que não é permitido.
 - Tickets: tabela `tickets` com coluna `canal` — `gestor_admin` (gestor↔administradora, em `admin/tickets.php`/`gestor/tickets.php`) e `cotista_gestor` (cotista↔gestor, em `cotista/tickets.php`/`gestor/chamados_cotistas.php`, gated por `ver_/responder_chamados_cotista`). Abrir/fechar/reabrir; tudo em `ticket_mensagens`.
 

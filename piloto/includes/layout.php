@@ -50,7 +50,7 @@ function menu_itens(array $u): array {
         ['Carteira',          $b.'gestor/carteira.php',     'bi-pie-chart'],
         ['Caixa & Fluxo',     $b.'gestor/caixa.php',        'bi-wallet2'],
         ['Cotistas',          $b.'gestor/cotistas.php',     'bi-people'],
-        ['Acessos de cotistas', $b.'gestor/acessos.php',    'bi-key'],
+        ['Acessos & transparência', $b.'gestor/acessos.php', 'bi-key'],
         ['Performance',       $b.'gestor/performance.php',  'bi-graph-up-arrow'],
         ['Relatórios',        $b.'gestor/relatorios.php',   'bi-file-earmark-text'],
         ['Enquadramento',     $b.'gestor/enquadramento.php','bi-check-circle'],

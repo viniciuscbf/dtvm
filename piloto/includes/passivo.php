@@ -213,3 +213,63 @@ function passivo_come_cotas(PDO $pdo, int $fundoId, string $competencia, string 
         return ['aplicavel' => true, 'total' => $total, 'n' => $n, 'aliquota' => $aliq];
     });
 }
+
+// ============================================================
+// ORDENS DO PORTAL DO COTISTA — a "porta de entrada" do dinheiro, como na vida real:
+//  · APLICAÇÃO: o cotista cria a ordem e paga por TED ou Pix a partir de conta DE SUA
+//    TITULARIDADE (regra de PLD — recurso de terceiro é devolvido, Res. CVM 50, art. 20).
+//    Pix usa QR dinâmico com txid, que casa o crédito com a ordem automaticamente.
+//    Cartão de crédito NÃO existe em fundo; espécie é vedada na prática (PLD); DOC foi extinto.
+//  · Confirmado o recebimento (extrato) e a titularidade, a administradora COTIZA
+//    (passivo_aplicar) pela cota da data do recurso disponível.
+//  · RESGATE: pago exclusivamente na conta bancária CADASTRADA do cotista (mesma
+//    titularidade), líquido de IOF/IR retidos na fonte (passivo_resgatar).
+// ============================================================
+
+/** DDL das ordens + conta bancária cadastrada do cotista + vínculo token→cotista. FORA de transação. */
+function ensure_ordens_passivo(PDO $pdo): void {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ordens_passivo (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        fundo_id INT NOT NULL,
+        cotista_id INT NOT NULL,
+        tipo ENUM('Aplicação','Resgate') NOT NULL,
+        valor DECIMAL(18,2) NOT NULL,
+        metodo VARCHAR(10) NULL,            -- 'Pix' | 'TED' (aplicação); resgate sai p/ conta cadastrada
+        txid VARCHAR(35) NULL,              -- Pix dinâmico: txid casa o crédito com a ordem
+        pagador_doc VARCHAR(24) NULL,       -- documento do pagador efetivo (validação de titularidade)
+        status VARCHAR(30) NOT NULL DEFAULT 'Aguardando pagamento',
+        motivo VARCHAR(300) NULL,
+        mov_ref VARCHAR(60) NULL,           -- referência da cotização/pagamento gerado
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+        confirmado_por VARCHAR(100) NULL,
+        confirmado_em DATETIME NULL,
+        INDEX idx_op (fundo_id, status),
+        INDEX idx_op_cot (cotista_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    // conta bancária CADASTRADA do cotista (mesma titularidade): origem esperada da aplicação
+    // e destino OBRIGATÓRIO do resgate — prática universal de PLD.
+    ddl_portavel($pdo, "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS banco VARCHAR(60) NULL");
+    ddl_portavel($pdo, "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS agencia VARCHAR(10) NULL");
+    ddl_portavel($pdo, "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS conta VARCHAR(20) NULL");
+    ddl_portavel($pdo, "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS pix_chave VARCHAR(80) NULL");
+    // token do portal pode ser vinculado a UM cotista (habilita movimentação self-service)
+    ddl_portavel($pdo, "ALTER TABLE tokens_acesso ADD COLUMN IF NOT EXISTS cotista_id INT NULL");
+}
+
+/** Cria a ordem de APLICAÇÃO (status 'Aguardando pagamento'; Pix ganha txid). */
+function ordem_criar_aplicacao(PDO $pdo, int $fundoId, int $cotistaId, float $valor, string $metodo): array {
+    $metodo = $metodo === 'Pix' ? 'Pix' : 'TED';
+    $txid = $metodo === 'Pix' ? strtoupper(bin2hex(random_bytes(12))) : null;   // 24 chars, padrão txid
+    $pdo->prepare("INSERT INTO ordens_passivo (fundo_id, cotista_id, tipo, valor, metodo, txid)
+                   VALUES (?,?,?,?,?,?)")
+        ->execute([$fundoId, $cotistaId, 'Aplicação', $valor, $metodo, $txid]);
+    return ['id' => (int)$pdo->lastInsertId(), 'txid' => $txid, 'metodo' => $metodo];
+}
+
+/** Cria a ordem de RESGATE (status 'Solicitado'; destino = conta cadastrada). */
+function ordem_criar_resgate(PDO $pdo, int $fundoId, int $cotistaId, float $valorBruto): int {
+    $pdo->prepare("INSERT INTO ordens_passivo (fundo_id, cotista_id, tipo, valor, status)
+                   VALUES (?,?,?,?, 'Solicitado')")
+        ->execute([$fundoId, $cotistaId, 'Resgate', $valorBruto]);
+    return (int)$pdo->lastInsertId();
+}

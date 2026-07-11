@@ -13,7 +13,15 @@ $u = exigir_perfil('admin');
 // em "Equipe do fundo" (convites + permissões). Esta tela é só consultiva.
 $fundos = $pdo->query('SELECT * FROM fundos ORDER BY FIELD(status,"Ativo","Em abertura","Fechado","Encerrado"), pl_atual DESC')->fetchAll();
 $usuarios = $pdo->query("SELECT us.*, f.nome fundo_nome FROM usuarios us LEFT JOIN fundos f ON f.id=us.fundo_id ORDER BY FIELD(us.perfil,'admin','gestor'), us.id")->fetchAll();
-$tokens = $pdo->query("SELECT t.*, f.nome fundo_nome FROM tokens_acesso t JOIN fundos f ON f.id=t.fundo_id ORDER BY t.status, t.criado_em DESC")->fetchAll();
+// contas de acesso do portal do cotista, com os vínculos (visão de supervisão)
+$contasPortal = [];
+try {
+    $contasPortal = $pdo->query("SELECT cc.*, GROUP_CONCAT(f.nome ORDER BY f.id SEPARATOR ' · ') fundos_vinc
+                                 FROM cotista_contas cc
+                                 LEFT JOIN cotistas c ON c.conta_id = cc.id
+                                 LEFT JOIN fundos f ON f.id = c.fundo_id
+                                 GROUP BY cc.id ORDER BY cc.status, cc.criado_em DESC")->fetchAll();
+} catch (Throwable $t) { /* tabela lazy pode não existir ainda */ }
 
 page_start('Fundos & Clientes', 'Fundos & Clientes', $u,
     'Cadastro consultivo — a constituição de fundos passa pelo checklist documental e pela aba Aberturas');
@@ -84,24 +92,24 @@ page_start('Fundos & Clientes', 'Fundos & Clientes', $u,
   </div>
   <div class="col-lg-5">
     <div class="card h-100">
-      <div class="card-header"><i class="bi bi-key me-1"></i> Tokens de cotistas emitidos (visão de supervisão)</div>
+      <div class="card-header"><i class="bi bi-person-badge me-1"></i> Contas do portal do cotista (visão de supervisão)</div>
       <div class="card-body p-0" style="max-height:340px;overflow-y:auto">
         <table class="table table-sm table-hover mb-0" style="font-size:.78rem">
-          <thead><tr><th>Fundo</th><th>Identificação</th><th>Nível</th><th>Status</th></tr></thead>
+          <thead><tr><th>Titular</th><th>E-mail</th><th>Fundos vinculados</th><th>Status</th></tr></thead>
           <tbody>
-          <?php $nivelRotulo = ['realtime' => 'tempo real', 'delay_1m' => '1 mês', 'delay_3m' => '3 meses'];
-          foreach ($tokens as $t): ?>
-            <tr class="<?= $t['status'] === 'Revogado' ? 'text-muted' : '' ?>">
-              <td><?= e_html($t['fundo_nome']) ?></td>
-              <td><?= e_html($t['descricao']) ?></td>
-              <td><?= badge($nivelRotulo[$t['nivel']], $t['nivel'] === 'realtime' ? 'danger' : 'info') ?></td>
-              <td><?= badge_status($t['status'] === 'Ativo' ? 'Ativo' : 'Encerrado') ?></td>
+          <?php foreach ($contasPortal as $t): ?>
+            <tr class="<?= $t['status'] === 'Bloqueada' ? 'text-muted' : '' ?>">
+              <td><?= e_html($t['nome']) ?><br><span class="text-muted" style="font-size:.7rem"><?= e_html($t['documento']) ?></span></td>
+              <td style="font-size:.72rem"><?= e_html($t['email']) ?></td>
+              <td style="font-size:.72rem"><?= $t['fundos_vinc'] ? e_html($t['fundos_vinc']) : '<span class="text-muted">sem vínculo</span>' ?></td>
+              <td><?= badge_status($t['status'] === 'Ativa' ? 'Ativo' : 'Encerrado') ?></td>
             </tr>
           <?php endforeach; ?>
+          <?php if (!$contasPortal): ?><tr><td colspan="4" class="text-muted text-center py-3">Nenhuma conta criada ainda.</td></tr><?php endif; ?>
           </tbody>
         </table>
       </div>
-      <div class="card-footer text-muted" style="font-size:.72rem">Quem emite e revoga é o gestor de cada fundo; a administradora supervisiona.</div>
+      <div class="card-footer text-muted" style="font-size:.72rem">O cotista se cadastra (ou o gestor cria o acesso); a transparência da carteira é uma política GLOBAL por fundo, definida pelo gestor. A administradora supervisiona.</div>
     </div>
   </div>
 </div>

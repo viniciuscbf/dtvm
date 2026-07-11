@@ -157,6 +157,63 @@ function data_corte_token(array $token): string {
     };
 }
 
+// ================= CONTA DO COTISTA (login e-mail/senha — substitui o acesso por token) =========
+
+/** Login da conta do cotista. Retorna a conta ou null. */
+function login_conta_cotista(PDO $pdo, string $email, string $senha): ?array {
+    $st = $pdo->prepare("SELECT * FROM cotista_contas WHERE email = ? AND status = 'Ativa'");
+    $st->execute([strtolower(trim($email))]);
+    $c = $st->fetch();
+    if (!$c || !password_verify($senha, $c['senha_hash'])) return null;
+    session_regenerate_id(true);
+    $_SESSION['cotista_conta_id'] = (int)$c['id'];
+    $pdo->prepare('UPDATE cotista_contas SET ultimo_acesso = NOW() WHERE id = ?')->execute([$c['id']]);
+    return $c;
+}
+
+/** Exige conta de cotista logada (revalida no banco — bloqueio vale na hora). */
+function exigir_conta_cotista(PDO $pdo): array {
+    $id = (int)($_SESSION['cotista_conta_id'] ?? 0);
+    if ($id) {
+        $st = $pdo->prepare("SELECT * FROM cotista_contas WHERE id = ? AND status = 'Ativa'");
+        $st->execute([$id]);
+        if ($c = $st->fetch()) return $c;
+    }
+    unset($_SESSION['cotista_conta_id']);
+    header('Location: ' . base_url() . 'cotista/index.php?expirado=1'); exit;
+}
+
+/** Posições da conta: vínculos (linhas de cotistas) + dados do fundo, inclusive a transparência. */
+function fundos_da_conta(PDO $pdo, int $contaId): array {
+    $st = $pdo->prepare("SELECT c.*, f.nome fundo_nome, f.cnpj fundo_cnpj, f.classe fundo_classe,
+                                f.benchmark fundo_benchmark, f.cota_atual fundo_cota, f.transparencia
+                         FROM cotistas c JOIN fundos f ON f.id = c.fundo_id
+                         WHERE c.conta_id = ? AND f.status = 'Ativo'
+                         ORDER BY (c.cotas * f.cota_atual) DESC");
+    $st->execute([$contaId]);
+    return $st->fetchAll();
+}
+
+/** Data de corte pela transparência GLOBAL do fundo ('off' → null = carteira não divulgada). */
+function data_corte_transparencia(?string $t): ?string {
+    return match ($t ?: 'delay_1m') {
+        'realtime' => date('Y-m-d'),
+        'delay_3m' => date('Y-m-d', strtotime('-3 months')),
+        'off'      => null,
+        default    => date('Y-m-d', strtotime('-1 month')),
+    };
+}
+
+/** Rótulo amigável da transparência. */
+function rotulo_transparencia(?string $t): string {
+    return match ($t ?: 'delay_1m') {
+        'realtime' => 'tempo real',
+        'delay_3m' => 'defasagem de 3 meses',
+        'off'      => 'carteira não divulgada',
+        default    => 'defasagem de 1 mês',
+    };
+}
+
 /** UUID v4 (36 caracteres) para tokens de acesso. */
 function uuid4(): string {
     $b = random_bytes(16);

@@ -6,7 +6,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS passivos, fip_distribuicoes, fip_avaliacoes, fip_participacoes, fip_chamada_lp, fip_chamadas, fip_lps,
-  derivativos_ajustes, derivativos, subclasses, precos_mercado, posicao_custodiante, ticket_mensagens, tickets, solicitacoes_cadastro_ativo, ativos_catalogo, sim_estado,
+  derivativos_ajustes, derivativos, subclasses, precos_mercado, posicao_custodiante, ordens_passivo, cotista_contas, ticket_mensagens, tickets, solicitacoes_cadastro_ativo, ativos_catalogo, sim_estado,
   eventos_fiscais, auditoria, onboarding_etapas, comentarios, documentos, chamados, comunicados,
   enquadramento_eventos, enquadramento_regras, repasses, partes_relacionadas, alertas_fraude,
   conciliacao, log_processamento, processamento, previsao_caixa, movimentacoes, mov_cotistas,
@@ -38,7 +38,8 @@ CREATE TABLE fundos (
   caixa_atual DECIMAL(18,2) DEFAULT 0,
   pl_atual DECIMAL(18,2) DEFAULT 0,
   cota_atual DECIMAL(18,8) DEFAULT 1,
-  data_abertura DATE
+  data_abertura DATE,
+  transparencia VARCHAR(12) DEFAULT 'delay_1m'  -- política GLOBAL do gestor p/ o portal do cotista: realtime|delay_1m|delay_3m|off
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE usuarios (
@@ -138,6 +139,7 @@ CREATE TABLE tokens_acesso (
   criado_por VARCHAR(100),
   criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
   revogado_em DATETIME NULL,
+  cotista_id INT NULL,                -- vínculo com UM cotista: habilita aplicar/resgatar no portal
   FOREIGN KEY (fundo_id) REFERENCES fundos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -351,7 +353,49 @@ CREATE TABLE cotistas (
   fatca_crs VARCHAR(30) DEFAULT NULL,
   termo_aceite DATETIME NULL,
   data_entrada DATE,
+  banco VARCHAR(60) NULL,             -- conta bancária CADASTRADA (mesma titularidade):
+  agencia VARCHAR(10) NULL,           --   origem esperada da aplicação e destino
+  conta VARCHAR(20) NULL,             --   OBRIGATÓRIO do resgate (prática de PLD)
+  pix_chave VARCHAR(80) NULL,
+  conta_id INT NULL,                  -- vínculo com a CONTA DE ACESSO (cotista_contas) — 1 conta, N fundos
   FOREIGN KEY (fundo_id) REFERENCES fundos(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Conta de ACESSO do cotista (login e-mail/senha — substitui o acesso por token):
+-- uma conta enxerga todas as posições vinculadas (cotistas.conta_id) nos vários fundos.
+CREATE TABLE cotista_contas (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nome VARCHAR(150) NOT NULL,
+  documento VARCHAR(24) NOT NULL,
+  email VARCHAR(120) NOT NULL UNIQUE,
+  senha_hash VARCHAR(255) NOT NULL,
+  status ENUM('Ativa','Bloqueada') DEFAULT 'Ativa',
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ultimo_acesso DATETIME NULL,
+  INDEX idx_cc_doc (documento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Ordens do PORTAL do cotista (porta de entrada do dinheiro): aplicação por TED/Pix de conta
+-- própria (Pix com txid dinâmico) e resgate para a conta cadastrada. Espelha ensure_ordens_passivo.
+CREATE TABLE ordens_passivo (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  fundo_id INT NOT NULL,
+  cotista_id INT NOT NULL,
+  tipo ENUM('Aplicação','Resgate') NOT NULL,
+  valor DECIMAL(18,2) NOT NULL,
+  metodo VARCHAR(10) NULL,            -- 'Pix' | 'TED' (aplicação)
+  txid VARCHAR(35) NULL,              -- Pix dinâmico: casa o crédito com a ordem
+  pagador_doc VARCHAR(24) NULL,       -- documento do pagador efetivo (validação de titularidade)
+  status VARCHAR(30) NOT NULL DEFAULT 'Aguardando pagamento',
+                                      -- Aplicação: Aguardando pagamento → Recebida → Cotizada | Devolvida
+                                      -- Resgate:   Solicitado → Pago | Cancelada
+  motivo VARCHAR(300) NULL,
+  mov_ref VARCHAR(60) NULL,
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+  confirmado_por VARCHAR(100) NULL,
+  confirmado_em DATETIME NULL,
+  INDEX idx_op (fundo_id, status),
+  INDEX idx_op_cot (cotista_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE mov_cotistas (

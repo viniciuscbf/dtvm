@@ -16,6 +16,10 @@ $fundo = null;
 foreach ($fundos as $f) if ((int)$f['id'] === $fid) $fundo = $f;
 if (!$fundo && $fundos) { $fundo = $fundos[0]; $fid = (int)$fundo['id']; }
 
+// DDL lazy ANTES das ações (fora de transação): ordens do portal + tabela de passivos do resgate
+ensure_ordens_passivo($pdo);
+ensure_passivos($pdo);
+
 $dataRef = $fundo ? (ultima_data_cota($pdo, $fid) ?: date('Y-m-d')) : date('Y-m-d');
 $cotaRef = $fundo ? (cota_em($pdo, $fid, $dataRef) ?: (float)$fundo['cota_atual']) : 1.0;
 if (!$cotaRef || $cotaRef <= 0) $cotaRef = 1.0;
@@ -76,6 +80,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $fundo) {
                 'detalhe' => 'Resgate bruto ' . moeda($r['bruto']) . ' · IR ' . moeda($r['ir']) . ' · IOF ' . moeda($r['iof'])]);
             $msg = 'Resgate bruto ' . moeda($r['bruto']) . ' — IR ' . moeda($r['ir']) . ' (' . number_format($r['aliq'], 1, ',', '.') . '%)' .
                    ($r['iof'] > 0 ? ' + IOF ' . moeda($r['iof']) : '') . ' → líquido ' . moeda($r['liquido']) . ' (' . $r['dias'] . ' dias).';
+        } elseif (!empty($_POST['ordem_confirmar'])) {
+            // ORDEM DO PORTAL: confirma o recebimento (extrato) + valida TITULARIDADE e cotiza.
+            $st = $pdo->prepare("SELECT o.*, c.nome, c.documento FROM ordens_passivo o JOIN cotistas c ON c.id=o.cotista_id
+                                 WHERE o.id = ? AND o.fundo_id = ? AND o.status = 'Recebida' AND o.tipo = 'Aplicação'");
+            $st->execute([(int)$_POST['ordem_confirmar'], $fid]);
+            if ($o = $st->fetch()) {
+                if ($o['pagador_doc'] !== null && $o['pagador_doc'] !== $o['documento']) {
+                    $msg = 'Titularidade DIVERGENTE (pagador ' . $o['pagador_doc'] . ' ≠ cotista ' . $o['documento'] .
+                           ') — não é possível cotizar; devolva à origem.'; $msgTipo = 'danger';
+                } else {
+                    $r = passivo_aplicar($pdo, $fid, (int)$o['cotista_id'], (float)$o['valor'], $dataRef);
+                    $pdo->prepare("UPDATE ordens_passivo SET status='Cotizada', confirmado_por=?, confirmado_em=NOW(),
+                                   mov_ref=? WHERE id=?")
+                        ->execute([$u['nome'], 'cota ' . number_format($r['cota'], 8, ',', '.'), $o['id']]);
+                    registrar_auditoria($pdo, 'ordem_cotizada', ['entidade' => 'ordem_passivo', 'entidade_id' => $o['id'], 'fundo_id' => $fid,
+                        'detalhe' => "Aplicação {$o['metodo']} de " . moeda($o['valor']) . " ({$o['nome']}) — titularidade OK, cotizada"]);
+                    $msg = 'Recebimento confirmado (titularidade OK) — ' . moeda($o['valor']) . ' cotizados a ' .
+                           number_format($r['cota'], 8, ',', '.') . ' (' . number_format($r['cotas'], 6, ',', '.') . ' cotas).';
+                }
+            }
+        } elseif (!empty($_POST['ordem_devolver'])) {
+            // titularidade divergente / sem ordem: devolve à conta de ORIGEM (PLD). TED de terceiro
+            // volta no mesmo dia; no Pix é a devolução comum pelo RECEBEDOR (pacs.004, até 90 dias) —
+            // o MED não cobre aporte errado (só fraude/falha operacional do PSP, Res. BCB 103).
+            $st = $pdo->prepare("SELECT o.*, c.nome FROM ordens_passivo o JOIN cotistas c ON c.id=o.cotista_id
+                                 WHERE o.id = ? AND o.fundo_id = ? AND o.status = 'Recebida'");
+            $st->execute([(int)$_POST['ordem_devolver'], $fid]);
+            if ($o = $st->fetch()) {
+                $pdo->prepare("UPDATE ordens_passivo SET status='Devolvida', confirmado_por=?, confirmado_em=NOW(),
+                               motivo='Devolvido à conta de origem — titularidade divergente (PLD, Res. CVM 50 art. 20); análise p/ eventual COS ao COAF' WHERE id=?")
+                    ->execute([$u['nome'], $o['id']]);
+                registrar_auditoria($pdo, 'ordem_devolvida', ['entidade' => 'ordem_passivo', 'entidade_id' => $o['id'], 'fundo_id' => $fid,
+                    'detalhe' => "Aplicação de " . moeda($o['valor']) . " DEVOLVIDA — pagador {$o['pagador_doc']} diverge do cotista ({$o['nome']})"]);
+                $msg = 'Recurso devolvido à conta de origem (titularidade divergente) — evento registrado para análise de PLD.';
+                $msgTipo = 'warning';
+            }
+        } elseif (!empty($_POST['ordem_pagar_resgate'])) {
+            $st = $pdo->prepare("SELECT o.*, c.nome, c.banco, c.agencia, c.conta FROM ordens_passivo o JOIN cotistas c ON c.id=o.cotista_id
+                                 WHERE o.id = ? AND o.fundo_id = ? AND o.status = 'Solicitado' AND o.tipo = 'Resgate'");
+            $st->execute([(int)$_POST['ordem_pagar_resgate'], $fid]);
+            if ($o = $st->fetch()) {
+                if (empty($o['banco']) || empty($o['conta'])) {
+                    $msg = 'Cotista sem conta cadastrada — o resgate só pode ser pago em conta de mesma titularidade.'; $msgTipo = 'danger';
+                } else {
+                    $r = passivo_resgatar($pdo, $fid, (int)$o['cotista_id'], (float)$o['valor'], $dataRef);
+                    $pdo->prepare("UPDATE ordens_passivo SET status='Pago', confirmado_por=?, confirmado_em=NOW(),
+                                   mov_ref=? WHERE id=?")
+                        ->execute([$u['nome'], 'líquido ' . moeda($r['liquido']), $o['id']]);
+                    $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por)
+                                   VALUES ('STR','STR0008',?,?,?,?,'Processada',NOW(),NOW(),'Rotina automática')")
+                        ->execute([$fid, 'RESG-' . $o['id'],
+                                   "IF requisita transferência entre contas de clientes (TED) — resgate líquido p/ conta cadastrada de {$o['nome']} ({$o['banco']} ag. {$o['agencia']} c/c {$o['conta']})",
+                                   (float)$r['liquido']]);
+                    registrar_auditoria($pdo, 'ordem_resgate_pago', ['entidade' => 'ordem_passivo', 'entidade_id' => $o['id'], 'fundo_id' => $fid,
+                        'detalhe' => 'Resgate bruto ' . moeda($r['bruto']) . ' → líquido ' . moeda($r['liquido']) . " pago na conta cadastrada ({$o['nome']})"]);
+                    $msg = 'Resgate processado: bruto ' . moeda($r['bruto']) . ' − IR ' . moeda($r['ir']) .
+                           ($r['iof'] > 0 ? ' − IOF ' . moeda($r['iof']) : '') . ' → ' . moeda($r['liquido']) .
+                           ' pago via TED na conta cadastrada.';
+                }
+            }
         } elseif (!empty($_POST['come_cotas'])) {
             $comp = trim($_POST['competencia'] ?? substr($dataRef, 0, 7));
             $r = passivo_come_cotas($pdo, $fid, $comp, $dataRef);
@@ -104,6 +168,18 @@ if ($fundo) {
     $st = $pdo->prepare('SELECT * FROM cotistas WHERE fundo_id = ? ORDER BY cotas DESC');
     $st->execute([$fid]);
     $cotistas = $st->fetchAll();
+}
+// ordens do portal do cotista aguardando a administradora
+$ordensPortal = [];
+if ($fundo) {
+    ensure_ordens_passivo($pdo);
+    ensure_passivos($pdo);   // resgate registra 'a pagar' na tabela passivos (lazy-DDL)
+    $st = $pdo->prepare("SELECT o.*, c.nome cotista_nome, c.documento, c.banco, c.agencia, c.conta
+                         FROM ordens_passivo o JOIN cotistas c ON c.id = o.cotista_id
+                         WHERE o.fundo_id = ? AND o.status IN ('Aguardando pagamento','Recebida','Solicitado')
+                         ORDER BY FIELD(o.status,'Recebida','Solicitado','Aguardando pagamento'), o.criado_em");
+    $st->execute([$fid]);
+    $ordensPortal = $st->fetchAll();
 }
 $eventos = [];
 if ($fundo) {
@@ -148,6 +224,71 @@ page_start('Passivo & Tributação', 'Passivo & Tributação', $u,
   <?= kpi('Patrimônio dos cotistas', moeda_compacta($totalCotas * $cotaRef), 'bi-cash-stack') ?>
   <?= kpi('Tributo apurado', moeda_compacta($totalTributo), 'bi-receipt', 'IR + IOF + come-cotas') ?>
 </div>
+
+<?php if ($ordensPortal): ?>
+<div class="card mb-4 border-primary">
+  <div class="card-header" style="background:#f0f4ff"><i class="bi bi-inbox me-1"></i>
+    Ordens do portal do cotista — confirmar recebimento, validar titularidade e cotizar</div>
+  <div class="card-body p-0">
+    <table class="table align-middle mb-0" style="font-size:.83rem">
+      <thead><tr><th>Ordem</th><th>Cotista</th><th class="text-end">Valor</th><th>Pagamento / titularidade</th><th>Status</th><th style="min-width:230px"></th></tr></thead>
+      <tbody>
+      <?php foreach ($ordensPortal as $o):
+          $tituOk = $o['pagador_doc'] === null || $o['pagador_doc'] === $o['documento']; ?>
+        <tr class="<?= (!$tituOk && $o['status'] === 'Recebida') ? 'table-danger' : '' ?>">
+          <td><?= badge($o['tipo'], $o['tipo'] === 'Aplicação' ? 'success' : 'warning') ?><br>
+            <span class="text-muted" style="font-size:.7rem">#<?= (int)$o['id'] ?> · <?= date('d/m H:i', strtotime($o['criado_em'])) ?></span></td>
+          <td><b><?= e_html($o['cotista_nome']) ?></b><br>
+            <span class="text-muted" style="font-size:.72rem">doc <?= e_html($o['documento']) ?></span></td>
+          <td class="text-end"><b><?= moeda($o['valor']) ?></b></td>
+          <td style="font-size:.76rem">
+            <?php if ($o['tipo'] === 'Aplicação'): ?>
+              <?= e_html($o['metodo']) ?><?= $o['txid'] ? ' · txid <code style="font-size:.68rem">' . e_html($o['txid']) . '</code>' : '' ?><br>
+              <?php if ($o['pagador_doc'] !== null): ?>
+                pagador <?= e_html($o['pagador_doc']) ?> ·
+                <?= $tituOk ? '<span class="text-success"><i class="bi bi-check-circle-fill"></i> mesma titularidade</span>'
+                            : '<span class="text-danger"><i class="bi bi-x-circle-fill"></i> TITULARIDADE DIVERGENTE</span>' ?>
+              <?php else: ?><span class="text-muted">aguardando o crédito no extrato</span><?php endif; ?>
+            <?php else: ?>
+              destino: <?= !empty($o['banco']) ? e_html($o['banco']) . ' · ag. ' . e_html($o['agencia']) . ' · c/c ' . e_html($o['conta'])
+                        : '<span class="text-danger">sem conta cadastrada</span>' ?><br>
+              <span class="text-muted">só paga em conta cadastrada de mesma titularidade</span>
+            <?php endif; ?>
+          </td>
+          <td><?= badge($o['status'], ['Recebida' => 'info', 'Aguardando pagamento' => 'warning', 'Solicitado' => 'warning'][$o['status']] ?? 'secondary') ?></td>
+          <td class="text-end">
+            <?php if ($o['status'] === 'Recebida'): ?>
+              <?php if ($tituOk): ?>
+                <form method="post" class="d-inline" onsubmit="return confirm('Confirmar recebimento e cotizar pela cota de <?= data_br($dataRef) ?>?')">
+                  <?= csrf_campo() ?><?= nonce_campo() ?><input type="hidden" name="ordem_confirmar" value="<?= (int)$o['id'] ?>">
+                  <button class="btn btn-sm btn-success"><i class="bi bi-check-lg me-1"></i>Confirmar e cotizar</button>
+                </form>
+              <?php endif; ?>
+              <form method="post" class="d-inline" onsubmit="return confirm('Devolver o recurso à conta de origem?')">
+                <?= csrf_campo() ?><?= nonce_campo() ?><input type="hidden" name="ordem_devolver" value="<?= (int)$o['id'] ?>">
+                <button class="btn btn-sm <?= $tituOk ? 'btn-outline-secondary' : 'btn-danger' ?>"><i class="bi bi-arrow-return-left me-1"></i>Devolver</button>
+              </form>
+            <?php elseif ($o['status'] === 'Solicitado'): ?>
+              <form method="post" class="d-inline" onsubmit="return confirm('Processar o resgate? IR/IOF serão retidos e o líquido pago na conta cadastrada.')">
+                <?= csrf_campo() ?><?= nonce_campo() ?><input type="hidden" name="ordem_pagar_resgate" value="<?= (int)$o['id'] ?>">
+                <button class="btn btn-sm btn-success" <?= empty($o['banco']) ? 'disabled' : '' ?>><i class="bi bi-cash-coin me-1"></i>Processar resgate</button>
+              </form>
+            <?php else: ?>
+              <span class="text-muted" style="font-size:.72rem"><i class="bi bi-hourglass-split me-1"></i>aguardando TED/Pix do cotista</span>
+            <?php endif; ?>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer text-muted" style="font-size:.72rem">
+    Regras reais: o crédito precisa vir de conta <b>do próprio cotista</b> (divergente → devolver: TED volta no mesmo
+    dia; Pix pela devolução do recebedor, até 90 dias — o MED não cobre aporte errado). Confirmado após o corte
+    (14h30), cotiza no dia útil seguinte. O resgate paga <b>somente</b> na conta cadastrada, líquido de IR/IOF.
+  </div>
+</div>
+<?php endif; ?>
 
 <div class="row g-3 mb-4">
   <!-- Aplicação -->

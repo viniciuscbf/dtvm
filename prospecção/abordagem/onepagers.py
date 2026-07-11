@@ -108,11 +108,11 @@ def onepager(cfg):
     prs = Presentation(); prs.slide_width = Emu(int(PW*EMU_IN)); prs.slide_height = Emu(int(PH*EMU_IN))
     s = prs.slides.add_slide(prs.slide_layouts[6])
     s.background.fill.solid(); s.background.fill.fore_color.rgb = PAPER
-    # faixa superior escura
+    # faixa superior escura — logo oficial completa (versão de texto branco p/ fundo escuro)
     rect(s, 0, 0, PW, 2.75, fill=NAVY_DK)
-    eye(s, M + 0.28, 0.98, 0.5)
-    txt(s, M + 0.62, 0.72, 4, 0.4, "ARGUS", 20, font=SERIF, color=D_TXT, bold=True, char=0.5)
-    txt(s, M + 0.64, 1.2, 6, 0.3, "ADMINISTRAÇÃO FIDUCIÁRIA E CUSTÓDIA DE FUNDOS", 7.5, font=MONO, color=D_MUT, char=1.5)
+    LOGO_BRANCA = r"C:\Users\vinic\OneDrive\Desktop\dtvm\brand\logo_argus_branca.png"
+    s.shapes.add_picture(LOGO_BRANCA, Inches(M), Inches(0.62), height=Inches(0.62))
+    txt(s, M + 0.02, 1.34, 6, 0.3, "ADMINISTRAÇÃO FIDUCIÁRIA E CUSTÓDIA DE FUNDOS", 7.5, font=MONO, color=D_MUT, char=1.5)
     rich(s, M, 1.68, PW - 2*M, 0.9, [([(cfg['titulo'], {'size': 21, 'font': SERIF, 'color': D_TXT})], {'line': 1.06})])
     txt(s, M, 2.42, PW - 2*M, 0.3, cfg['sub'], 10, font=SANS, color=GOLD, italic=True)
 
@@ -144,18 +144,16 @@ def onepager(cfg):
     txt(s, PW - M - 2.7, y + 0.16, 2.4, 0.7, "Só 1.277 dos ~31 mil\nfundos passam de R$ 1 bi.\nA cauda pequena é enorme.",
         8.5, font=MONO, color=RGBColor(0xcf, 0xee, 0xfb), char=0.2, align=PP_ALIGN.RIGHT, spacing=1.12)
 
-    # CTA explícito — material comercial precisa pedir
-    y = y + 1.1
-    rect(s, M, y, PW - 2*M, 0.44, fill=SOFT, line=GOLD, lw=1.0, radius=0.12)
-    rich(s, M + 0.28, y + 0.12, PW - 2*M - 0.56, 0.3, [
-        ([("PRÓXIMO PASSO   ", {'size': 9, 'font': MONO, 'color': NAVY, 'bold': True, 'char': 1.2}),
-          ("20 minutos, sem compromisso — basta responder o e-mail.", {'size': 10.5, 'font': SANS, 'color': INK})], {'line': 1.0}),
-    ])
+    # convite humano (não uma frase de sistema) — específico do segmento
+    y = y + 1.02
+    rect(s, M, y, PW - 2*M, 0.56, fill=SOFT, line=GOLD, lw=1.0, radius=0.12)
+    txt(s, M + 0.28, y + 0.11, PW - 2*M - 0.56, 0.36, cfg['cta'],
+        10.5, font=SERIF, color=INK, italic=True, spacing=1.12)
 
     # rodapé
-    hline(s, M, PH - 0.62, PW - 2*M, color=LINE)
-    txt(s, M, PH - 0.5, 4.2, 0.25, "contato@argusdtvm.com.br  ·  argusdtvm.com.br", 8.5, font=MONO, color=NAVY, char=0.2)
-    txt(s, PW - M - 2.9, PH - 0.5, 2.9, 0.25, "CONFIDENCIAL · DADOS SIMULADOS",
+    hline(s, M, PH - 0.5, PW - 2*M, color=LINE)
+    txt(s, M, PH - 0.38, 4.2, 0.25, "contato@argusdtvm.com.br  ·  argusdtvm.com.br", 8.5, font=MONO, color=NAVY, char=0.2)
+    txt(s, PW - M - 2.9, PH - 0.38, 2.9, 0.25, "CONFIDENCIAL · DADOS SIMULADOS",
         7, font=MONO, color=FAINT, char=0.5, align=PP_ALIGN.RIGHT)
 
     out = os.path.join(BASE, cfg['arquivo']); prs.save(out); return out
@@ -176,7 +174,8 @@ CFGS = [
                "Custo de entrada ~zero: sem investir em tecnologia nem contratar equipe.",
                "Custódia própria opcional na fase 2 — mais uma linha de receita sobre a mesma máquina.",
                "Risco reduzido, não aumentado: operação documentada, monitoramento diário em 100% dos fundos, trilha de auditoria completa."],
-     "partida": "Vocês já são elegíveis (Res. CVM 21). Falta só o credenciamento de administrador fiduciário — prazo legal de 60 dias, com o dossiê que entregamos pronto para protocolar."},
+     "partida": "Vocês já são elegíveis (Res. CVM 21). Falta só o credenciamento de administrador fiduciário — prazo legal de 60 dias, com o dossiê que entregamos pronto para protocolar.",
+     "cta": "Queremos apresentar a conta exata para o seu banco — 20 minutos com quem construiu a plataforma. É só responder o e-mail que trouxe esta página."},
     {"arquivo": "Argus_OnePager_CTVM.pptx",
      "titulo": "Da corretagem espremida à receita\nrecorrente — com a licença que você já tem.",
      "sub": "Administração fiduciária e custódia de fundos — proposta de parceria.",
@@ -186,7 +185,8 @@ CFGS = [
                "Vocês já são distribuidores natos — captação e base de clientes viram ativo da parceria.",
                "Elegíveis às DUAS licenças CVM: administração fiduciária e custódia (Res. 21 e Res. 32).",
                "Os gestores que hoje só executam com vocês passam a ter os fundos deles DENTRO de casa."],
-     "partida": "Vocês já são elegíveis. Credenciamento de administrador fiduciário na CVM em ~60 dias, com o dossiê pronto — e a custódia (90 dias) quando a escala justificar."},
+     "partida": "Vocês já são elegíveis. Credenciamento de administrador fiduciário na CVM em ~60 dias, com o dossiê pronto — e a custódia (90 dias) quando a escala justificar.",
+     "cta": "Queremos apresentar a conta exata para a sua corretora — 20 minutos com quem construiu a plataforma. É só responder o e-mail que trouxe esta página."},
     {"arquivo": "Argus_OnePager_Financeira.pptx",
      "titulo": "A porta que abriu em 2025 — e quase\nninguém percebeu.",
      "sub": "Administração fiduciária de fundos — proposta de parceria para a sua financeira.",
@@ -199,7 +199,8 @@ CFGS = [
                "Diversificação recorrente (% do PL) descorrelacionada do ciclo de crédito.",
                "Custódia dos fundos terceirizada com custodiante autorizado — nós estruturamos, vocês não montam nada.",
                "Por ser instituição BCB, vocês podem contratar assessores de investimento para distribuir — canal de captação pronto."],
-     "partida": "O objeto já comporta (Res. 5.237); falta o registro de administrador fiduciário na CVM — ~60 dias, com o dossiê que entregamos pronto para protocolar."},
+     "partida": "O objeto já comporta (Res. 5.237); falta o registro de administrador fiduciário na CVM — ~60 dias, com o dossiê que entregamos pronto para protocolar.",
+     "cta": "Queremos mostrar o passo a passo da Res. 5.237 aplicado à sua financeira — 20 minutos com quem construiu a plataforma. É só responder o e-mail que trouxe esta página."},
 ]
 
 if __name__ == "__main__":

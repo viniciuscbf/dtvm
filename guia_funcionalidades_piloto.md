@@ -8,7 +8,7 @@
 ## 0. Landing e segurança
 
 - **Landing** (`/piloto/`): apresentação institucional + entrada dos 4 portais. Não há atalhos de login.
-- **Autenticação**: senhas bcrypt; sessão revalidada no banco a cada página; sessões de versões antigas invalidam sozinhas; gestor de fundo em abertura só enxerga a tela de status da abertura; cotista não tem senha — entra por token.
+- **Autenticação**: senhas bcrypt; sessão revalidada no banco a cada página; sessões de versões antigas invalidam sozinhas; gestor de fundo em abertura só enxerga a tela de status da abertura; cotista tem **conta própria** (e-mail + senha forte) com autocadastro ou acesso criado pelo gestor.
 
 ## 1. Portal do Gestor (`/gestor/`)
 
@@ -22,7 +22,7 @@
 | **Carteira** | Posição por data (22 dias retroativos), preço médio × MaM, fonte de preço, resultado não realizado, filtro por tipo; selo **PRÉVIA/OFICIAL**; downloads CSV/JSON/**PDF por classe de ativo** |
 | **Caixa & Fluxo** | Saldo na data, entradas × saídas por mês, extrato filtrável, **previsão de caixa 60 dias** com saldo projetado e alerta de liquidez negativa |
 | **Cotistas** | Lista com participação, concentração top 5 com alerta de liquidez, movimentação de cotas (aplicação/resgate com cotização/liquidação) |
-| **Acessos de cotistas** | Gera **tokens UUID-36** com nível de visão (tempo real / 1 mês / 3 meses de defasagem), copia, **revoga na hora**; checkbox para exibir revogados (oculto por padrão) |
+| **Acessos & transparência** | Define a **política GLOBAL de transparência da carteira** do fundo (tempo real / defasada 1 mês / 3 meses / não divulgada — vale para todos os cotistas); cria **contas de acesso** por cotista (senha provisória exibida uma vez), bloqueia/reativa/desvincula |
 | **Performance** | Rentabilidade por período × CDI, % CDI, volatilidade anualizada, drawdown máximo, matriz mensal, memória de cálculo da taxa de performance — tudo **em qualquer data retroativa** |
 | **Relatórios** | Central única: **fundo × data (dias processados, com selo) × tipo (carteira, fluxo de caixa, cotistas, série da cota, performance) × formato (CSV/JSON/PDF)** |
 | **Enquadramento** | Regras da política medidas da carteira real (barras de utilização), histórico de desenquadramentos com causa e prazo |
@@ -32,8 +32,12 @@
 
 ## 2. Portal do Cotista (`/cotista/`)
 
-- Entrada **somente com token** (formato validado); revogação derruba o acesso na hora.
-- Painel enxuto: evolução do fundo × benchmark (base 100), rentabilidades, composição da carteira **por classe** (nunca ativo a ativo), tudo **na data de corte do token** (tempo real / -1 mês / -3 meses). Sem caixa, sem outros cotistas.
+- **Conta própria** (e-mail + senha forte, bcrypt): autocadastro na entrada (com aceite LGPD) ou acesso criado pelo gestor; bloqueio vale na hora (sessão revalidada no banco). Demo: `ricardo.alves@email.com.br` / `Cotista@123`.
+- **Início (consolidado)**: patrimônio total, valor aplicado, resultado e rentabilidade somando **todos os fundos** da conta; donut de alocação; últimas movimentações; eventos fiscais (come-cotas/IR); comunicados dos fundos + gerais.
+- **Painel por fundo**: posição própria SEMPRE visível (cotas × última cota publicada); evolução × benchmark e composição **por classe** seguem a transparência global do fundo (tempo real / -1m / -3m / **não divulgada** — nesse caso a carteira some mas a posição fica). Seletor entre os fundos da conta.
+- **Movimentar**: aplicação via **Pix (QR dinâmico com txid)** ou TED da conta de titularidade; resgate só para a **conta cadastrada**; seletor de fundo; simulação de pagamento (inclusive CPF divergente p/ demonstrar a trava de titularidade).
+- **Dúvidas**: chamados cotista↔gestor presos à conta, com escolha do fundo.
+- **Meus dados**: cadastro, vínculos (suitability/KYC por fundo), **conta bancária** (grava em todos os vínculos, auditada, sujeita a validação) e **troca de senha** (política forte).
 
 ## 3. Portal da Administradora (`/admin/`)
 
@@ -50,7 +54,7 @@
 | **Pendências** | Fila única de tudo que precisa de humano: erros de batch, cotas rejeitadas, divergências, alertas IA, boletas aguardando aceite, liquidações, eventos, envios atrasados, ofícios, assembleias, preços de comitê, chamados (com resposta inline); comentários operacionais por fundo |
 | **IA · Fraude** | Alertas priorizados com explicação em linguagem natural + evidência; ações (revisar/escalar/falso positivo) com trilha; **grafo de partes relacionadas** (vínculo suspeito tracejado); aba "Como funciona" documenta as 14 regras (R1–R14) em 7 categorias, com limiar e base legal/caso real |
 | **Repasses** | Apuração 0,08% a.a. com piso R$ 100 por fundo/competência, split **25% banco / 75%**, evolução mensal, instruções de pagamento |
-| **Fundos & Clientes** | Cadastro consultivo (fundos, taxas — gestão/performance definidas pelo gestor no regulamento), usuários com KYC, supervisão de tokens |
+| **Fundos & Clientes** | Cadastro consultivo (fundos, taxas — gestão/performance definidas pelo gestor no regulamento), usuários com KYC, supervisão das **contas do portal do cotista** (titular, e-mail, fundos vinculados, status) |
 
 ## 4. Portal do Banco Custodiante (`/custodia/`)
 

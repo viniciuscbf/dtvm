@@ -119,4 +119,26 @@ Feitas essas correções e **contratado um advogado para papelizar o contrato** 
 
 ---
 
+## Adendo (2026-07-11) — pendências societárias da PRÓPRIA Argus
+
+O parecer acima cobre o desenho da parceria; falta estruturar a **empresa em si**. Três pendências
+para a mesma consulta jurídica formal:
+
+1. **Constituição da PJ** com objeto social deliberadamente **fora do perímetro CVM**: desenvolvimento
+   e licenciamento de software, suporte operacional/BPO não-regulado. O objeto é a primeira linha de
+   defesa da tese "prestadora de tecnologia" (art. 83, §3º) — não pode conter expressões como
+   "administração de recursos", "gestão de carteiras" ou "distribuição".
+2. **Marca/domínio "Argus DTVM"** — *calibrado após discussão (2026-07-11)*: custódia + administração
+   fiduciária são o núcleo clássico de uma DTVM e o nome descreve o **destino** do projeto (a DTVM
+   própria é o Plano C/estado final; no Plano A nenhuma entidade nova é constituída — as atividades
+   rodam sob as licenças do parceiro). Como **marca de projeto pré-autorização** é defensável: é
+   normal constituir a S.A. com "DTVM" na denominação **antes** do BCB autorizar (a entidade existe,
+   só não opera); o público da marca são parceiros institucionais; no Plano A os fundos saem no nome
+   do **banco** (Argus é bastidor); e os materiais já dizem "protótipo/dados simulados/proposta de
+   parceria" em tudo. **Limites que permanecem:** nunca ofertar serviço regulado ao público sob o
+   nome, nem sugerir autorização existente. Levar ao advogado como "denominação de projeto
+   pré-autorização" — item de lista, não bloqueador.
+3. **Quadro societário e "quem somos"**: nomes, bios e certificações dos sócios (o CGA/CGE é trunfo)
+   formalizados — exigidos na prática por qualquer contraparte institucional e insumo do contrato.
+
 *Fontes primárias: Res. CVM 21/2021, 175/2022, 178/2023 (conteudo.cvm.gov.br, consolidados); Lei 6.385/76 e CC art. 1.368-D (planalto.gov.br); PAS CVM RJ2014/8297, SP2012/0374 e correlatos (gov.br/cvm). Consultadas em 2026-07-09. Não substitui parecer de advogado habilitado.*

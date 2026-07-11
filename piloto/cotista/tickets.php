@@ -1,18 +1,17 @@
 <?php
 // Portal do Cotista — Central de dúvidas (chamados cotista ↔ gestor).
-// O cotista entra por token (sem cadastro). Abre chamados, acompanha respostas
-// do gestor e pode encerrar (resolvido) ou reabrir. Tudo gravado em SQL.
+// O cotista entra com a CONTA (e-mail/senha); os chamados ficam presos à conta
+// via tickets.token_cotista = 'conta:ID' (mesma coluna usada na era dos tokens).
 define('BASE_URL', '../');
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
 ensure_tickets($pdo);
 
-$token = exigir_token($pdo);
-$fid = (int)$token['fundo_id'];
-$tk  = $token['token'];
-$autor = $token['descricao'] ?: 'Cotista';
-$fundoNome = $token['fundo_nome'] ?? '';
+$conta = exigir_conta_cotista($pdo);
+$vinculos = fundos_da_conta($pdo, (int)$conta['id']);
+$tk  = 'conta:' . (int)$conta['id'];
+$autor = $conta['nome'] ?: 'Cotista';
 
 const TEMAS_COTISTA = ['Dúvida sobre rentabilidade', 'Aplicação / resgate', 'Documentos / informe de IR',
                        'Tributação (come-cotas / IR)', 'Acesso ao portal', 'Outros'];
@@ -25,7 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tema = in_array($_POST['tema'] ?? '', TEMAS_COTISTA, true) ? $_POST['tema'] : 'Outros';
         $assunto = trim($_POST['assunto'] ?? '');
         $mensagem = trim($_POST['mensagem'] ?? '');
-        if ($assunto === '' || $mensagem === '') {
+        // o chamado nasce vinculado a UM dos fundos da conta (validado nos vínculos)
+        $fid = 0;
+        foreach ($vinculos as $v) if ((int)$v['fundo_id'] === (int)($_POST['fundo_id'] ?? 0)) $fid = (int)$v['fundo_id'];
+        if (!$fid && $vinculos) $fid = (int)$vinculos[0]['fundo_id'];
+        if (!$fid) {
+            $msgErr = 'Sua conta ainda não tem fundo vinculado — fale com a administradora.';
+        } elseif ($assunto === '' || $mensagem === '') {
             $msgErr = 'Preencha o assunto e a sua dúvida.';
         } else {
             $novoId = null;
@@ -73,9 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// lista dos chamados deste cotista (por token)
-$st = $pdo->prepare("SELECT t.*, (SELECT COUNT(*) FROM ticket_mensagens m WHERE m.ticket_id=t.id) n_msg
-                     FROM tickets t WHERE t.canal='cotista_gestor' AND t.token_cotista=?
+// lista dos chamados desta conta
+$st = $pdo->prepare("SELECT t.*, f.nome fundo_nome,
+                            (SELECT COUNT(*) FROM ticket_mensagens m WHERE m.ticket_id=t.id) n_msg
+                     FROM tickets t LEFT JOIN fundos f ON f.id=t.fundo_id
+                     WHERE t.canal='cotista_gestor' AND t.token_cotista=?
                      ORDER BY FIELD(t.status,'Respondido','Aberto','Em andamento','Encerrado'), t.atualizado_em DESC");
 $st->execute([$tk]);
 $tickets = $st->fetchAll();
@@ -107,8 +114,10 @@ if (!empty($_GET['id'])) {
     <img src="../assets/favicon.png" alt="Argus" style="height:26px;width:26px;object-fit:contain">
     <b style="font-size:.85rem;letter-spacing:1px">PORTAL DO COTISTA</b>
   </div>
-  <div class="d-flex align-items-center gap-3">
-    <a class="btn btn-sm btn-outline-light" href="painel.php" style="font-size:.75rem"><i class="bi bi-graph-up me-1"></i>Meu fundo</a>
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <a class="btn btn-sm btn-outline-light" href="home.php" style="font-size:.75rem"><i class="bi bi-house me-1"></i>Início</a>
+    <a class="btn btn-sm btn-outline-light" href="movimentar.php" style="font-size:.75rem"><i class="bi bi-arrow-left-right me-1"></i>Movimentar</a>
+    <a class="btn btn-sm btn-outline-light" href="dados.php" style="font-size:.75rem"><i class="bi bi-person-gear me-1"></i>Meus dados</a>
     <a class="btn btn-sm btn-outline-light" href="sair.php" style="font-size:.75rem">Sair</a>
   </div>
 </nav>
@@ -116,7 +125,7 @@ if (!empty($_GET['id'])) {
 <div class="container py-4" style="max-width:1050px">
   <div class="mb-3">
     <h4 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Central de dúvidas</h4>
-    <span class="text-muted" style="font-size:.82rem">Envie dúvidas ao gestor do fundo <b><?= e_html($fundoNome) ?></b> e acompanhe as respostas.</span>
+    <span class="text-muted" style="font-size:.82rem">Envie dúvidas ao gestor de qualquer fundo em que você investe e acompanhe as respostas.</span>
   </div>
 
   <?php if ($msgOk): ?><div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i><?= e_html($msgOk) ?></div><?php endif; ?>
@@ -130,6 +139,18 @@ if (!empty($_GET['id'])) {
           <form method="post">
             <?= csrf_campo() ?>
             <input type="hidden" name="acao" value="abrir">
+            <?php if (count($vinculos) > 1): ?>
+            <div class="mb-2">
+              <label class="form-label mb-1" style="font-size:.82rem">Fundo</label>
+              <select name="fundo_id" class="form-select form-select-sm">
+                <?php foreach ($vinculos as $v): ?>
+                  <option value="<?= (int)$v['fundo_id'] ?>"><?= e_html($v['fundo_nome']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+            <?php elseif ($vinculos): ?>
+              <input type="hidden" name="fundo_id" value="<?= (int)$vinculos[0]['fundo_id'] ?>">
+            <?php endif; ?>
             <div class="mb-2">
               <label class="form-label mb-1" style="font-size:.82rem">Tema</label>
               <select name="tema" class="form-select form-select-sm">
@@ -159,7 +180,7 @@ if (!empty($_GET['id'])) {
                 <?= badge_status($t['status']) ?>
               </div>
               <div style="font-size:.76rem" class="text-muted mt-1">
-                <?= badge($t['tema'], 'secondary') ?> · <?= (int)$t['n_msg'] ?> msg · <?= data_br($t['atualizado_em']) ?>
+                <?= badge($t['tema'], 'secondary') ?> · <?= e_html($t['fundo_nome'] ?? '') ?> · <?= (int)$t['n_msg'] ?> msg · <?= data_br($t['atualizado_em']) ?>
               </div>
             </a>
           <?php endforeach; ?>

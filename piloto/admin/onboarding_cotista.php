@@ -12,6 +12,7 @@ $u = exigir_perfil('admin');
 
 // Garante as colunas de KYC/suitability/PLD na tabela cotistas (DDL fora de transação).
 ensure_kyc_cotista($pdo);
+ensure_ordens_passivo($pdo);   // colunas de conta bancária cadastrada (DDL fora de transação)
 
 $msg = ''; $msgTipo = 'success';
 
@@ -70,14 +71,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $fundo) {
             } elseif (!$aceite) {
                 $msg = 'É necessário registrar o aceite do termo de adesão.'; $msgTipo = 'warning';
             } else {
-                com_transacao($pdo, function () use ($pdo, $fid, $nome, $documento, $tipoPessoa, $suit, $fatca) {
+                // conta bancária de MESMA TITULARIDADE: a Res. 50 (Anexo B) não a exige no cadastro,
+                // mas é prática universal/regulamento — o resgate só é pago em conta do próprio cotista.
+                $banco = trim($_POST['banco'] ?? '') ?: null;
+                $agencia = trim($_POST['agencia'] ?? '') ?: null;
+                $contaB = trim($_POST['conta'] ?? '') ?: null;
+                $pixCh = trim($_POST['pix_chave'] ?? '') ?: null;
+                com_transacao($pdo, function () use ($pdo, $fid, $nome, $documento, $tipoPessoa, $suit, $fatca, $banco, $agencia, $contaB, $pixCh) {
                     $st = $pdo->prepare(
                         "INSERT INTO cotistas (fundo_id, nome, documento, tipo_pessoa, cotas, custo_total, data_entrada,
-                                               suitability, kyc_status, pld_status, fatca_crs, termo_aceite)
-                         VALUES (?,?,?,?,0,0,?,?,?,?,?,NOW())"
+                                               suitability, kyc_status, pld_status, fatca_crs, termo_aceite,
+                                               banco, agencia, conta, pix_chave)
+                         VALUES (?,?,?,?,0,0,?,?,?,?,?,NOW(),?,?,?,?)"
                     );
                     $st->execute([$fid, $nome, $documento, $tipoPessoa, date('Y-m-d'),
-                                  $suit, 'Pendente', 'Pendente', $fatca]);
+                                  $suit, 'Pendente', 'Pendente', $fatca, $banco, $agencia, $contaB, $pixCh]);
                     $novoId = (int)$pdo->lastInsertId();
                     registrar_auditoria($pdo, 'cotista_onboarding', [
                         'entidade' => 'cotista', 'entidade_id' => $novoId, 'fundo_id' => $fid,
@@ -250,6 +258,14 @@ page_start('Onboarding de cotistas', 'Onboarding de cotistas', $u,
               <option value="<?= $fc ?>"><?= $fc ?></option>
             <?php endforeach; ?>
           </select>
+
+          <label class="form-label" style="font-size:.8rem">Conta bancária de <b>mesma titularidade</b> <span class="text-muted">(destino do resgate; origem esperada da aplicação)</span></label>
+          <div class="row g-1 mb-1">
+            <div class="col-6"><input class="form-control form-control-sm" name="banco" placeholder="Banco (ex.: 001 — BB)"></div>
+            <div class="col-2"><input class="form-control form-control-sm" name="agencia" placeholder="ag."></div>
+            <div class="col-4"><input class="form-control form-control-sm" name="conta" placeholder="conta"></div>
+          </div>
+          <input class="form-control form-control-sm mb-2" name="pix_chave" placeholder="chave Pix (opcional)">
 
           <div class="form-check mb-3">
             <input class="form-check-input" type="checkbox" name="termo" id="termo" value="1">
