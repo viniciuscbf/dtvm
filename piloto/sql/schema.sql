@@ -106,9 +106,25 @@ CREATE TABLE boletas (
   status ENUM('Enviada','Aceita','Rejeitada','Liquidada') DEFAULT 'Enviada',
   motivo VARCHAR(300) NULL,                 -- motivo de rejeição pela custódia
   liquidacao_id INT NULL,                   -- instrução de liquidação gerada no aceite
+  data_liquidacao_prevista DATE NULL,       -- data pactuada na boleta (balcão D+0/D+1 · bolsa D+2 · TPF D+0)
+  taxa_negociada VARCHAR(40) NULL,          -- RF negocia por taxa (ex.: 'CDI+1,20%', '15,10% a.a.'); PU é derivado
+  modalidade_liq VARCHAR(30) NULL,          -- balcão (NoMe/Cetip21): 'Bruta (DVP via STR)' | 'Bilateral' | 'Sem modalidade'
   criado_por VARCHAR(100),
   criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (fundo_id) REFERENCES fundos(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Posição custodiada — fonte INDEPENDENTE da carteira da administradora (base da conciliação
+-- Posição × Custodiante; espelha o ensure_posicao_custodiante do dominio.php)
+CREATE TABLE posicao_custodiante (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  fundo_id INT NOT NULL,
+  data_ref DATE NOT NULL,
+  codigo VARCHAR(40) NOT NULL,
+  tipo VARCHAR(40),
+  quantidade DECIMAL(18,6) NOT NULL,
+  central VARCHAR(20),
+  INDEX idx_pc (fundo_id, data_ref)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tokens de acesso do cotista (gerados e revogados pelo gestor)

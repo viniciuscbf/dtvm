@@ -25,13 +25,36 @@ if (isset($_GET['baixar'])) {
     if ($_GET['baixar'] === 'posicao') {
         header("Content-Disposition: attachment; filename=\"posicao_custodia_f{$fid}_" . str_replace('-', '', $data) . '.csv"');
         fputcsv($out, ['Data', 'Fundo', 'CNPJ', 'Central', 'Ativo', 'Tipo', 'Quantidade', 'Preco Referencia', 'Valor'], ';');
+        // FONTE INDEPENDENTE: a posição exportada é a do CUSTODIANTE (posicao_custodiante),
+        // não a carteira contábil da administradora — senão a conciliação seria circular.
+        $stp = $pdo->prepare("SELECT MAX(data_ref) FROM posicao_custodiante WHERE fundo_id = ? AND data_ref <= ?");
+        $stp->execute([$fid, $data]);
+        $dataPos = $stp->fetchColumn();
+        // preço de referência por código (só para valorizar o arquivo; a quantidade é a custodiada)
+        $refPreco = [];
         foreach (carteira($pdo, $fid, $data) as $a) {
-            $central = $a['tipo'] === 'Título Público' ? 'SELIC'
-                     : (in_array($a['tipo'], ['Debênture', 'CDB', 'CRI/CRA'], true) ? 'B3 Balcao' : 'B3 Depositaria');
-            fputcsv($out, [$data, $fundoSel['nome'], $fundoSel['cnpj'], $central, $a['codigo'], $a['tipo'],
-                number_format((float)$a['quantidade'], 2, ',', ''),
-                number_format((float)($a['preco_referencia'] ?: $a['preco_mam']), 4, ',', ''),
-                number_format($a['valor_mercado'], 2, ',', '')], ';');
+            $refPreco[$a['codigo']] = (float)($a['preco_referencia'] ?: $a['preco_mam']);
+        }
+        if ($dataPos) {
+            $stp = $pdo->prepare("SELECT * FROM posicao_custodiante WHERE fundo_id = ? AND data_ref = ? ORDER BY codigo");
+            $stp->execute([$fid, $dataPos]);
+            foreach ($stp->fetchAll() as $a) {
+                $pu = $refPreco[$a['codigo']] ?? 0.0;
+                fputcsv($out, [$dataPos, $fundoSel['nome'], $fundoSel['cnpj'], $a['central'], $a['codigo'], $a['tipo'],
+                    number_format((float)$a['quantidade'], 2, ',', ''),
+                    number_format($pu, 4, ',', ''),
+                    number_format((float)$a['quantidade'] * $pu, 2, ',', '')], ';');
+            }
+        } else {
+            // fallback (base antiga sem snapshot do custodiante): exporta a carteira com aviso explícito
+            foreach (carteira($pdo, $fid, $data) as $a) {
+                $central = $a['tipo'] === 'Título Público' ? 'SELIC'
+                         : (in_array($a['tipo'], ['Debênture', 'CDB', 'CRI/CRA'], true) ? 'B3 Balcao' : 'B3 Depositaria');
+                fputcsv($out, [$data, $fundoSel['nome'], $fundoSel['cnpj'], $central . ' (SEM SNAPSHOT DO CUSTODIANTE - fallback carteira)', $a['codigo'], $a['tipo'],
+                    number_format((float)$a['quantidade'], 2, ',', ''),
+                    number_format((float)($a['preco_referencia'] ?: $a['preco_mam']), 4, ',', ''),
+                    number_format($a['valor_mercado'], 2, ',', '')], ';');
+            }
         }
     } else {
         header("Content-Disposition: attachment; filename=\"extrato_conta_f{$fid}_" . str_replace('-', '', $data) . '.csv"');

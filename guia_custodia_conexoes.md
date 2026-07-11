@@ -17,7 +17,7 @@ Custódia de valores mobiliários é atividade autorizada pela CVM por norma **p
 **As três funções nucleares do custodiante** (é isso que o portal de custódia do piloto simula):
 
 1. **Guarda** dos ativos em contas **individualizadas por fundo** nas centrais depositárias (segregação patrimonial — os ativos do fundo nunca se misturam com os do banco);
-2. **Liquidação física e financeira** das operações (entrega contra pagamento — DVP), nos ciclos de mercado (D+1 títulos públicos, D+2 ações);
+2. **Liquidação física e financeira** das operações (entrega contra pagamento — DVP), no modelo de cada infraestrutura: títulos públicos em **LBTR/tempo real no Selic (D+0)**; ações em **D+2 pelo saldo líquido multilateral da Câmara B3 (CCP)** — nunca operação por operação; balcão em **D+0/D+1 por duplo comando** (matching bilateral no NoMe, modalidades Bruta/Bilateral/Sem modalidade);
 3. **Tratamento de eventos** e cobrança de direitos: dividendos, JCP, cupons, amortizações, bonificações — anunciar → provisionar → creditar; mais a **informação**: arquivos diários de posição e extrato que alimentam a conciliação da administradora.
 
 ---
@@ -93,11 +93,13 @@ Assumindo o banco autorizado pelo BCB (licença bancária/DTVM) e com a autoriza
 |---|---|
 | Autorização Res. CVM 32 + mesa de custódia própria | 4º portal (`/custodia/`) com perfil e login próprios |
 | Contas individualizadas nas centrais | `contas_centrais` (SELIC, B3 Depositária, B3 Balcão, STR/Reservas) |
-| Mensageria RSFN/SPB | `mensagens_spb` com códigos estilo catálogo (SEL1052, STR0008…) e reprocessamento |
-| Liquidação DVP D+1/D+2 | `liquidacoes` — confirmar movimenta o caixa e gera confirmação na mensageria |
+| Mensageria RSFN/SPB | `mensagens_spb` com códigos **reais do Catálogo do SFN** (SEL1052 operação definitiva, SEL1054/1056 compromissada/zeragem, SEL1081 posição, SEL1099 movimentação financeira, LDL0001/0005 câmara, STR0004/STR0008) + "052" do NoMe; reprocessamento de erros |
+| Liquidação por segmento | `liquidacoes` — TPF D+0 LBTR · balcão D+0/D+1 (duplo comando, data pactuada na boleta) · bolsa D+2 (câmara); a data de liquidação é respeitada (não se liquida antes) e a confirmação usa o código do segmento |
+| Zeragem do caixa | Compromissada over no passar de dia (SEL1054/SEL1056) — o caixa livre rende, como num fundo real |
 | Eventos corporativos | `eventos_corporativos` — anunciar → provisionar → creditar |
-| Arquivos diários de posição/extrato | `custodia/arquivos.php` gera CSVs reais que a administradora concilia |
-| Batimento custodiante × administradora | Conciliação + divergência NORD3 (ativo fantasma) atravessando os dois portais |
+| Arquivos diários de posição/extrato | `custodia/arquivos.php` gera CSVs da **posição do custodiante** (`posicao_custodiante`, fonte independente da carteira da adm.) |
+| Batimento custodiante × administradora | Conciliação + divergência NORD3 (conciliação de custódia — sem lastro) atravessando os dois portais |
+| Segregação de execução | Liquidar/provisionar/creditar são atos **só do portal de custódia**; a tela da administradora é espelho somente-leitura |
 
 ---
 

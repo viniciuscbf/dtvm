@@ -53,6 +53,52 @@ MARGIN = 0.92
 prs = Presentation()
 prs.slide_width  = Emu(int(PW * EMU_IN))
 prs.slide_height = Emu(int(PH * EMU_IN))
+
+# ---- VARIANTES por tipo de parceiro (banco / CTVM / financeira) -------------------------------
+# O deck é gerado 3×, trocando os termos e os pontos ESTRUTURAIS (SCFI não pode custodiar —
+# Res. CVM 32, art. 4º — então a variante financeira não promete custódia própria).
+VARIANTES = [
+    {"id": "banco", "arquivo": "Argus_Apresentacao.pptx",
+     "para": "para o seu banco.", "inst": "o banco", "Inst": "O banco", "INST": "O BANCO", "DA_INST": "DO BANCO", "da_inst": "do banco",
+     "rotulo_card": "Administrador fiduciário formal",
+     "cover_body": None,
+     "custodia_row": ["Custódia", "~R$ 1.500/mês", "R$ 0", "absorvida pelo banco parceiro"],
+     "tesouraria": "A explorar com a tesouraria: o caixa dos fundos em conta (float) e a compra de CDB do banco pelos fundos de RF (funding) — upside a quantificar.",
+     "reg_custodia": ("Res. CVM 32", "Custodiante", "Autorização separada. Pode ser terceirizada no início e internalizada em escala. Exige auditoria interna — não auditor externo."),
+     "roadmap_custodia": ("Custódia", "Res. 32 + adesões B3/SELIC/RSFN, em paralelo.", "Meses 3–9"),
+     "roadmap_nota": "Começamos pela administração (viável já com poucos fundos) e tratamos a custódia em paralelo, internalizando-a só quando o volume de fundos justificar.",
+     "custo_label": "Custódia · R$0 (banco)", "custo_val": 0.001,
+     "custo_txt": "A fatia da Argus é 0,08% — a menor da conta. O peso está na gestão (do gestor) e nos custos fixos regulatórios (taxa CVM, auditoria), que a plataforma reduz ao mínimo e a custódia via banco zera para o fundo. É por isso que o fundo pequeno passa a fechar.",
+     "papeis_custodiante": "banco (ou terceiro no início)",
+     "ax_custodia": ("Decidir a custódia", "contratar um terceiro no início ou licenciar-se (Res. 32) quando houver escala.")},
+    {"id": "ctvm", "arquivo": "Argus_Apresentacao_CTVM.pptx",
+     "para": "para a sua corretora.", "inst": "a corretora", "Inst": "A corretora", "INST": "A CORRETORA", "DA_INST": "DA CORRETORA", "da_inst": "da corretora",
+     "rotulo_card": "Administradora fiduciária formal",
+     "cover_body": "Vocês entram com a licença, a distribuição e os clientes gestores que já têm. Nós entramos com a tecnologia e a operação. Juntos, transformamos corretagem transacional em receita recorrente — num mercado que os grandes decidiram ignorar.",
+     "custodia_row": ["Custódia", "~R$ 1.500/mês", "R$ 0", "absorvida pela corretora parceira"],
+     "tesouraria": "A explorar: o caixa dos fundos em conta (float) e o cross-sell com a base de clientes da corretora — upside a quantificar.",
+     "reg_custodia": ("Res. CVM 32", "Custodiante", "Autorização separada — CTVM é elegível. Pode ser terceirizada no início e internalizada em escala. Exige auditoria interna."),
+     "roadmap_custodia": ("Custódia", "Res. 32 + adesões B3/SELIC/RSFN, em paralelo.", "Meses 3–9"),
+     "roadmap_nota": "Começamos pela administração (viável já com poucos fundos) e tratamos a custódia em paralelo, internalizando-a só quando o volume de fundos justificar.",
+     "custo_label": "Custódia · R$0 (corretora)", "custo_val": 0.001,
+     "custo_txt": "A fatia da Argus é 0,08% — a menor da conta. O peso está na gestão (do gestor) e nos custos fixos regulatórios (taxa CVM, auditoria), que a plataforma reduz ao mínimo e a custódia via corretora zera para o fundo. É por isso que o fundo pequeno passa a fechar.",
+     "papeis_custodiante": "corretora (ou terceiro no início)",
+     "ax_custodia": ("Decidir a custódia", "contratar um terceiro no início ou licenciar-se (Res. 32 — CTVM é elegível) quando houver escala.")},
+    {"id": "scfi", "arquivo": "Argus_Apresentacao_Financeira.pptx",
+     "para": "para a sua financeira.", "inst": "a financeira", "Inst": "A financeira", "INST": "A FINANCEIRA", "DA_INST": "DA FINANCEIRA", "da_inst": "da financeira",
+     "rotulo_card": "Administradora fiduciária formal",
+     "cover_body": "A Resolução CMN 5.237 abriu, em setembro de 2025, a administração de carteiras para as financeiras — e o mercado ainda não acordou. Vocês entram com a instituição e o compliance; nós, com a tecnologia e a operação. Juntos, atendemos um mercado que os grandes decidiram ignorar.",
+     "custodia_row": ["Custódia", "~R$ 1.500/mês", "em lote", "terceirizada — negociada em escala"],
+     "tesouraria": "A explorar: o caixa dos fundos em conta (float) e a compra de RDB/LC da financeira pelos fundos de RF (funding) — upside a quantificar.",
+     "reg_custodia": ("Res. CVM 32", "Custódia terceirizada", "SCFI está fora do rol de custodiantes — contrata-se custodiante autorizado (art. 19, responsabilidade solidária). Nós estruturamos e negociamos em lote."),
+     "roadmap_custodia": ("Custódia parceira", "Contratação de custodiante autorizado + integração de arquivos.", "Meses 2–4"),
+     "roadmap_nota": "Começamos pela administração (viável já com poucos fundos); a custódia permanece terceirizada — SCFI está fora do rol da Res. 32 — e é negociada em lote para não pesar no fundo.",
+     "custo_label": "Custódia · ~R$1,8 mil (lote)", "custo_val": 0.036,
+     "custo_txt": "A fatia da Argus é 0,08% — a menor da conta. O peso está na gestão (do gestor) e nos custos fixos regulatórios (taxa CVM, auditoria), que a plataforma reduz ao mínimo; a custódia, terceirizada, é negociada em lote. É por isso que o fundo pequeno passa a fechar.",
+     "papeis_custodiante": "custodiante terceiro autorizado (sempre)",
+     "ax_custodia": ("Contratar a custódia", "custodiante terceiro autorizado (Res. 32, art. 19) — nós estruturamos e negociamos em lote; SCFI não custodia.")},
+]
+SEG = VARIANTES[0]   # preenchido no loop final
 BLANK = prs.slide_layouts[6]
 
 # =================================================================== helpers base
@@ -359,12 +405,12 @@ def s_cover():
     hline(s, MARGIN, 3.0, PW - 2 * MARGIN, color=D_LINE, weight=0.75)
     rich(s, MARGIN, 3.32, 11.2, 2.0, [
         ([("Uma nova linha de receita recorrente", {'size': 37, 'font': SERIF, 'color': D_TXT})], {'line': 1.05}),
-        ([("para o seu banco.", {'size': 37, 'font': SERIF, 'color': GOLD, 'italic': True})],
+        ([(SEG['para'], {'size': 37, 'font': SERIF, 'color': GOLD, 'italic': True})],
          {'line': 1.05, 'space_before': 2}),
     ])
     txt(s, MARGIN, 5.35, 10.2, 1.0,
-        "Vocês entram com a licença e a estrutura que já têm. Nós entramos com a tecnologia e a "
-        "operação. Juntos, atendemos um mercado que os grandes decidiram ignorar — os fundos pequenos.",
+        SEG['cover_body'] or ("Vocês entram com a licença e a estrutura que já têm. Nós entramos com a tecnologia e a "
+        "operação. Juntos, atendemos um mercado que os grandes decidiram ignorar — os fundos pequenos."),
         14, font=SANS, color=D_MUT, spacing=1.32)
     hline(s, MARGIN, PH - 0.82, PW - 2 * MARGIN, color=D_LINE, weight=0.75)
     txt(s, MARGIN, PH - 0.68, 8, 0.3, "PROPOSTA DE PARCERIA · CONFIDENCIAL", 8.5, font=MONO, color=D_FAINT, char=1.8)
@@ -468,7 +514,7 @@ def s_solucao():
     rect(s, MARGIN, 4.55, PW - 2 * MARGIN, 0.66, fill=SOFT, line=GOLD, radius=0.05, shadow=False)
     txt(s, MARGIN + 0.25, 4.68, PW - 2 * MARGIN - 0.5, 0.45,
         "Nada é publicado sem a aprovação formal do gestor. Cada correção vira lançamento com trilha. "
-        "É a dupla checagem que produz prova de diligência — a blindagem do banco.", 11,
+        "É a dupla checagem que produz prova de diligência — a blindagem " + SEG['da_inst'] + ".", 11,
         font=SANS, color=INK, italic=True, spacing=1.15)
     extras = [
         ("Custódia integrada", "o gestor boleta, a liquidação é entrega-contra-pagamento e a posição reflete no dia."),
@@ -609,7 +655,7 @@ def s_barateamento():
     table(s, MARGIN, 3.55, [2.75, 2.15, 1.9, PW - 2 * MARGIN - 2.75 - 2.15 - 1.9],
           ["COMPONENTE (fundo R$ 1 mi)", "MERCADO", "ARGUS", "COMO BARATEAMOS"],
           [["Administração", "R$ 15–25 mil/mês", "R$ 100/mês", "software, não trabalho manual por fundo"],
-           ["Custódia", "~R$ 1.500/mês", "R$ 0", "absorvida pelo banco parceiro"],
+           SEG['custodia_row'],
            ["Auditoria", "~R$ 11 mil/ano", "~R$ 1,5 mil/ano", "mesmo auditor em lote, carteiras padronizadas"],
            ["Taxa CVM", "~R$ 3 mil/ano", "~R$ 3 mil/ano", "igual — é tributo, não dá para baratear"],
            ["Total ex-gestão", "~R$ 50–70 mil/ano", "~R$ 6 mil/ano", "≈ 10× mais barato no fundo pequeno"]],
@@ -640,8 +686,8 @@ def s_modelo():
     lw = 5.3; rxx = MARGIN + 6.15; rw = PW - MARGIN - rxx
     # banco
     card(s, MARGIN, 2.7, lw, 2.75, fill=NAVY, line=NAVY, radius=0.05, shadow=True)
-    txt(s, MARGIN + 0.32, 2.95, lw - 0.6, 0.3, "O BANCO", 10, font=MONO, color=GOLD, char=1.6, bold=True)
-    txt(s, MARGIN + 0.32, 3.28, lw - 0.6, 0.4, "Administrador fiduciário formal", 15, font=SERIF, color=D_TXT, bold=True)
+    txt(s, MARGIN + 0.32, 2.95, lw - 0.6, 0.3, SEG['INST'], 10, font=MONO, color=GOLD, char=1.6, bold=True)
+    txt(s, MARGIN + 0.32, 3.28, lw - 0.6, 0.4, SEG['rotulo_card'], 15, font=SERIF, color=D_TXT, bold=True)
     for i, t in enumerate(["A licença e a estrutura que já existem", "Os diretores estatutários responsáveis",
                            "A responsabilidade perante a CVM", "A conta e o nome"]):
         yy = 3.78 + i * 0.42
@@ -652,23 +698,23 @@ def s_modelo():
     txt(s, rxx + 0.32, 2.95, rw - 0.6, 0.3, "A ARGUS (NOSSA EQUIPE)", 10, font=MONO, color=NAVY, char=1.4, bold=True)
     txt(s, rxx + 0.32, 3.28, rw - 0.6, 0.4, "Tecnologia + operação", 15, font=SERIF, color=INK, bold=True)
     for i, t in enumerate(["A plataforma completa, já construída", "A operação da controladoria, ponta a ponta",
-                           "A originação de novos fundos", "Os manuais e controles que protegem o banco"]):
+                           "A originação de novos fundos", "Os manuais e controles que protegem a instituição"]):
         yy = 3.78 + i * 0.42
         oval(s, rxx + 0.4, yy + 0.1, 0.035, fill=NAVY)
         txt(s, rxx + 0.58, yy, rw - 0.9, 0.4, t, 11, font=SANS, color=INK, spacing=1.05)
     # split
     rect(s, MARGIN, 5.7, PW - 2 * MARGIN, 0.95, fill=SOFT, line=LINE, radius=0.05, shadow=False)
     txt(s, MARGIN + 0.35, 5.83, 5.9, 0.35, "Divisão da receita de administração", 13, font=SERIF, color=INK, bold=True)
-    txt(s, MARGIN + 0.35, 6.17, 6.05, 0.5, "O banco (administrador) remunera a Argus pelos serviços de tecnologia "
+    txt(s, MARGIN + 0.35, 6.17, 6.05, 0.5, SEG['Inst'] + " (administrador) remunera a Argus pelos serviços de tecnologia "
         "e operação. Começa 50/50 — com opção de recompra que pode levar a 15/85.", 9.5, font=SANS, color=MUTED, spacing=1.12)
     txt(s, PW - MARGIN - 3.5, 5.8, 3.2, 0.6, "50 / 50", 30, font=SERIF, color=NAVY, bold=True, align=PP_ALIGN.RIGHT)
-    txt(s, PW - MARGIN - 3.5, 6.4, 3.2, 0.3, "BANCO / ARGUS — INÍCIO", 8, font=MONO, color=MUTED, char=1.0, align=PP_ALIGN.RIGHT)
-    source(s, "Res. CVM 175 art. 118 §1º (repasse a prestador contratado). Linha vermelha: o banco é o administrador de verdade — decide, controla e responde.")
+    txt(s, PW - MARGIN - 3.5, 6.4, 3.2, 0.3, SEG['INST'] + " / ARGUS — INÍCIO", 8, font=MONO, color=MUTED, char=1.0, align=PP_ALIGN.RIGHT)
+    source(s, "Res. CVM 175 art. 118 §1º (repasse a prestador contratado). Linha vermelha: " + SEG['inst'] + " é o administrador de verdade — decide, controla e responde.")
 
 def s_conta_banco():
     s = slide(PAPER)
-    head(s, "A parceria", "A conta para o banco", "Receita nova, custo de entrada quase zero.")
-    txt(s, 8.5, 2.6, PW - MARGIN - 8.5, 0.3, "FATIA INICIAL DO BANCO (50%) — R$ MIL/ANO", 8.5, font=MONO, color=MUTED, char=0.8)
+    head(s, "A parceria", "A conta para " + SEG['inst'], "Receita nova, custo de entrada quase zero.")
+    txt(s, 8.5, 2.6, PW - MARGIN - 8.5, 0.3, "FATIA INICIAL " + SEG["DA_INST"] + " (50%) — R$ MIL/ANO", 8.5, font=MONO, color=MUTED, char=0.8)
     bar_chart(s, 8.35, 2.95, PW - MARGIN - 8.35, 3.35,
               ["R$50mi", "R$200mi", "R$500mi", "R$1bi"],
               [("R$ mil", [20, 80, 200, 350])],
@@ -677,9 +723,9 @@ def s_conta_banco():
         8.5, font=MONO, color=FAINT, char=0.2, spacing=1.15)
     items = [
         ("Custo de entrada ~zero", "sem investir em tecnologia nem contratar equipe — a receita nasce sobre a estrutura atual."),
-        ("Dispensa de capital mínimo", "por já ser instituição autorizada, o banco não precisa dos R$ 550 mil de capital exigidos de uma PJ comum."),
+        ("Dispensa de capital mínimo", "por já ser instituição autorizada, " + SEG['inst'] + " não precisa dos R$ 550 mil de capital exigidos de uma PJ comum."),
         ("Alavancagem operacional", "a estrutura custa ~R$ 27 mil/ano fixos; quase toda receita nova vira resultado."),
-        ("Originação incluída", "somos nós que trazemos os fundos — o banco não precisa de esforço comercial."),
+        ("Originação incluída", "somos nós que trazemos os fundos — " + SEG['inst'] + " não precisa de esforço comercial."),
     ]
     y = 2.62
     for i, (t, d) in enumerate(items):
@@ -688,14 +734,13 @@ def s_conta_banco():
         txt(s, MARGIN + 0.26, y + 0.34, 7.2, 0.55, d, 10.5, font=SANS, color=MUTED, spacing=1.18)
         y += 0.82
     rect(s, MARGIN, 5.88, 7.25, 0.66, fill=SOFT, line=LINE, radius=0.06, shadow=False)
-    txt(s, MARGIN + 0.22, 5.99, 6.85, 0.5, "A explorar com a tesouraria: o caixa dos fundos em conta "
-        "(float) e a compra de CDB do banco pelos fundos de RF (funding) — upside a quantificar.",
+    txt(s, MARGIN + 0.22, 5.99, 6.85, 0.5, SEG['tesouraria'],
         9.5, font=SANS, color=INK, italic=True, spacing=1.12)
     source(s, "guia_potencial_financeiro.md; guia_credenciamento_banco.md (dispensa de capital). Receita = PL × taxa; não é promessa de PL.")
 
 def s_vigilancia_porque():
     s = slide(NAVY_DK)
-    head(s, "A vigilância", "Por que vigiar cada fundo", "O maior medo do banco tem nome e valor.", dark=True)
+    head(s, "A vigilância", "Por que vigiar cada fundo", "O maior medo " + SEG['da_inst'] + " tem nome e valor.", dark=True)
     txt(s, MARGIN, 2.5, PW - 2 * MARGIN, 0.55,
         "A CVM pune o administrador e o custodiante quando falham na diligência — não só o fraudador. "
         "Cada fundo é uma porta que alguém pode tentar usar para fraude ou lavagem.",
@@ -762,12 +807,12 @@ def s_vigilancia_como():
 
 def s_risco_banco():
     s = slide(NAVY_DK)
-    head(s, "A parceria", "O risco do banco", "“E quando um gestor fizer besteira?” — três camadas de blindagem.", dark=True)
+    head(s, "A parceria", "O risco " + SEG['da_inst'], "“E quando um gestor fizer besteira?” — três camadas de blindagem.", dark=True)
     layers = [
         ("A norma protege", "Res. CVM 175: responsabilidade subjetiva (exige dolo/culpa) e de meio, não de fim. Sem solidariedade automática — cada um responde pela sua esfera."),
         ("A operação produz prova", "nenhuma cota publica sem aprovação formal do gestor; toda correção vira lançamento com trilha; conciliação diária em três frentes."),
         ("O monitoramento é total", "IA lê regulamentos e vigia negócios fora de mercado, partes relacionadas e o lastro na custódia — em 100% dos fundos, todos os dias."),
-        ("O compliance manda", "o compliance do banco designa o diretor, aprova os manuais, recebe relatórios e audita quando quiser. Envolvimento é blindagem."),
+        ("O compliance manda", "o compliance " + SEG['da_inst'] + " designa o diretor, aprova os manuais, recebe relatórios e audita quando quiser. Envolvimento é blindagem."),
     ]
     x0 = MARGIN; cw = (PW - 2 * MARGIN - 3 * 0.35) / 4
     for i, (t, d) in enumerate(layers):
@@ -818,12 +863,14 @@ def s_regulatorio():
     s = slide(PAPER)
     head(s, "O caminho", "Mapa regulatório", "Todo o caminho já levantado e documentado.")
     txt(s, MARGIN, 2.55, PW - 2 * MARGIN, 0.5,
-        "Nós preparamos os dossiês; o banco protocola e supervisiona. Nada aqui é território desconhecido.",
+        "Nós preparamos os dossiês; " + SEG['inst'] + " protocola e supervisiona. Nada aqui é território desconhecido.",
         13, font=SANS, color=INK, spacing=1.25)
     docs = [
-        ("Res. CVM 21", "Administrador fiduciário", "Habilitação do banco (SSM → ANBIMA → CVM). Prazo legal de 60 dias. Formulário, manuais e website entregues prontos."),
-        ("Res. CVM 32", "Custodiante", "Autorização separada. Pode ser terceirizada no início e internalizada em escala. Exige auditoria interna — não auditor externo."),
-        ("Adesões de mercado", "B3 · SELIC · RSFN", "Contas segregadas, liquidação DVP e mensageria do SPB. Ocorrem após o deferimento da custódia."),
+        ("Res. CVM 21", "Administrador fiduciário", "Habilitação " + SEG['da_inst'] + " (SSM → ANBIMA → CVM). Prazo legal de 60 dias. Formulário, manuais e website entregues prontos."),
+        SEG['reg_custodia'],
+        ("Adesões de mercado", "B3 · SELIC · RSFN",
+         ("Contas segregadas, liquidação DVP e mensageria do SPB — já resolvidas pelo custodiante contratado; os fundos nascem com contas individualizadas." if SEG['id'] == 'scfi'
+          else "Contas segregadas, liquidação DVP e mensageria do SPB. Ocorrem após o deferimento da custódia.")),
         ("Dossiês prontos", "Pacotes completos", "Matrizes de conformidade e manuais em custodiante/ e administrador_fiduciario/ — com o protótipo como anexo técnico."),
     ]
     x0 = MARGIN; cw = (PW - 2 * MARGIN - 3 * 0.4) / 4
@@ -842,7 +889,7 @@ def s_roadmap():
     phases = [
         ("Acordo", "Carta de intenções e consulta jurídica conjunta.", "Mês 0"),
         ("Habilitação", "Administrador fiduciário na CVM (Res. 21, ~60 dias).", "Meses 1–4"),
-        ("Custódia", "Res. 32 + adesões B3/SELIC/RSFN, em paralelo.", "Meses 3–9"),
+        SEG['roadmap_custodia'],
         ("Homologação", "Mensageria, manuais e controles validados.", "Meses 6–12"),
         ("Operação assistida", "3 a 5 fundos-piloto sob a licença, antes de escalar.", "Meses 12–18"),
     ]
@@ -858,8 +905,7 @@ def s_roadmap():
         txt(s, lxb, y + 0.66, Lw, 1.1, d, 9.5, font=SANS, color=MUTED, spacing=1.18, align=PP_ALIGN.CENTER)
     rect(s, MARGIN, 6.05, PW - 2 * MARGIN, 0.62, fill=SOFT, line=LINE, radius=0.06, shadow=False)
     txt(s, MARGIN + 0.25, 6.17, PW - 2 * MARGIN - 0.5, 0.45,
-        "Começamos pela administração (viável já com poucos fundos) e tratamos a custódia em paralelo, "
-        "internalizando-a só quando o volume de fundos justificar.", 10, font=SANS, color=MUTED, italic=True, spacing=1.12)
+        SEG['roadmap_nota'], 10, font=SANS, color=MUTED, italic=True, spacing=1.12)
     source(s, "guia_custodia_conexoes.md; relatorio_gaps_producao_licenca.md. Prazos indicativos; o legal da Res. 21 é 60 dias.")
 
 def s_riscos():
@@ -870,7 +916,7 @@ def s_riscos():
           [["Custo por fundo irredutível", "parte do custo pode não ser automatizável", "o piloto mede o custo unitário real antes de escalar"],
            ["IA não pega fraudador competente", "a fraude é feita para as contas fecharem", "IA é apoio de uma camada humana de compliance, no plano"],
            ["Auditor único barato", "compromete a independência exigida", "pulverizamos entre vários auditores"],
-           ["Receita modesta no início", "a taxa é enxuta de propósito", "custo de entrada do banco ~zero e alavancagem operacional"]],
+           ["Receita modesta no início", "a taxa é enxuta de propósito", "custo de entrada " + SEG['da_inst'] + " ~zero e alavancagem operacional"]],
           rh=0.66, accent_col=2, csize=10.5)
     txt(s, MARGIN, 6.35, PW - 2 * MARGIN, 0.5,
         "Se algum desses riscos matar a tese, queremos descobrir no piloto — não na escala. É para isso "
@@ -883,7 +929,7 @@ def s_pedido():
     steps = [
         ("01", "Reunião técnica", "com o time de tecnologia e o compliance de vocês, para abrir o modelo, os controles e o protótipo."),
         ("02", "Carta de intenções", "não-vinculante, para detalharmos a divisão de resultado e de responsabilidades."),
-        ("03", "3 a 5 fundos-piloto", "sob a licença do banco, com supervisão total de vocês e o custo unitário medido."),
+        ("03", "3 a 5 fundos-piloto", "sob a licença " + SEG['da_inst'] + ", com supervisão total de vocês e o custo unitário medido."),
     ]
     x0 = MARGIN; cw = (PW - 2 * MARGIN - 2 * 0.45) / 3
     for i, (n, t, d) in enumerate(steps):
@@ -927,7 +973,7 @@ def s_anexo_divider():
     grupos_r = [
         ("VIGILÂNCIA", ["Tipologia → sinal → limite", "Casos reais de fraude"]),
         ("REGULATÓRIO", ["Taxa CVM do fundo", "Quem faz o quê", "Obrigações de PLD/FT"]),
-        ("PARCERIA", ["O que o banco faz"]),
+        ("PARCERIA", ["O que " + SEG['inst'] + " faz"]),
         ("MÉTODO", ["Fontes"]),
     ]
     for ci, (cx, gs) in enumerate([(MARGIN, grupos_l), (6.95, grupos_r)]):
@@ -964,12 +1010,10 @@ def s_ax_custo_fundo():
     stacked_col(s, MARGIN, 2.95, 5.6, 3.4, ["Custo anual\ndo fundo"],
                 [("Gestão · 0,70% (do gestor)", [0.70]), ("Taxa CVM · R$3.162", [0.06]),
                  ("Auditoria · R$1.500", [0.03]), ("Administração · 0,08% (Argus)", [0.08]),
-                 ("Custódia · R$0 (banco)", [0.001])],
+                 (SEG['custo_label'], [SEG['custo_val']])],
                 colors=[MUTED, NEG, GOLD_DK, NAVY, TEAL], val_fmt='0.00"%"', show_val=False)
     txt(s, 6.9, 2.95, PW - MARGIN - 6.9, 3.4,
-        "A fatia da Argus é 0,08% — a menor da conta. O peso está na gestão (do gestor) e nos custos "
-        "fixos regulatórios (taxa CVM, auditoria), que a plataforma reduz ao mínimo e a custódia via "
-        "banco zera para o fundo. É por isso que o fundo pequeno passa a fechar.", 12, font=SANS, color=INK, spacing=1.34)
+        SEG['custo_txt'], 12, font=SANS, color=INK, spacing=1.34)
     source(s, "planilha_custos.md (§7). Taxa CVM R$3.162/ano (faixa até R$5mi); auditoria adaptada em lote.")
 
 def s_ax_receita_pl():
@@ -987,9 +1031,9 @@ def s_ax_estrutura():
     head(s, "Anexo · negócio", "Custo da estrutura", "Operar a administradora custa pouco.")
     table(s, MARGIN, 2.75, [5.0, 3.2, PW - 2 * MARGIN - 5.0 - 3.2],
           ["ITEM", "VALOR/ANO", "NATUREZA"],
-          [["Nuvem (AWS)", "~R$ 5.400", "escalável; ~R$0 sob o banco"],
-           ["Taxa CVM do administrador (PJ)", "~R$ 9.519", "some se operar sob o banco"],
-           ["Contribuição ANBIMA", "negociada", "some se o banco já é associado"],
+          [["Nuvem (AWS)", "~R$ 5.400", "escalável; ~R$0 sob o parceiro"],
+           ["Taxa CVM do administrador (PJ)", "~R$ 9.519", "some se operar sob o parceiro"],
+           ["Contribuição ANBIMA", "negociada", "some se o parceiro já é associado"],
            ["Seguro E&O, contador, jurídico", "a cotar", "recorrente / pontual"]],
           rh=0.54, accent_col=1, csize=10.5)
     rect(s, MARGIN, 5.78, PW - 2 * MARGIN, 0.82, fill=SOFT, line=LINE, radius=0.05, shadow=False)
@@ -1069,14 +1113,14 @@ def s_ax_papeis():
     head(s, "Anexo · regulatório", "Quem faz o quê", "Os papéis de um fundo — e onde entramos.")
     table(s, MARGIN, 2.8, [3.6, 5.3, PW - 2 * MARGIN - 3.6 - 5.3],
           ["FUNÇÃO", "RESPONSABILIDADE", "NA PARCERIA"],
-          [["Administrador fiduciário", "constituição, cota, PL, contabilidade e informes", "Banco responde · Argus executa"],
+          [["Administrador fiduciário", "constituição, cota, PL, contabilidade e informes", SEG['Inst'] + " responde · Argus executa"],
            ["Gestor", "decisões de investimento e enquadramento", "cliente ou parceiro"],
-           ["Custodiante", "guarda dos ativos, liquidação e conciliação", "banco (ou terceiro no início)"],
-           ["Distribuidor", "coloca o investidor dentro do fundo", "banco — sem licença nova"]],
+           ["Custodiante", "guarda dos ativos, liquidação e conciliação", SEG['papeis_custodiante']],
+           ["Distribuidor", "coloca o investidor dentro do fundo", SEG['inst'] + " — sem licença nova"]],
           rh=0.68, accent_col=2, csize=10.5)
     txt(s, MARGIN, 6.25, PW - 2 * MARGIN, 0.5,
-        "Distribuir cotas dos fundos que ele mesmo administra quase sempre já está no escopo do banco "
-        "(Lei 6.385, art. 15) — um eixo extra de valor, sem obter autorização nova.", 11, font=SANS, color=MUTED, italic=True, spacing=1.15)
+        "Distribuir cotas dos fundos que ele mesmo administra é permitido ao administrador "
+        "(Res. CVM 21, art. 33) — um eixo extra de valor, sem obter autorização nova.", 11, font=SANS, color=MUTED, italic=True, spacing=1.15)
     source(s, "Res. CVM 21/32/175; distribuidor/manual_banco_distribuidor.md.")
 
 def s_ax_monitoramento():
@@ -1140,13 +1184,13 @@ def s_ax_pld():
 
 def s_ax_banco():
     s = slide(PAPER)
-    head(s, "Anexo · parceria", "O que o banco faz", "Seis passos — e nós ajudamos em todos.")
+    head(s, "Anexo · parceria", "O que " + SEG['inst'] + " faz", "Seis passos — e nós ajudamos em todos.")
     reqs = [
         ("Habilitar-se administrador", "protocolo na CVM (SSM/ANBIMA), ~60 dias — com os documentos que entregamos prontos."),
         ("Designar diretores", "responsável pela administração fiduciária + controles internos (pessoas reais da casa)."),
         ("Validar e assinar", "os manuais, o formulário de referência e o website que preparamos."),
         ("Aderir ao Código ANBIMA", "no mesmo protocolo da habilitação."),
-        ("Decidir a custódia", "contratar um terceiro no início ou licenciar-se (Res. 32) quando houver escala."),
+        SEG['ax_custodia'],
         ("Supervisionar", "compliance com acesso total, relatórios periódicos e direito de auditar."),
     ]
     x0 = MARGIN; cw = (PW - 2 * MARGIN - 2 * 0.4) / 3
@@ -1158,7 +1202,7 @@ def s_ax_banco():
         txt(s, x + 0.9, y + 0.19, cw - 1.1, 0.4, t, 12.5, font=SERIF, color=INK, bold=True, spacing=1.0)
         txt(s, x + 0.26, y + 0.66, cw - 0.5, 0.8, d, 10, font=SANS, color=MUTED, spacing=1.22)
     txt(s, MARGIN, 6.35, PW - 2 * MARGIN, 0.4,
-        "Custos ao banco: registro CVM ~R$ 2.380 (uma vez) e fiscalização ~R$ 9.519/ano (administrador); "
+        "Custos ao parceiro: registro CVM ~R$ 2.380 (uma vez) e fiscalização ~R$ 9.519/ano (administrador); "
         "custódia ~R$ 38.077/ano só se internalizar.", 9.5, font=SANS, color=MUTED, italic=True, spacing=1.1)
     source(s, "guia_burocratico_regulatorio.md; guia_credenciamento_banco.md.")
 
@@ -1186,16 +1230,25 @@ def s_ax_fontes():
            {'size': 10.5, 'font': SANS, 'color': MUTED})], {'line': 1.26})])
 
 # ---------------------------------------------------------------- ordem do deck
-for fn in [s_cover, s_problema, s_lacuna, s_oportunidade, s_tese, s_solucao, s_deploy,
-           s_captacao, s_subclasses,
-           s_preco, s_barateamento, s_cotista, s_modelo, s_conta_banco,
-           s_vigilancia_porque, s_vigilancia_como, s_risco_banco, s_piloto,
-           s_regulatorio, s_roadmap, s_riscos, s_pedido, s_fecho,
-           s_anexo_divider, s_ax_cotista, s_ax_custo_fundo, s_ax_receita_pl, s_ax_estrutura,
-           s_ax_taxacvm, s_ax_concorrencia, s_ax_mercado, s_ax_precos, s_ax_papeis,
-           s_ax_monitoramento, s_ax_casos, s_ax_pld, s_ax_banco, s_ax_fontes]:
-    fn()
+ORDEM = [s_cover, s_problema, s_lacuna, s_oportunidade, s_tese, s_solucao, s_deploy,
+         s_captacao, s_subclasses,
+         s_preco, s_barateamento, s_cotista, s_modelo, s_conta_banco,
+         s_vigilancia_porque, s_vigilancia_como, s_risco_banco, s_piloto,
+         s_regulatorio, s_roadmap, s_riscos, s_pedido, s_fecho,
+         s_anexo_divider, s_ax_cotista, s_ax_custo_fundo, s_ax_receita_pl, s_ax_estrutura,
+         s_ax_taxacvm, s_ax_concorrencia, s_ax_mercado, s_ax_precos, s_ax_papeis,
+         s_ax_monitoramento, s_ax_casos, s_ax_pld, s_ax_banco, s_ax_fontes]
 
-out = r"C:\Users\vinic\OneDrive\Desktop\dtvm\apresentacao\Argus_Apresentacao.pptx"
-prs.save(out)
-print("OK ->", out, "| slides:", len(prs.slides._sldIdLst))
+# gera as 3 variantes (banco / CTVM / financeira) — mesma estrutura, termos e pontos
+# estruturais (custódia) trocados por segmento
+for SEG in VARIANTES:
+    prs = Presentation()
+    prs.slide_width  = Emu(int(PW * EMU_IN))
+    prs.slide_height = Emu(int(PH * EMU_IN))
+    BLANK = prs.slide_layouts[6]   # SEMPRE do prs corrente — layout de outra Presentation duplica master/theme e corrompe o pptx
+    PGN['n'] = 0                   # numeração de página reinicia por variante
+    for fn in ORDEM:
+        fn()
+    out = r"C:\Users\vinic\OneDrive\Desktop\dtvm\apresentacao" + "\\" + SEG['arquivo']
+    prs.save(out)
+    print("OK ->", out, "| slides:", len(prs.slides._sldIdLst))

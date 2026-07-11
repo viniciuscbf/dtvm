@@ -36,6 +36,12 @@ function ensure_contrapartes(PDO $pdo): void
     // a boleta passa a referenciar o cadastro por FK; o texto 'contraparte' vira apenas snapshot p/ a custódia
     ddl_portavel($pdo, "ALTER TABLE boletas ADD COLUMN IF NOT EXISTS contraparte_id INT NULL");
     ddl_portavel($pdo, "ALTER TABLE boletas ADD COLUMN IF NOT EXISTS corretora_executora_id INT NULL");
+    // campos de boleta real: data de liquidação NEGOCIADA (balcão D+0/D+1; bolsa travada D+2),
+    // taxa da operação (RF negocia por taxa; PU é derivado) e modalidade de liquidação do balcão
+    // (campo real do NoMe/Cetip21: Bruta (DVP via STR) / Bilateral / Sem modalidade).
+    ddl_portavel($pdo, "ALTER TABLE boletas ADD COLUMN IF NOT EXISTS data_liquidacao_prevista DATE NULL");
+    ddl_portavel($pdo, "ALTER TABLE boletas ADD COLUMN IF NOT EXISTS taxa_negociada VARCHAR(40) NULL");
+    ddl_portavel($pdo, "ALTER TABLE boletas ADD COLUMN IF NOT EXISTS modalidade_liq VARCHAR(30) NULL");
 
     // Semente de referência (como ensure_catalogo): habilita a mesa a operar já no 1º acesso.
     if ((int) $pdo->query("SELECT COUNT(*) FROM contrapartes")->fetchColumn() === 0) {

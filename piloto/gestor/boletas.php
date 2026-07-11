@@ -102,6 +102,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
         } else {
             $valor = $qtd * $preco;
 
+            // 2b) condições de liquidação pactuadas na boleta (como numa boleta real):
+            //  · bolsa: ciclo travado pela câmara (D+2, netting multilateral) — o gestor não escolhe;
+            //  · título público: Selic liquida LBTR/DVP em tempo real — D+0 (ou D+1 por convenção);
+            //  · balcão (RF privada): data negociada bilateralmente — D+0 a D+2, com modalidade NoMe.
+            $prazoMax = $ehBolsa ? 2 : ($tipo === 'Título Público' ? 1 : 2);
+            $prazo = max(0, min($prazoMax, (int)($_POST['prazo_liq'] ?? 0)));
+            if ($ehBolsa) $prazo = 2;
+            $dl = new DateTime(($_POST['data_operacao'] ?? '') ?: date('Y-m-d'));
+            $n = $prazo;
+            while ($n > 0) { $dl->modify('+1 day'); if ((int)$dl->format('N') < 6) $n--; }
+            $dataLiqPrev = $dl->format('Y-m-d');
+            $taxaNeg = trim($_POST['taxa_negociada'] ?? '') !== '' ? mb_substr(trim($_POST['taxa_negociada']), 0, 40) : null;
+            if ($ehBolsa) {
+                $modLiq = 'Câmara B3 (saldo líquido)';
+            } elseif ($tipo === 'Título Público') {
+                $modLiq = 'LBTR Selic (DVP tempo real)';
+            } else {
+                $modsOk = ['Bruta (DVP via STR)', 'Bilateral', 'Sem modalidade'];
+                $modLiq = in_array($_POST['modalidade_liq'] ?? '', $modsOk, true) ? $_POST['modalidade_liq'] : 'Bruta (DVP via STR)';
+            }
+
             // 3) venda: precisa ter posição suficiente
             if ($operacao === 'Venda') {
                 $st = $pdo->prepare('SELECT quantidade FROM ativos_carteira WHERE fundo_id = ? AND codigo = ? AND data_ref = ?');
@@ -133,16 +154,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['boletar'])) {
             }
 
             if ($msgTipo !== 'danger') {
-                com_transacao($pdo, function () use ($pdo, $fid, $operacao, $codigo, $tipo, $qtd, $preco, $valor, $cpTextoSnap, $cpFK, $corrFK, $u) {
-                    $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, contraparte_id, corretora_executora_id, criado_por)
-                                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+                com_transacao($pdo, function () use ($pdo, $fid, $operacao, $codigo, $tipo, $qtd, $preco, $valor, $cpTextoSnap, $cpFK, $corrFK, $u, $dataLiqPrev, $taxaNeg, $modLiq) {
+                    $pdo->prepare("INSERT INTO boletas (fundo_id, data_operacao, operacao, ativo_codigo, tipo_ativo, quantidade, preco, valor, contraparte, contraparte_id, corretora_executora_id, data_liquidacao_prevista, taxa_negociada, modalidade_liq, criado_por)
+                                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
                         ->execute([$fid, ($_POST['data_operacao'] ?? '') ?: date('Y-m-d'), $operacao, $codigo, $tipo,
-                                   $qtd, $preco, $valor, $cpTextoSnap, $cpFK, $corrFK, $u['nome']]);
+                                   $qtd, $preco, $valor, $cpTextoSnap, $cpFK, $corrFK, $dataLiqPrev, $taxaNeg, $modLiq, $u['nome']]);
                 });
                 registrar_auditoria($pdo, 'boleta_enviada', ['entidade' => 'boleta', 'fundo_id' => $fid,
-                    'detalhe' => "$operacao de $codigo — " . moeda($valor) . ' (pré-trade OK)']);
+                    'detalhe' => "$operacao de $codigo — " . moeda($valor) . " (pré-trade OK; liq. $dataLiqPrev · $modLiq)"]);
                 $onde = $ehBolsa ? 'via ' . e_html($cpTextoSnap) : 'contra ' . e_html($cpTextoSnap);
-                $msg = "Boleta de $operacao de $codigo enviada à mesa de custódia $onde (pré-trade OK) — ela valida, liquida (DVP) e a posição entra na carteira.";
+                $msg = "Boleta de $operacao de $codigo enviada à mesa de custódia $onde (pré-trade OK) — liquidação pactuada para " . data_br($dataLiqPrev) . " ($modLiq).";
             }
         }
     }
@@ -212,6 +233,23 @@ page_start('Boletar operação', 'Boletar operação', $u,
             <div class="col-6"><label class="form-label" id="lbl-preco" style="font-size:.78rem">Preço unitário (R$) *</label>
               <input class="form-control form-control-sm" name="preco" required placeholder="1.120,50"></div>
 
+            <div class="col-6" id="grp-prazo" style="display:none">
+              <label class="form-label" style="font-size:.78rem">Liquidação *</label>
+              <select class="form-select form-select-sm" name="prazo_liq" id="prazo-liq"></select>
+              <span class="text-muted" id="prazo-nota" style="font-size:.68rem"></span></div>
+            <div class="col-6" id="grp-taxa" style="display:none">
+              <label class="form-label" style="font-size:.78rem">Taxa negociada <span class="text-muted">(RF)</span></label>
+              <input class="form-control form-control-sm" name="taxa_negociada" placeholder="CDI+1,20% · 15,10% a.a.">
+              <span class="text-muted" style="font-size:.68rem">RF se negocia por taxa — o PU informado é o derivado dela.</span></div>
+            <div class="col-12" id="grp-modalidade" style="display:none">
+              <label class="form-label" style="font-size:.78rem">Modalidade de liquidação (balcão) *</label>
+              <select class="form-select form-select-sm" name="modalidade_liq">
+                <option>Bruta (DVP via STR)</option>
+                <option>Bilateral</option>
+                <option>Sem modalidade</option>
+              </select>
+              <span class="text-muted" style="font-size:.68rem">Campo do registro no balcão B3 (NoMe/Cetip21). "Sem modalidade" = só transferência de custódia, livre de pagamento.</span></div>
+
             <div class="col-12" id="deriv-hint" style="display:none">
               <div class="alert alert-info py-1 px-2 mb-0" style="font-size:.72rem"><i class="bi bi-info-circle me-1"></i>
                 Futuro: <b>Compra</b> = comprado em PU (aposta que os juros caem); <b>Venda</b> = vendido. Sem desembolso do
@@ -248,8 +286,10 @@ page_start('Boletar operação', 'Boletar operação', $u,
           <button class="btn btn-dark btn-sm w-100 mt-3"><i class="bi bi-send me-1"></i>Validar (pré-trade) e enviar à custódia</button>
         </form>
         <p class="text-muted mb-0 mt-2" style="font-size:.72rem">
-          Ciclo real: seleção no catálogo → <b>enquadramento pré-trade</b> (art. 89) → boleta → aceite da mesa de custódia
-          (instrução D+1/D+2) → liquidação DVP → ativo entra na carteira pelo preço médio → a cota do dia reflete.</p>
+          Ciclo real: seleção no catálogo → <b>enquadramento pré-trade</b> (art. 89) → boleta com condições pactuadas
+          (bolsa D+2 pela câmara · TPF D+0 LBTR · balcão D+0/D+1 bilateral) → mesa de custódia comanda a ponta →
+          liquidação na data pactuada → ativo entra na carteira pelo preço médio → a cota do dia reflete.
+          <span class="text-muted">Fora do escopo da demo: banco liquidante, corretagem/emolumentos e ISIN.</span></p>
       </div>
     </div>
   </div>
@@ -292,7 +332,13 @@ page_start('Boletar operação', 'Boletar operação', $u,
             <b><?= e_html($b['ativo_codigo']) ?></b> <span class="text-muted" style="font-size:.72rem">(<?= e_html($b['tipo_ativo']) ?>)</span></td>
           <td class="text-end"><?= number_format((float)$b['quantidade'], 0, ',', '.') ?> × <?= number_format((float)$b['preco'], 4, ',', '.') ?></td>
           <td class="text-end"><b><?= moeda($b['valor']) ?></b></td>
-          <td style="font-size:.8rem"><?= e_html($b['contraparte']) ?></td>
+          <td style="font-size:.8rem"><?= e_html($b['contraparte']) ?>
+            <?php if (!empty($b['data_liquidacao_prevista']) || !empty($b['modalidade_liq'])): ?>
+              <br><span class="text-muted" style="font-size:.7rem">
+                <?= !empty($b['data_liquidacao_prevista']) ? 'liq. ' . data_br($b['data_liquidacao_prevista']) : '' ?>
+                <?= !empty($b['modalidade_liq']) ? ' · ' . e_html($b['modalidade_liq']) : '' ?>
+                <?= !empty($b['taxa_negociada']) ? ' · ' . e_html($b['taxa_negociada']) : '' ?></span>
+            <?php endif; ?></td>
           <td><?= badge($b['status'], ['Enviada' => 'warning', 'Aceita' => 'info', 'Liquidada' => 'success', 'Rejeitada' => 'danger'][$b['status']] ?? 'secondary') ?>
             <?= $b['status'] === 'Rejeitada' && $b['motivo'] ? '<br><span class="text-danger" style="font-size:.72rem">' . e_html($b['motivo']) . '</span>' : '' ?>
             <?= $b['status'] === 'Enviada' ? '<br><span class="text-muted" style="font-size:.7rem">aguardando aceite da custódia</span>' : '' ?></td>
@@ -337,6 +383,24 @@ page_start('Boletar operação', 'Boletar operação', $u,
     if (t && !bolsa) camaraInfo.innerHTML = '<span class="text-muted"><i class="bi bi-bank me-1"></i>Registro/liquidação: <b>' + camaraDe(t) + '</b> · contraparte bilateral — risco de crédito é do fundo.</span>';
   }
 
+  // condições de liquidação por segmento: bolsa D+2 travado (câmara), TPF D+0/D+1 (LBTR), balcão D+0..D+2
+  var grpPrazo = document.getElementById('grp-prazo'), selPrazo = document.getElementById('prazo-liq');
+  var prazoNota = document.getElementById('prazo-nota');
+  var grpTaxa = document.getElementById('grp-taxa'), grpMod = document.getElementById('grp-modalidade');
+  function togglaLiquidacao() {
+    var t = cat.value, bolsa = ehBolsa(t), deriv = t === 'Derivativo', tpf = t === 'Título Público';
+    grpPrazo.style.display = t && !deriv ? 'block' : 'none';
+    grpTaxa.style.display = t && !deriv && !bolsa ? 'block' : 'none';
+    grpMod.style.display = t && !deriv && !bolsa && !tpf ? 'block' : 'none';
+    if (!t || deriv) return;
+    var ops = bolsa ? [2] : (tpf ? [0, 1] : [0, 1, 2]);
+    selPrazo.innerHTML = ops.map(function (d) { return '<option value="' + d + '">D+' + d + '</option>'; }).join('');
+    selPrazo.disabled = bolsa;                 // bolsa: ciclo é da câmara, não se negocia
+    prazoNota.textContent = bolsa ? 'travado: netting multilateral pela Câmara B3 (CCP)'
+                          : (tpf ? 'Selic liquida LBTR/DVP em tempo real (D+0 padrão)'
+                                 : 'data pactuada bilateralmente no balcão');
+  }
+
   function fecharSug() { sug.style.display = 'none'; sug.innerHTML = ''; }
 
   function render(lista) {
@@ -372,7 +436,7 @@ page_start('Boletar operação', 'Boletar operação', $u,
     busca.disabled = !cat.value;
     busca.value = ''; codigo.value = '';
     busca.placeholder = cat.value ? 'digite código ou nome…' : 'escolha a categoria primeiro';
-    labelsDe(null); togglaContraparte(); fecharSug();
+    labelsDe(null); togglaContraparte(); togglaLiquidacao(); fecharSug();
     if (cat.value) busca.focus();
   });
   busca.addEventListener('input', buscar);

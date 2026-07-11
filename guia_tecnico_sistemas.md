@@ -303,7 +303,7 @@ graph TB
         S4[Compras de ativos liquidadas]
     end
     subgraph Repasses["REPASSES que voce apura e distribui"]
-        R1[Taxa de administracao<br/>-> split banco/voce 25/75]
+        R1[Taxa de administracao<br/>-> split banco/voce 50/50]
         R2[Taxa de gestao<br/>-> gestor]
         R3[Proventos<br/>-> ficam no fundo/cotistas]
         R4[Resgates<br/>-> conta do cotista]
@@ -319,7 +319,7 @@ graph TB
 
 | Repasse | Origem | Destino | Frequência |
 |---|---|---|---|
-| **Taxa de administração** | Provisionada diária, cobrada do fundo | Dividida **25% banco / 75% você** | Mensal (típico) |
+| **Taxa de administração** | Provisionada diária, cobrada do fundo | Dividida **50% banco / 50% você** (início; opção de recompra → 15/85) | Mensal (típico) |
 | **Taxa de gestão** | Provisionada diária, cobrada do fundo | Gestor | Mensal |
 | **Taxa de performance** | Se atingir benchmark | Gestor (e/ou split) | Conforme regulamento |
 | **Taxa de custódia** | Cobrada do fundo | Custodiante (ou R$ 0 se banco absorve) | Mensal |
@@ -327,7 +327,7 @@ graph TB
 | **Resgates** | Pedido do cotista | Conta do cotista | Conforme cotização |
 | **Proventos** | Ativos da carteira | Permanecem no fundo (viram caixa/reinvestimento) | Ao evento |
 
-> 💡 **O repasse que é a sua receita:** a **taxa de administração** é de onde sai o seu dinheiro. O sistema provisiona diariamente (para a cota já sair líquida), a apura no fechamento do mês, e calcula o **split 25/75** entre banco e você. Automatizar isso é o que garante que você receba certo, todo mês, em todos os fundos — sem planilha manual.
+> 💡 **O repasse que é a sua receita:** a **taxa de administração** é de onde sai o seu dinheiro. O sistema provisiona diariamente (para a cota já sair líquida), a apura no fechamento do mês, e calcula o **split 50/50** entre banco e você (estrutura inicial; a opção de recompra pode levar a 15/85). Automatizar isso é o que garante que você receba certo, todo mês, em todos os fundos — sem planilha manual.
 
 ### 5.4 Provisão vs. pagamento (um ponto que confunde)
 
@@ -345,7 +345,7 @@ As taxas são **provisionadas todo dia** (para a cota refletir o custo diariamen
 | **Motor de casamento (matching)** | Casa registros por chave; identifica divergências |
 | **Classificador de divergências** | Separa timing × erro × suspeita; aplica tolerâncias por prazo de liquidação |
 | **Motor de provisão** | Provisiona taxas diariamente por fundo (e subclasse) |
-| **Apurador de repasses** | Calcula quanto vai para cada destino; aplica o split 25/75 |
+| **Apurador de repasses** | Calcula quanto vai para cada destino; aplica o split 50/50 |
 | **Instrução de pagamento** | Gera as ordens de repasse (o pagamento efetivo é instruído ao custodiante/banco) |
 | **Trilha de auditoria** | Registra tudo: divergências, resoluções, provisões, repasses |
 | **Painel de exceções** | Mostra ao operador o que não conciliou e precisa de ação |
@@ -412,7 +412,7 @@ Este ciclo é o **coração operacional**. Ele roda automaticamente todo dia út
 | 5 | **Conciliação** (posição × custodiante × gestor) | Sem isso a cota não é confiável; é o que protege o banco |
 | 6 | **Envio ao HUB ANBIMA** (API) | Obrigatório, D+1 |
 | 7 | **Controle de passivo** (cotistas, aplic/resgate) + **KYC/PLD** | Onboarding e movimentação |
-| 8 | **Apuração de repasses** (taxas, split 25/75) | Como você e o banco recebem |
+| 8 | **Apuração de repasses** (taxas, split 50/50) | Como você e o banco recebem |
 | 9 | **Enquadramento** (limites da política) | Conformidade |
 | 10 | **Dashboard + baixar carteira** (API cliente) | Experiência do gestor |
 | 11 | **Relatórios regulatórios + contabilidade do fundo** | Reporte a cotista e CVM |
@@ -423,7 +423,7 @@ Comece por **Renda Fixa e Ações** (preços observáveis, MaM padronizável); a
 
 ---
 
-> **Resumo em uma frase:** você constrói uma **máquina de controladoria** — que recebe posições do custodiante (não se conecta direto à Cetip/Selic/B3, isso é do custodiante), precifica cada ativo pela sua fonte primária (ANBIMA para renda fixa + comitê para crédito ilíquido; fechamento B3 para ações; B3 para derivativos; laudo para FIP), **concilia** as fontes (posição × custodiante × gestor) antes de fechar, calcula PL e cota líquidos de taxas, **apura os repasses** (taxas e o split 25/75 banco/você), envia ao HUB ANBIMA e mostra ao gestor via dashboard e "baixar carteira". A conciliação é o que torna a cota confiável e protege o banco; o sistema de MaM é obrigatório e segue seu Manual de Precificação; o ciclo diário automatizado é o que permite escalar para centenas de fundos.
+> **Resumo em uma frase:** você constrói uma **máquina de controladoria** — que recebe posições do custodiante (não se conecta direto à Cetip/Selic/B3, isso é do custodiante), precifica cada ativo pela sua fonte primária (ANBIMA para renda fixa + comitê para crédito ilíquido; fechamento B3 para ações; B3 para derivativos; laudo para FIP), **concilia** as fontes (posição × custodiante × gestor) antes de fechar, calcula PL e cota líquidos de taxas, **apura os repasses** (taxas e o split 50/50 banco/você, com opção de recompra → 15/85), envia ao HUB ANBIMA e mostra ao gestor via dashboard e "baixar carteira". A conciliação é o que torna a cota confiável e protege o banco; o sistema de MaM é obrigatório e segue seu Manual de Precificação; o ciclo diário automatizado é o que permite escalar para centenas de fundos.
 
 ---
 

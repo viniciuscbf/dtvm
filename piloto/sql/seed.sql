@@ -2364,13 +2364,25 @@ INSERT INTO contas_centrais (fundo_id, central, numero_conta, titularidade, stat
 
 -- ---------- mensagens_spb (mensageria RSFN do dia) ----------
 INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por) VALUES
-('SELIC', 'SEL1052', 1, 'OP-77123', 'Transferência definitiva de LFT 2029 — crédito na conta 6710.101-1 (compra liquidada)', 329969.17, 'Processada', '2026-07-03 07:52:00', '2026-07-03 07:52:00', 'Vinicius Fernandes'),
-('STR', 'STR0008', 1, 'OP-77123', 'Confirmação de liquidação financeira via conta Reservas', 329969.17, 'Processada', '2026-07-03 07:53:00', '2026-07-03 07:53:00', 'Rotina automática'),
-('B3 Balcão', 'MOV0001', 2, 'LIQ-1', 'Instrução de transferência DEB VALE29 recebida — aguardando liquidação DVP (D+1)', 412350.0, 'Recebida', '2026-07-03 08:10:00', NULL, NULL),
-('B3 Depositária', 'MOV0004', 4, 'LIQ-2', 'Instrução de venda em bolsa — ciclo D+2, aguardando janela de liquidação', NULL, 'Recebida', '2026-07-03 08:12:00', NULL, NULL),
-('B3 Depositária', 'PRO0002', 4, 'EV-DIV', 'Anúncio de dividendo — atualizar agenda de eventos do ativo', NULL, 'Processada', '2026-07-03 08:30:00', '2026-07-03 08:30:00', 'Rotina automática'),
-('SELIC', 'SEL1054', 6, 'OP-77488', 'Resgate antecipado informado pela contraparte — divergência de quantidade, verificar', NULL, 'Erro', '2026-07-03 09:05:00', NULL, NULL),
-('B3 Balcão', 'POS0900', NULL, 'EOD-D1', 'Arquivo de posição de fechamento (balcão) disponível para conciliação', NULL, 'Processada', '2026-07-03 18:40:00', '2026-07-03 18:40:00', 'Rotina automática'),
-('SELIC', 'POS0901', NULL, 'EOD-D1', 'Arquivo de posição de fechamento (SELIC) disponível para conciliação', NULL, 'Processada', '2026-07-03 18:41:00', '2026-07-03 18:41:00', 'Rotina automática'),
-('B3 Depositária', 'POS0902', 7, 'EOD-D1', 'Posição NORD3 divergente da carteira informada pela administradora — batimento acusou diferença', NULL, 'Erro', '2026-07-03 18:45:00', NULL, NULL);
+('SELIC', 'SEL1052', 1, 'OP-77123', 'Operação definitiva de compra — LFT 2029 creditada na conta 6710.101-1 (DVP LBTR em tempo real)', 329969.17, 'Processada', '2026-07-03 07:52:00', '2026-07-03 07:52:00', 'Vinicius Fernandes'),
+('SELIC', 'SEL1099', 1, 'OP-77123', 'SEL informa movimentação financeira — perna financeira da operação definitiva concluída', 329969.17, 'Processada', '2026-07-03 07:53:00', '2026-07-03 07:53:00', 'Rotina automática'),
+('B3 Balcão', '052', 2, 'LIQ-1', 'Duplo comando: ponta comandada no NoMe (tipo 052 — compra/venda definitiva) — DEB VALE29 aguarda comando da contraparte · Bruta (DVP via STR), liq. D+1', 412350.0, 'Recebida', '2026-07-03 08:10:00', NULL, NULL),
+('B3 Depositária', 'LDL0001', 4, 'LIQ-2', 'Câmara B3 informa resultado líquido de negociações — venda ITUB4 na janela D+2 (saldo multilateral)', NULL, 'Recebida', '2026-07-03 08:12:00', NULL, NULL),
+('B3 Depositária', 'AGENDA-EV', 4, 'EV-DIV', 'Agenda de eventos da Depositária — anúncio de dividendo ITUB4 (feed de eventos, fora da RSFN)', NULL, 'Processada', '2026-07-03 08:30:00', '2026-07-03 08:30:00', 'Rotina automática'),
+('SELIC', 'SEL1052', 6, 'OP-77488', 'Operação definitiva rejeitada — quantidade divergente do comando da contraparte; recomando necessário', NULL, 'Erro', '2026-07-03 09:05:00', NULL, NULL),
+('SELIC', 'SEL1054', 6, 'OVER-D0', 'Operação compromissada (zeragem over) — caixa livre aplicado com lastro em LFT; retorno na abertura (SEL1056)', NULL, 'Processada', '2026-07-03 17:55:00', '2026-07-03 17:55:00', 'Rotina automática'),
+('STR', 'STR0008', 4, 'RESG-2201', 'IF requisita transferência entre contas de clientes (TED) — pagamento de resgate a cotista', 377203.23, 'Processada', '2026-07-03 16:20:00', '2026-07-03 16:20:00', 'Rotina automática'),
+('B3 Balcão', 'ARQ-POS', NULL, 'EOD-D1', 'Arquivo de posição de fechamento do balcão (NoMe) disponível para conciliação — feed fora da RSFN', NULL, 'Processada', '2026-07-03 18:40:00', '2026-07-03 18:40:00', 'Rotina automática'),
+('SELIC', 'SEL1081', NULL, 'EOD-D1', 'Consulta posição de custódia respondida — base do batimento diário (Res. CVM 32, art. 13, §1º, I)', NULL, 'Processada', '2026-07-03 18:41:00', '2026-07-03 18:41:00', 'Rotina automática'),
+('B3 Depositária', 'ARQ-POS', 7, 'EOD-D1', 'Arquivo de posição da Depositária — NORD3 diverge do interno (33.337 × 27.669); batimento acusou', NULL, 'Erro', '2026-07-03 18:45:00', NULL, NULL);
+
+-- ---------- posicao_custodiante (fonte INDEPENDENTE p/ conciliação e arquivo de posição) ----------
+-- Snapshot do último dia espelha a carteira, exceto a divergência semeada do NORD3 (fundo 7).
+INSERT INTO posicao_custodiante (fundo_id, data_ref, codigo, tipo, quantidade, central)
+SELECT fundo_id, data_ref, codigo, tipo, quantidade,
+       CASE WHEN tipo = 'Título Público' THEN 'SELIC'
+            WHEN tipo IN ('Debênture','CDB','CRI/CRA') THEN 'B3 Balcão'
+            ELSE 'B3 Depositária' END
+FROM ativos_carteira WHERE data_ref = '2026-07-03';
+UPDATE posicao_custodiante SET quantidade = 27669 WHERE fundo_id = 7 AND codigo = 'NORD3' AND data_ref = '2026-07-03';
 

@@ -51,30 +51,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
     $msgTipo = 'danger';
 }
 
+/** Segmento de liquidação do instrumento: 'tpf' (Selic), 'bolsa' (Câmara B3/CCP) ou 'balcao' (NoMe). */
+function segmento_liq(?string $tipoAtivo, string $codigo): string {
+    if ($tipoAtivo !== null) {
+        if ($tipoAtivo === 'Título Público') return 'tpf';
+        return in_array($tipoAtivo, ['Ação', 'ETF', 'Cota de Fundo'], true) ? 'bolsa' : 'balcao';
+    }
+    if (preg_match('/^(LFT|LTN|NTN)/', $codigo)) return 'tpf';
+    return preg_match('/^[A-Z]{4}\d{1,2}$/', $codigo) ? 'bolsa' : 'balcao';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // aceite de boleta do gestor → vira instrução de liquidação (D+1 renda fixa, D+2 bolsa)
+    // aceite de boleta do gestor → comando da ponta, conforme o segmento:
+    //  · TPF: operação definitiva no Selic (SEL1052) — LBTR/DVP em tempo real, D+0 padrão;
+    //  · balcão: duplo comando no NoMe (tipo de operação 052) — casa quando a contraparte comanda;
+    //  · bolsa: confirmação de alocação — liquida pelo saldo líquido na janela da Câmara B3 (D+2).
     if (!empty($_POST['aceitar_boleta'])) {
         $st = $pdo->prepare("SELECT * FROM boletas WHERE id = ? AND status = 'Enviada'");
         $st->execute([(int)$_POST['aceitar_boleta']]);
         if ($b = $st->fetch()) {
-            $dias = in_array($b['tipo_ativo'], ['Ação', 'Cota de Fundo'], true) ? 2 : 1;
-            $dl = new DateTime($b['data_operacao']);
-            $n = $dias;
-            while ($n > 0) { $dl->modify('+1 day'); if ((int)$dl->format('N') < 6) $n--; }
+            $seg = segmento_liq($b['tipo_ativo'], $b['ativo_codigo']);
+            // data pactuada na boleta manda; fallback: bolsa D+2, TPF D+0, balcão D+0
+            $dataLiq = $b['data_liquidacao_prevista'] ?? null;
+            if (!$dataLiq) {
+                $dias = $seg === 'bolsa' ? 2 : 0;
+                $dl = new DateTime($b['data_operacao']);
+                $n = $dias;
+                while ($n > 0) { $dl->modify('+1 day'); if ((int)$dl->format('N') < 6) $n--; }
+                $dataLiq = $dl->format('Y-m-d');
+            }
             $pdo->prepare("INSERT INTO liquidacoes (fundo_id, data_operacao, ativo_codigo, operacao, quantidade, valor, data_liquidacao, contraparte, status, boleta_id)
                            VALUES (?,?,?,?,?,?,?,?, 'Pendente', ?)")
                 ->execute([$b['fundo_id'], $b['data_operacao'], $b['ativo_codigo'], $b['operacao'],
-                           $b['quantidade'], $b['valor'], $dl->format('Y-m-d'), $b['contraparte'], $b['id']]);
+                           $b['quantidade'], $b['valor'], $dataLiq, $b['contraparte'], $b['id']]);
             $liqId = (int)$pdo->lastInsertId();
             $pdo->prepare("UPDATE boletas SET status='Aceita', liquidacao_id=? WHERE id=?")->execute([$liqId, $b['id']]);
-            $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em)
-                           VALUES (?,?,?,?,?,?,'Recebida',NOW())")
-                ->execute([in_array($b['tipo_ativo'], ['Ação', 'Cota de Fundo'], true) ? 'B3 Depositária' : 'B3 Balcão',
-                           'MOV0001', $b['fundo_id'], 'BOL-' . $b['id'],
-                           "Instrução de {$b['operacao']} de {$b['ativo_codigo']} registrada — liquidação D+$dias",
-                           (float)$b['valor']]);
-            registrar_auditoria($pdo, 'boleta_aceita', ['entidade' => 'boleta', 'entidade_id' => $b['id'], 'fundo_id' => $b['fundo_id'], 'detalhe' => "Boleta {$b['operacao']} {$b['ativo_codigo']} aceita — liquidação D+$dias (liq #$liqId)"]);
-            $msg = "Boleta aceita — instrução de liquidação criada para D+$dias.";
+            if ($seg === 'tpf') {
+                $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em)
+                               VALUES ('SELIC','SEL1052',?,?,?,?,'Recebida',NOW())")
+                    ->execute([$b['fundo_id'], 'BOL-' . $b['id'],
+                               "Participante requisita operação definitiva — {$b['operacao']} {$b['ativo_codigo']} (DVP LBTR, liq. " . data_br($dataLiq) . ')',
+                               (float)$b['valor']]);
+                $msg = 'Operação definitiva comandada no Selic (SEL1052) — DVP em tempo real na data pactuada.';
+            } elseif ($seg === 'balcao') {
+                $mod = $b['modalidade_liq'] ?: 'Bruta (DVP via STR)';
+                $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em)
+                               VALUES ('B3 Balcão','052',?,?,?,?,'Recebida',NOW())")
+                    ->execute([$b['fundo_id'], 'BOL-' . $b['id'],
+                               "Comando da ponta registrado no NoMe (tipo 052 — compra/venda definitiva; duplo comando) — $mod, liq. " . data_br($dataLiq),
+                               (float)$b['valor']]);
+                $msg = 'Ponta comandada no balcão (duplo comando) — a operação casa quando a contraparte comandar a dela.';
+            } else {
+                // bolsa: alocação não trafega pela RSFN — a câmara casa e liquida pelo saldo líquido
+                $pdo->prepare("INSERT INTO log_processamento (fundo_id, data_ref, etapa, nivel, mensagem) VALUES (?,?,?,?,?)")
+                    ->execute([$b['fundo_id'], date('Y-m-d'), 'Posição', 'INFO',
+                               "Alocação de {$b['operacao']} {$b['ativo_codigo']} confirmada — liquida pelo saldo líquido multilateral na janela da Câmara B3 (D+2, " . data_br($dataLiq) . ')']);
+                $msg = 'Alocação confirmada — liquidação pelo saldo líquido na janela da Câmara B3 (CCP) em D+2.';
+            }
+            registrar_auditoria($pdo, 'boleta_aceita', ['entidade' => 'boleta', 'entidade_id' => $b['id'], 'fundo_id' => $b['fundo_id'], 'detalhe' => "Boleta {$b['operacao']} {$b['ativo_codigo']} — comando/alocação ($seg), liq. $dataLiq (liq #$liqId)"]);
         }
     } elseif (!empty($_POST['rejeitar_boleta']) && trim($_POST['motivo'] ?? '') !== '') {
         $pdo->prepare("UPDATE boletas SET status='Rejeitada', motivo=? WHERE id=? AND status='Enviada'")
@@ -86,38 +120,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $st = $pdo->prepare("SELECT * FROM liquidacoes WHERE id = ? AND status IN ('Pendente','Falha')");
         $st->execute([(int)$_POST['liquidar']]);
         if ($l = $st->fetch()) {
+            // o ciclo é respeitado: não se liquida antes da data pactuada (a câmara/Selic também não liquidaria)
+            if ($l['data_liquidacao'] > date('Y-m-d') && $l['status'] !== 'Falha') {
+                $msg = 'Ainda não é a data de liquidação (' . data_br($l['data_liquidacao']) . ') — a instrução aguarda o ciclo.';
+                $msgTipo = 'warning';
+            } else {
             $sinal = $l['operacao'] === 'Compra' ? -1 : 1;
-            com_transacao($pdo, function () use ($pdo, $l, $u, $sinal) {
+            // busca a boleta antes (para saber o segmento e a modalidade)
+            $b = null;
+            if (!empty($l['boleta_id'])) {
+                $stb = $pdo->prepare('SELECT * FROM boletas WHERE id = ?');
+                $stb->execute([(int)$l['boleta_id']]);
+                $b = $stb->fetch() ?: null;
+            }
+            $seg = segmento_liq($b['tipo_ativo'] ?? null, $l['ativo_codigo']);
+            com_transacao($pdo, function () use ($pdo, $l, $u, $sinal, $b, $seg) {
             $pdo->prepare("UPDATE liquidacoes SET status='Liquidada', confirmado_por=?, confirmado_em=NOW() WHERE id=?")
                 ->execute([$u['nome'] . ' (custódia)', $l['id']]);
+            // data contábil = data da liquidação (não a data do clique)
+            $dataContabil = min($l['data_liquidacao'], date('Y-m-d'));
             $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-                ->execute([$l['fundo_id'], date('Y-m-d'),
+                ->execute([$l['fundo_id'], $dataContabil,
                            $l['operacao'] === 'Compra' ? 'Liquidação Compra' : 'Liquidação Venda',
                            "DVP {$l['operacao']} {$l['ativo_codigo']} liquidada pelo custodiante",
                            $sinal * (float)$l['valor']]);
             $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual + ? WHERE id = ?')
                 ->execute([$sinal * (float)$l['valor'], $l['fundo_id']]);
-            $ehTituloPublico = (bool)preg_match('/^(LFT|LTN|NTN)/', $l['ativo_codigo']);
-            $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por)
-                           VALUES (?,?,?,?,?,?,'Processada',NOW(),NOW(),?)")
-                ->execute([$ehTituloPublico ? 'SELIC' : 'B3 Depositária',
-                           'STR0008', $l['fundo_id'], 'LIQ-' . $l['id'],
-                           "Confirmação de liquidação financeira — {$l['operacao']} {$l['ativo_codigo']}",
-                           (float)$l['valor'], $u['nome']]);
-            // se a instrução veio de boleta do gestor: a posição entra/sai da carteira de verdade
-            if (!empty($l['boleta_id'])) {
-                $stb = $pdo->prepare('SELECT * FROM boletas WHERE id = ?');
-                $stb->execute([(int)$l['boleta_id']]);
-                if ($b = $stb->fetch()) {
-                    aplicar_boleta_na_carteira($pdo, $b);
-                    $pdo->prepare("UPDATE boletas SET status='Liquidada' WHERE id=?")->execute([$b['id']]);
+            // mensagem/registro da perna financeira conforme o segmento (códigos reais do catálogo do SFN)
+            if ($seg === 'tpf') {
+                $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por)
+                               VALUES ('SELIC','SEL1099',?,?,?,?,'Processada',NOW(),NOW(),?)")
+                    ->execute([$l['fundo_id'], 'LIQ-' . $l['id'],
+                               "SEL informa movimentação financeira — DVP {$l['operacao']} {$l['ativo_codigo']} concluída (LBTR)",
+                               (float)$l['valor'], $u['nome']]);
+            } elseif ($seg === 'bolsa') {
+                $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por)
+                               VALUES ('B3 Depositária','LDL0005',?,?,?,?,'Processada',NOW(),NOW(),?)")
+                    ->execute([$l['fundo_id'], 'LIQ-' . $l['id'],
+                               "Câmara B3 paga participantes credores — saldo líquido multilateral da janela (piloto liquida por operação) · {$l['ativo_codigo']}",
+                               (float)$l['valor'], $u['nome']]);
+            } else {
+                $mod = $b['modalidade_liq'] ?? 'Bruta (DVP via STR)';
+                if (str_starts_with($mod, 'Bruta')) {
+                    $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por)
+                                   VALUES ('STR','STR0004',?,?,?,?,'Processada',NOW(),NOW(),?)")
+                        ->execute([$l['fundo_id'], 'LIQ-' . $l['id'],
+                                   "IF requisita transferência para IF — perna financeira bruta (banco liquidante) · {$l['operacao']} {$l['ativo_codigo']}",
+                                   (float)$l['valor'], $u['nome']]);
+                } else {
+                    $pdo->prepare("INSERT INTO log_processamento (fundo_id, data_ref, etapa, nivel, mensagem) VALUES (?,?,?,?,?)")
+                        ->execute([$l['fundo_id'], date('Y-m-d'), 'Posição', 'INFO',
+                                   "Liquidação $mod de {$l['ativo_codigo']} — perna financeira fora da mensageria (bilateral/livre de pagamento)"]);
                 }
+            }
+            // se a instrução veio de boleta do gestor: a posição entra/sai da carteira de verdade
+            if ($b) {
+                aplicar_boleta_na_carteira($pdo, $b);
+                $pdo->prepare("UPDATE boletas SET status='Liquidada' WHERE id=?")->execute([$b['id']]);
             }
             });
             $msg = 'Liquidação DVP confirmada — caixa movimentado' .
                    (!empty($l['boleta_id']) ? ', posição refletida na carteira (reprocessar a cota do dia)' : '') .
-                   ' e confirmação registrada na mensageria.';
-            registrar_auditoria($pdo, 'liquidacao_dvp', ['entidade' => 'liquidacao', 'entidade_id' => $l['id'], 'fundo_id' => $l['fundo_id'], 'detalhe' => "DVP {$l['operacao']} {$l['ativo_codigo']} liquidada (" . moeda($l['valor']) . ')']);
+                   ' e a perna financeira registrada.';
+            registrar_auditoria($pdo, 'liquidacao_dvp', ['entidade' => 'liquidacao', 'entidade_id' => $l['id'], 'fundo_id' => $l['fundo_id'], 'detalhe' => "DVP {$l['operacao']} {$l['ativo_codigo']} liquidada (" . moeda($l['valor']) . ", $seg)"]);
+            }
         }
     } elseif (!empty($_POST['provisionar_evento'])) {
         $pdo->prepare("UPDATE eventos_corporativos SET status='Provisionado', processado_por=?, processado_em=NOW()
@@ -168,13 +234,23 @@ page_start('Instruções & Liquidação', 'Instruções & Liquidação', $u,
             <?= e_html($b['ativo_codigo']) ?> <span class="text-muted" style="font-size:.72rem">(<?= e_html($b['tipo_ativo']) ?>) · op. <?= data_br($b['data_operacao']) ?></span></td>
           <td class="text-end"><?= number_format((float)$b['quantidade'], 0, ',', '.') ?> × <?= number_format((float)$b['preco'], 4, ',', '.') ?></td>
           <td class="text-end"><b><?= moeda($b['valor']) ?></b></td>
-          <td style="font-size:.8rem"><?= e_html($b['contraparte']) ?></td>
+          <td style="font-size:.8rem"><?= e_html($b['contraparte']) ?>
+            <?php if (!empty($b['data_liquidacao_prevista']) || !empty($b['modalidade_liq'])): ?>
+              <br><span class="text-muted" style="font-size:.7rem">
+                <?= !empty($b['data_liquidacao_prevista']) ? 'liq. pactuada ' . data_br($b['data_liquidacao_prevista']) : '' ?>
+                <?= !empty($b['modalidade_liq']) ? ' · ' . e_html($b['modalidade_liq']) : '' ?>
+                <?= !empty($b['taxa_negociada']) ? ' · ' . e_html($b['taxa_negociada']) : '' ?></span>
+            <?php endif; ?></td>
           <td style="font-size:.78rem"><?= e_html($b['criado_por']) ?><br>
             <span class="text-muted" style="font-size:.7rem"><?= date('d/m H:i', strtotime($b['criado_em'])) ?></span></td>
           <td>
+            <?php $segB = segmento_liq($b['tipo_ativo'], $b['ativo_codigo']); ?>
             <form method="post" class="d-inline">
               <?= csrf_campo() ?><input type="hidden" name="aceitar_boleta" value="<?= (int)$b['id'] ?>">
-              <button class="btn btn-sm btn-success"><i class="bi bi-check-lg me-1"></i>Aceitar (gera D+<?= in_array($b['tipo_ativo'], ['Ação', 'Cota de Fundo'], true) ? '2' : '1' ?>)</button>
+              <button class="btn btn-sm btn-success"><i class="bi bi-check-lg me-1"></i><?=
+                $segB === 'tpf' ? 'Comandar no Selic (LBTR)'
+                : ($segB === 'balcao' ? 'Comandar ponta (duplo comando)'
+                : 'Confirmar alocação (Câmara B3, D+2)') ?></button>
             </form>
             <form method="post" class="d-flex gap-1 mt-1">
               <?= csrf_campo() ?><input type="hidden" name="rejeitar_boleta" value="<?= (int)$b['id'] ?>">
@@ -205,20 +281,29 @@ page_start('Instruções & Liquidação', 'Instruções & Liquidação', $u,
           <td style="font-size:.78rem"><?= data_br($l['data_operacao']) ?> → <?= data_br($l['data_liquidacao']) ?></td>
           <td style="font-size:.8rem"><?= e_html($l['contraparte']) ?></td>
           <td><?= badge_status($l['status'] === 'Liquidada' ? 'OK' : ($l['status'] === 'Falha' ? 'Erro' : 'Pendente')) ?>
-            <?= $l['status'] === 'Falha' ? '<br><span class="text-danger" style="font-size:.7rem">contraparte não entregou — repactuar</span>' : '' ?></td>
+            <?= $l['status'] === 'Falha' ? '<br><span class="text-danger" style="font-size:.7rem">falha de entrega — na B3 real: empréstimo compulsório → multa 0,5% (teto R$ 50 mil) → recompra em D+1; no balcão bruta, estorno após 30 min</span>' : '' ?></td>
           <td class="text-end">
             <?php if (in_array($l['status'], ['Pendente', 'Falha'], true)): ?>
+              <?php if ($l['status'] === 'Pendente' && $l['data_liquidacao'] > date('Y-m-d')): ?>
+                <span class="text-muted" style="font-size:.72rem"><i class="bi bi-hourglass-split me-1"></i>aguarda o ciclo (liq. <?= data_br($l['data_liquidacao']) ?>)</span>
+              <?php else: ?>
               <form method="post" onsubmit="return confirm('Confirmar a liquidação DVP? O caixa do fundo será movimentado.')">
                 <?= csrf_campo() ?><input type="hidden" name="liquidar" value="<?= (int)$l['id'] ?>">
                 <button class="btn btn-sm <?= $l['status'] === 'Falha' ? 'btn-danger' : 'btn-success' ?>">
                   <i class="bi bi-check-lg me-1"></i><?= $l['status'] === 'Falha' ? 'Reliquidar' : 'Liquidar DVP' ?></button>
               </form>
+              <?php endif; ?>
             <?php endif; ?>
           </td>
         </tr>
       <?php endforeach; ?>
       </tbody>
     </table>
+  </div>
+  <div class="card-footer text-muted" style="font-size:.72rem">
+    <b>Grades reais de horário:</b> Selic 6h30–18h30 (LBTR/DVP em tempo real) · TED de cliente no STR até 17h30 ·
+    Câmara B3: pagamentos dos devedores 14h10–14h50, DVP final ~15h50 (saldo líquido multilateral) · alocação de RV até 15h.
+    No piloto o relógio é o do Simulator Master — a grade é informativa.
   </div>
 </div>
 

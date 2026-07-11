@@ -113,19 +113,38 @@ def universo_bcb():
     json.dump(out, open(cache, "w", encoding="utf-8"), ensure_ascii=False)
     return out
 
-def ativos_bcb():
-    cache = os.path.join(DADOS, "ativos.json")
+# Colunas de porte do IFDATA (Relatório '1') -> chave interna. As de ESCALA entram no teto;
+# Lucro Líquido é resultado (pode ser negativo) — vira coluna informativa, NÃO entra no filtro.
+PORTE_COLS = {
+    "Ativo Total": "ativo", "Passivo Exigível": "passivo", "Patrimônio Líquido": "pl",
+    "Captações": "captacoes", "Carteira de Crédito": "carteira",
+    "Títulos e Valores Mobiliários": "tvm", "Lucro Líquido": "lucro",
+}
+ESCALA_KEYS = ("ativo", "passivo", "pl", "captacoes", "carteira", "tvm")   # métricas de tamanho da estrutura
+TETO = 400_000_000   # R$ 400 mi: nenhuma métrica de escala pode passar disso (regra do usuário)
+# Rede de segurança p/ porte NÃO reportado (CNPJ-raiz não casa com IFDATA): perfis sabidamente grandes
+# não podem entrar no alvo só porque o dado veio em branco (senão JP Morgan/BB/XP escapam).
+BIG_PERFIS = {"Grande/varejo", "Estrangeiro", "Estatal/público", "Captivo (montadora/equip.)"}
+
+def portes_bcb():
+    """raiz do CNPJ -> {ativo, passivo, pl, captacoes, carteira, tvm, lucro} em R$ (BCB IFDATA)."""
+    cache = os.path.join(DADOS, "portes.json")
     if os.path.exists(cache): return json.load(open(cache, encoding="utf-8"))
     mp = {}
     for ym in ("202503", "202412", "202409"):
         try: v = json.loads(http_get(IFDATA_VAL.format(ym=ym)))["value"]
         except Exception as e: print("  IFDATA valores falhou", ym, e); continue
         for r in v:
-            if r.get("NomeColuna") == "Ativo Total":
-                mp[str(r["CodInst"]).zfill(8)] = r["Saldo"]
-        if mp: print(f"  IFDATA Ativo Total: {len(mp)} instituições (base {ym})"); break
+            k = PORTE_COLS.get(r.get("NomeColuna"))
+            if k:
+                mp.setdefault(str(r["CodInst"]).zfill(8), {})[k] = r["Saldo"]
+        if mp: print(f"  IFDATA porte ({len(PORTE_COLS)} colunas): {len(mp)} instituições (base {ym})"); break
     json.dump(mp, open(cache, "w", encoding="utf-8"))
     return mp
+
+def escala(p):
+    """maior métrica de escala conhecida (0 se nada reportado)."""
+    return max([p.get(k) or 0 for k in ESCALA_KEYS], default=0)
 
 def cvm_flags():
     dest = os.path.join(DADOS, "cad_adm_cart.zip")
@@ -205,16 +224,27 @@ def elegibilidade(seg, adm_fiduc):
     is_cambio = "Câmbio" in seg or "Cambio" in seg
     is_banco = seg.startswith("Banco") or "Caixa" in seg
     if adm_fiduc: return "Já adm. fiduciário (excluir)"
-    if is_dtvm: return "DTVM (excluir)"
+    # DTVM: excluída por DECISÃO ESTRATÉGICA (não jurídica) — já tem retaguarda/estrutura própria
+    # de mercado de capitais; agregamos pouco e o risco de ela absorver a ideia e dispensar a
+    # parceria é alto. (Juridicamente seria elegível às duas licenças — não importa: fora.)
+    if is_dtvm: return "DTVM (excluir — estrutura própria)"
     if (is_banco and not is_cambio) or is_ctvm: return "Elegível direto (banco/CTVM)"
-    if is_cambio or "Crédito Direto" in seg or "Pagamento" in seg or "Financiamento" in seg or "Hipotec" in seg or "Fomento" in seg:
-        return "Precisa virar DTVM/custodiante"
+    # SCFI: Res. CMN 5.237/2025, art. 6º, p.u., IV — financeiras podem administrar carteiras
+    # de valores mobiliários desde 1º/9/2025 (custódia continua fora — Res. CVM 32, art. 4º).
+    if "Financiamento" in seg: return "Elegível adm. fiduciário (SCFI, Res. 5.237)"
+    # Objeto social taxativo não comporta administração de fundos (SCD Res. 5.050 art. 7º §1º;
+    # câmbio Res. 5.009 art. 2º; hipotecária Res. 2.122 só FII; IP = tese inédita) → só
+    # constituindo DTVM no grupo (R$ 1,5 mi + 6-12 meses de BCB).
+    if is_cambio or "Crédito Direto" in seg or "Pagamento" in seg or "Hipotec" in seg or "Fomento" in seg:
+        return "Só via DTVM nova (objeto restrito)"
     return "Outro"
 
 # ------------------------------------------------------ Excel
 COLS = ["Instituição", "Segmento BCB", "Perfil", "Elegibilidade", "Grupo tem DTVM/adm.fid.?",
         "CNPJ", "UF", "Município",
-        "Ativo Total (R$)", "Início atividade", "Gestor CVM?", "Nº fundos que gere",
+        "Ativo Total (R$)", "Passivo Exigível (R$)", "Patrimônio Líquido (R$)", "Captações (R$)",
+        "Carteira de Crédito (R$)", "TVM (R$)", "Maior escala (R$)", "Lucro Líquido (R$)",
+        "Início atividade", "Gestor CVM?", "Nº fundos que gere",
         "Adm.fiduciário?", "Custodiante?", "Nº classes que custodia", "PL custodiado (R$)",
         "Telefone", "E-mail", "Site"]
 
@@ -225,10 +255,15 @@ def escrever(master, alvoA, alvoB, path):
     wb = Workbook(); HF = PatternFill("solid", fgColor="6A50AC"); HFONT = Font(bold=True, color="FFFFFF", size=10)
     W = {"Instituição": 46, "Segmento BCB": 30, "Perfil": 22, "Elegibilidade": 26,
          "Grupo tem DTVM/adm.fid.?": 22, "CNPJ": 20, "UF": 5,
-         "Município": 16, "Ativo Total (R$)": 18, "Início atividade": 11, "Gestor CVM?": 11,
+         "Município": 16, "Ativo Total (R$)": 18, "Passivo Exigível (R$)": 18,
+         "Patrimônio Líquido (R$)": 18, "Captações (R$)": 16, "Carteira de Crédito (R$)": 18,
+         "TVM (R$)": 16, "Maior escala (R$)": 16, "Lucro Líquido (R$)": 16,
+         "Início atividade": 11, "Gestor CVM?": 11,
          "Nº fundos que gere": 12, "Adm.fiduciário?": 13, "Custodiante?": 12,
          "Nº classes que custodia": 13, "PL custodiado (R$)": 18, "Telefone": 15, "E-mail": 30, "Site": 26}
-    money_i = [COLS.index(c) + 1 for c in ("Ativo Total (R$)", "PL custodiado (R$)")]
+    money_i = [COLS.index(c) + 1 for c in ("Ativo Total (R$)", "Passivo Exigível (R$)",
+               "Patrimônio Líquido (R$)", "Captações (R$)", "Carteira de Crédito (R$)", "TVM (R$)",
+               "Maior escala (R$)", "Lucro Líquido (R$)", "PL custodiado (R$)")]
     def aba(ws, titulo, linhas):
         ws.title = titulo; ws.append(COLS)
         for c in range(1, len(COLS) + 1):
@@ -250,10 +285,24 @@ def escrever(master, alvoA, alvoB, path):
         ["Coluna PERFIL rotula: Estatal/público, Estrangeiro, Captivo (montadora), Grande/varejo,"],
         ["  Câmbio, Fintech (SCD), Fintech (pagamentos), Financeira, Hipotecária, Independente nacional."],
         ["  -> filtre 'Independente nacional' no Alvo A para os alvos mais prováveis."],
-        ["Coluna ELEGIBILIDADE: Elegível direto (banco/CTVM) | Precisa virar DTVM/custodiante |"],
+        ["Coluna ELEGIBILIDADE (validada em fontes primárias — ver parceria_estrutura_juridica.md):"],
+        ["  Elegível direto (banco/CTVM) = parceiro completo: adm. fiduciário (Res. 21 art. 1º §2º I) +"],
+        ["    custódia própria possível (Res. 32 art. 4º) + distribuição (art. 33)."],
+        ["  DTVM (excluir — estrutura própria) = decisão ESTRATÉGICA: DTVM já tem retaguarda de mercado de"],
+        ["    capitais; agregamos pouco e o risco de absorver a ideia e dispensar a parceria é alto."],
+        ["  Elegível adm. fiduciário (SCFI, Res. 5.237) = financeiras PODEM administrar carteiras desde"],
+        ["    1º/9/2025 (art. 6º p.u. IV) — custódia sempre terceirizada (fora do rol da Res. 32)."],
+        ["  Só via DTVM nova (objeto restrito) = SCD (Res. 5.050 art. 7º §1º taxativo), IP (tese inédita),"],
+        ["    câmbio (Res. 5.009 objeto exclusivo), hipotecária (só FII) — exigem DTVM no grupo:"],
+        ["    R$ 1,5 mi de capital + 6-12 meses de BCB. Fundo do funil."],
         ["  DTVM (excluir) | Já adm. fiduciário (excluir)."], [""],
-        ["PORTE = ATIVO TOTAL (BCB IF.data, IfDataValores TipoInstituicao=2, base ~mar/2025), em R$."],
-        ["  Disponível p/ ~548 das 864; em branco = a instituição não reporta nesse nível."],
+        ["PORTE (BCB IF.data, IfDataValores TipoInstituicao=2, base ~mar/2025), em R$: Ativo Total, Passivo"],
+        ["  Exigível, Patrimônio Líquido, Captações, Carteira de Crédito e TVM. Lucro Líquido é informativo."],
+        ["FILTRO DE PORTE nos Alvos: nenhuma métrica de ESCALA (todas, menos o Lucro) pode passar de R$ 400 mi;"],
+        ["  qualquer valor acima disso EXCLUI a instituição do alvo. A coluna 'Maior escala' mostra a que manda."],
+        ["  Escala em branco (não reporta) = mantida, EXCETO se o Perfil já é grande (Estrangeiro/Grande/"],
+        ["  Estatal/Captivo) — aí o branco é lacuna de dado e a instituição sai (pega JP Morgan/BB/XP sem porte)."],
+        ["  O Master (aba 1) mantém TODOS, sem teto, para referência."],
         ["Alvo A ordenado por Ativo Total (menor primeiro); em branco vai para o fim."], [""],
         ["Fontes: BCB Instituicoes_em_funcionamento + IFDATA; CVM cad_adm_cart + tabecus.asp."],
         ["Sua pergunta: instituições AUTORIZADAS estão TODAS aqui. Empresas com capital que ainda não são"],
@@ -268,7 +317,7 @@ def main():
     print("Argus — prospecção (Ativo Total + colunas de perfil)...")
     fiduc, gestor, custod, fiduc_nomes = cvm_flags(); print(f"  CVM: {len(fiduc)} adm.fiduc | {len(gestor)} gestor | {len(custod)} custod")
     inst = universo_bcb(); print(f"  BCB: {len(inst)} instituições")
-    ativo = ativos_bcb()
+    porte = portes_bcb()
     gere = fundos_geridos(); cust_cnt = classes_custodiadas(); ini = inicio_atividade()
     print(f"  extra: {len(gere)} gestores c/ fundos | {len(cust_cnt)} custodiantes c/ classes | início p/ {len(ini)}")
 
@@ -281,7 +330,8 @@ def main():
     for x in inst:
         raiz = so_dig(x["cnpj"]).zfill(8)[:8]
         af = raiz in fiduc
-        at = ativo.get(raiz)
+        p = porte.get(raiz, {})
+        at = p.get("ativo"); esc = escala(p)
         cc = cust_cnt.get(raiz)
         mca = marca(x["nome"])
         grp = mca if (mca in infra_brands and not af and "Distribuidora de TVM" not in x["seg"]) else ""
@@ -289,17 +339,33 @@ def main():
                "Perfil": perfil(x["nome"], x["seg"]), "Elegibilidade": elegibilidade(x["seg"], af),
                "Grupo tem DTVM/adm.fid.?": (f"sim — {grp}" if grp else ""),
                "CNPJ": fmt_cnpj(raiz), "UF": x["uf"], "Município": x["mun"],
-               "Ativo Total (R$)": at if at else "", "Início atividade": ini.get(raiz, ""),
+               "Ativo Total (R$)": at or "", "Passivo Exigível (R$)": p.get("passivo") or "",
+               "Patrimônio Líquido (R$)": p.get("pl") or "", "Captações (R$)": p.get("captacoes") or "",
+               "Carteira de Crédito (R$)": p.get("carteira") or "", "TVM (R$)": p.get("tvm") or "",
+               "Maior escala (R$)": esc or "", "Lucro Líquido (R$)": p.get("lucro") or "",
+               "Início atividade": ini.get(raiz, ""),
                "Gestor CVM?": "sim" if raiz in gestor else "", "Nº fundos que gere": gere.get(raiz, "") or "",
                "Adm.fiduciário?": "sim" if af else "", "Custodiante?": "sim" if raiz in custod else "",
                "Nº classes que custodia": (cc[0] if cc else ""), "PL custodiado (R$)": (cc[1] if cc else ""),
                "Telefone": x["tel"], "E-mail": x["email"], "Site": x["site"],
-               "_at": at or 0, "_el": elegibilidade(x["seg"], af), "_grp": grp}
+               "_at": at or 0, "_esc": esc, "_el": elegibilidade(x["seg"], af), "_grp": grp}
         master.append(reg)
 
+    # FILTRO DE PORTE (regra do usuário): nenhuma métrica de escala (ativo, passivo, PL, captações,
+    # carteira, TVM) pode passar de R$ 400 mi. Escala confirmada acima do teto -> fora. Escala em branco
+    # (não reportada) -> fica, EXCETO se o perfil já é sabidamente grande (Estrangeiro/Grande/Estatal/
+    # Captivo), caso em que o branco é lacuna de dado, não pequenez -> fora (pega JP Morgan/BB/XP).
     def por_ativo(r): return (0, r["_at"]) if r["_at"] else (1, 0)   # com ativo primeiro, menor->maior
-    alvoA = sorted([r for r in master if r["_el"].startswith("Elegível") and not r["_grp"]], key=por_ativo)
-    alvoB = sorted([r for r in master if r["_el"].startswith("Precisa") and not r["_grp"]], key=por_ativo)
+    def pequeno(r):
+        if r["_esc"] > TETO: return False
+        if r["_esc"] == 0 and r["Perfil"] in BIG_PERFIS: return False
+        return True
+    alvoA = sorted([r for r in master if r["_el"].startswith("Elegível direto") and not r["_grp"] and pequeno(r)], key=por_ativo)
+    # Alvo B: financeiras (SCFI, elegíveis diretas à adm. desde a Res. 5.237/25) vêm PRIMEIRO;
+    # depois as de objeto restrito (SCD/IP/câmbio/hipotecária), que só servem via DTVM nova.
+    alvoB = sorted([r for r in master if (r["_el"].startswith("Elegível adm") or r["_el"].startswith("Só via DTVM"))
+                    and not r["_grp"] and pequeno(r)],
+                   key=lambda r: (0 if r["_el"].startswith("Elegível adm") else 1,) + por_ativo(r))
     master.sort(key=lambda r: (r["_el"], -(r["_at"] or 0)))
 
     xlsx = os.path.join(BASE, "bancos_alvo.xlsx")
@@ -311,10 +377,15 @@ def main():
         w = csv.DictWriter(f, fieldnames=COLS, extrasaction="ignore"); w.writeheader()
         for r in alvoA + alvoB: w.writerow(r)
 
+    elA = [r for r in master if r["_el"].startswith("Elegível direto") and not r["_grp"]]
+    elB = [r for r in master if (r["_el"].startswith("Elegível adm") or r["_el"].startswith("Só via DTVM")) and not r["_grp"]]
+    cortadosA = sum(1 for r in elA if not pequeno(r)); cortadosB = sum(1 for r in elB if not pequeno(r))
     print("\n===== RESUMO =====")
     print("  por elegibilidade:", dict(collections.Counter(r["_el"] for r in master)))
     print("  por perfil:", dict(collections.Counter(r["Perfil"] for r in master)))
-    print(f"  Alvo A (elegível direto): {len(alvoA)} | Alvo B (precisa virar DTVM): {len(alvoB)}")
+    print(f"  FILTRO DE PORTE (teto R$ {TETO/1e6:,.0f} mi por métrica de escala):")
+    print(f"    Alvo A: {len(elA)} elegíveis -> {len(alvoA)} dentro do teto ({cortadosA} cortados por escala > teto)")
+    print(f"    Alvo B: {len(elB)} elegíveis -> {len(alvoB)} dentro do teto ({cortadosB} cortados por escala > teto)")
     print("\n  Alvo A — top 15 menores por Ativo Total (Perfil):")
     for r in alvoA[:15]:
         at = f"{r['_at']/1e6:,.0f} mi" if r["_at"] else "?"

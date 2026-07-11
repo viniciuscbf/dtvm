@@ -1,6 +1,8 @@
 <?php
-// Custódia & Liquidação — as funções do custodiante: guarda da posição,
-// liquidação física/financeira das operações e tratamento de eventos corporativos
+// Custódia & Liquidação (visão da ADMINISTRADORA) — página SOMENTE-LEITURA.
+// Segregação real (Res. CVM 32): liquidar DVP, provisionar e creditar eventos são atos
+// PRIVATIVOS do custodiante (portal /custodia/). A administradora enxerga as filas,
+// CONCILIA e reflete na cota — quem produz a posição não é quem a valida.
 define('BASE_URL', '../');
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../includes/auth.php';
@@ -8,51 +10,6 @@ require_once __DIR__ . '/../includes/layout.php';
 
 $u = exigir_perfil('admin');
 $msg = ''; $msgTipo = 'success';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
-    $_POST = []; $msg = 'Requisição inválida (proteção CSRF). Recarregue a página.'; $msgTipo = 'danger';
-}
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // confirmar liquidação física/financeira → movimenta o caixa do fundo (atômico)
-    if (!empty($_POST['liquidar'])) {
-        $st = $pdo->prepare("SELECT * FROM liquidacoes WHERE id = ? AND status = 'Pendente'");
-        $st->execute([(int)$_POST['liquidar']]);
-        if ($l = $st->fetch()) {
-            $sinal = $l['operacao'] === 'Compra' ? -1 : 1;   // compra sai caixa; venda entra
-            com_transacao($pdo, function () use ($pdo, $l, $u, $sinal) {
-                $pdo->prepare("UPDATE liquidacoes SET status='Liquidada', confirmado_por=?, confirmado_em=NOW() WHERE id=?")
-                    ->execute([$u['nome'], $l['id']]);
-                $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
-                    ->execute([$l['fundo_id'], $l['data_liquidacao'],
-                               $l['operacao'] === 'Compra' ? 'Liquidação Compra' : 'Liquidação Venda',
-                               "Liquidação {$l['operacao']} {$l['ativo_codigo']} (confirmada pela custódia)",
-                               $sinal * (float)$l['valor']]);
-                $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual + ? WHERE id = ?')
-                    ->execute([$sinal * (float)$l['valor'], $l['fundo_id']]);
-                $pdo->prepare("INSERT INTO log_processamento (fundo_id, data_ref, etapa, nivel, mensagem) VALUES (?,?,?,?,?)")
-                    ->execute([$l['fundo_id'], date('Y-m-d'), 'Caixa', 'INFO',
-                               "Liquidação de {$l['operacao']} de {$l['ativo_codigo']} confirmada por " . $u['nome']]);
-            });
-            $msg = "Liquidação confirmada — caixa do fundo movimentado em " . moeda(($sinal) * (float)$l['valor']) . '.';
-        }
-    }
-    // eventos corporativos: provisionar → liquidar
-    elseif (!empty($_POST['provisionar_evento'])) {
-        $pdo->prepare("UPDATE eventos_corporativos SET status='Provisionado', processado_por=?, processado_em=NOW()
-                       WHERE id=? AND status='Anunciado'")->execute([$u['nome'], (int)$_POST['provisionar_evento']]);
-        $msg = 'Evento provisionado — passa a compor o PL como direito a receber.';
-    } elseif (!empty($_POST['liquidar_evento'])) {
-        $st = $pdo->prepare("SELECT * FROM eventos_corporativos WHERE id = ? AND status = 'Provisionado'");
-        $st->execute([(int)$_POST['liquidar_evento']]);
-        if ($ev = $st->fetch()) {
-            creditar_evento_corporativo($pdo, $ev);   // amortização baixa principal; bonificação ajusta qtd; provento credita
-            $msg = "{$ev['tipo']} de {$ev['ativo_codigo']} processado" .
-                   ($ev['tipo'] === 'Amortização' ? ' — principal devolvido e PU do ativo reduzido'
-                   : (in_array($ev['tipo'], ['Bonificação', 'Desdobramento'], true) ? ' — quantidade ajustada (sem caixa)'
-                   : ' — ' . moeda($ev['valor_total']) . ' creditado no caixa')) . '.';
-        }
-    }
-}
 
 $liquidacoes = $pdo->query("SELECT l.*, f.nome fundo_nome FROM liquidacoes l JOIN fundos f ON f.id=l.fundo_id
                             ORDER BY FIELD(l.status,'Pendente','Falha','Liquidada'), l.data_liquidacao")->fetchAll();
@@ -128,10 +85,7 @@ page_start('Custódia & Liquidação', 'Custódia & Liquidação', $u,
                 <?= $l['confirmado_por'] ? '<br><span class="text-muted" style="font-size:.68rem">' . e_html($l['confirmado_por']) . '</span>' : '' ?></td>
               <td class="text-end">
                 <?php if ($l['status'] === 'Pendente'): ?>
-                  <form method="post" onsubmit="return confirm('Confirmar a liquidação? O caixa do fundo será movimentado.')">
-                    <?= csrf_campo() ?><input type="hidden" name="liquidar" value="<?= (int)$l['id'] ?>">
-                    <button class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Confirmar</button>
-                  </form>
+                  <span class="text-muted" style="font-size:.7rem"><i class="bi bi-lock me-1"></i>liquida no portal de custódia</span>
                 <?php endif; ?>
               </td>
             </tr>
@@ -140,7 +94,7 @@ page_start('Custódia & Liquidação', 'Custódia & Liquidação', $u,
           </tbody>
         </table>
       </div>
-      <div class="card-footer text-muted" style="font-size:.72rem">Ações em D+2, títulos públicos em D+1 (padrão de mercado). Confirmar a liquidação credita/debita o caixa do fundo e registra a movimentação.</div>
+      <div class="card-footer text-muted" style="font-size:.72rem">Ações: D+2 pela Câmara B3 (saldo líquido multilateral). Títulos públicos: Selic liquida LBTR/DVP em tempo real (D+0). Balcão: data pactuada (D+0/D+1). A execução é do custodiante — aqui a administradora acompanha e concilia.</div>
     </div>
   </div>
 
@@ -161,13 +115,8 @@ page_start('Custódia & Liquidação', 'Custódia & Liquidação', $u,
               <td><?= data_br($ev['data_pagamento']) ?></td>
               <td><?= badge($ev['status'], $ev['status'] === 'Liquidado' ? 'success' : ($ev['status'] === 'Provisionado' ? 'info' : 'warning')) ?></td>
               <td class="text-end">
-                <?php if ($ev['status'] === 'Anunciado'): ?>
-                  <form method="post"><?= csrf_campo() ?><input type="hidden" name="provisionar_evento" value="<?= (int)$ev['id'] ?>">
-                    <button class="btn btn-sm btn-outline-primary" title="Reconhece o direito no PL"><i class="bi bi-journal-plus"></i> Provisionar</button></form>
-                <?php elseif ($ev['status'] === 'Provisionado'): ?>
-                  <form method="post" onsubmit="return confirm('Liquidar o evento? O valor será creditado no caixa.')">
-                    <?= csrf_campo() ?><input type="hidden" name="liquidar_evento" value="<?= (int)$ev['id'] ?>">
-                    <button class="btn btn-sm btn-success"><i class="bi bi-cash-coin"></i> Liquidar</button></form>
+                <?php if ($ev['status'] !== 'Liquidado'): ?>
+                  <span class="text-muted" style="font-size:.7rem"><i class="bi bi-lock me-1"></i>processa no portal de custódia</span>
                 <?php endif; ?>
               </td>
             </tr>
@@ -217,7 +166,7 @@ page_start('Custódia & Liquidação', 'Custódia & Liquidação', $u,
   </div>
   <div class="card-footer text-muted" style="font-size:.72rem">
     A guarda é segregada por fundo nas centrais depositárias (SELIC para títulos públicos, B3 para ações e crédito privado).
-    O batimento diário carteira × custódia alimenta a Conciliação; diferenças sem lastro viram alerta de IA (R4 — ativo fantasma).
+    O batimento diário carteira × custódia alimenta a Conciliação; diferença sem lastro vira alerta de IA (R5 — conciliação de custódia).
   </div>
 </div>
 <?php page_end();

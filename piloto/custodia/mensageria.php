@@ -88,9 +88,12 @@ page_start('Mensageria SPB', 'Mensageria SPB', $u,
     </table>
   </div>
   <div class="card-footer text-muted" style="font-size:.72rem">
-    No produto final, estas mensagens chegam pela <b>RSFN</b> (Rede do Sistema Financeiro Nacional) no padrão de
-    catálogo do SPB — SEL (SELIC), STR (reservas) e a mensageria/arquivos da B3. O piloto simula o tráfego para
-    demonstrar o fluxo operacional: mensagem → processamento → reflexo na posição/caixa → conciliação.
+    No produto final, estas mensagens chegam pela <b>RSFN</b> no padrão do <b>Catálogo de Serviços do SFN</b>.
+    Códigos <b>SEL/STR/LDL</b> exibidos são reais: SEL1052 = operação definitiva · SEL1054 = compromissada (zeragem over) ·
+    SEL1081 = consulta posição de custódia · SEL1099 = SEL informa movimentação financeira · STR0008 = transferência entre
+    contas de clientes (TED) · LDL0001/LDL0005 = resultado líquido/pagamento pela câmara. <b>"052"</b> é o tipo de operação
+    do balcão B3 (NoMe — compra/venda definitiva, duplo comando); <b>ARQ-POS/AGENDA-EV</b> são arquivos/feeds fora da RSFN.
+    Grades reais: Selic 6h30–18h30 · TED cliente até 17h30 · janela da Câmara B3 14h10–14h50. O piloto simula o tráfego.
   </div>
 </div>
 <?php page_end();

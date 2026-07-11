@@ -833,17 +833,35 @@ def msg(central, codigo, fid, ref, desc, valor, status, hora, quem=None):
     else:
         linhas.append(f"({s(central)}, {s(codigo)}, {fid if fid else 'NULL'}, {s(ref)}, {s(desc)}, "
                       f"{valor if valor is not None else 'NULL'}, {s(status)}, {pe}, NULL, NULL)")
-msg('SELIC', 'SEL1052', 1, 'OP-77123', f"Transferência definitiva de {tp1m['cod']} — crédito na conta 6710.101-1 (compra liquidada)", round(max(1, int(tp1m['qtd'] * 0.05)) * tp1m['mam'], 2), 'Processada', '07:52:00', ADMIN)
-msg('STR', 'STR0008', 1, 'OP-77123', 'Confirmação de liquidação financeira via conta Reservas', round(max(1, int(tp1m['qtd'] * 0.05)) * tp1m['mam'], 2), 'Processada', '07:53:00', 'Rotina automática')
-msg('B3 Balcão', 'MOV0001', 2, 'LIQ-1', 'Instrução de transferência DEB VALE29 recebida — aguardando liquidação DVP (D+1)', 412350.00, 'Recebida', '08:10:00')
-msg('B3 Depositária', 'MOV0004', 4, 'LIQ-2', 'Instrução de venda em bolsa — ciclo D+2, aguardando janela de liquidação', None, 'Recebida', '08:12:00')
-msg('B3 Depositária', 'PRO0002', 4, 'EV-DIV', 'Anúncio de dividendo — atualizar agenda de eventos do ativo', None, 'Processada', '08:30:00', 'Rotina automática')
-msg('SELIC', 'SEL1054', 6, 'OP-77488', 'Resgate antecipado informado pela contraparte — divergência de quantidade, verificar', None, 'Erro', '09:05:00')
-msg('B3 Balcão', 'POS0900', None, 'EOD-D1', 'Arquivo de posição de fechamento (balcão) disponível para conciliação', None, 'Processada', '18:40:00', 'Rotina automática')
-msg('SELIC', 'POS0901', None, 'EOD-D1', 'Arquivo de posição de fechamento (SELIC) disponível para conciliação', None, 'Processada', '18:41:00', 'Rotina automática')
-msg('B3 Depositária', 'POS0902', 7, 'EOD-D1', 'Posição NORD3 divergente da carteira informada pela administradora — batimento acusou diferença', None, 'Erro', '18:45:00')
+# Códigos SEL/STR/LDL são REAIS (Catálogo de Serviços do SFN): SEL1052 = operação definitiva;
+# SEL1054 = compromissada (a zeragem over); SEL1081 = consulta posição de custódia; SEL1099 = SEL
+# informa movimentação financeira; STR0008 = transferência entre contas de CLIENTES (a TED);
+# LDL0001 = câmara informa resultado líquido. '052' = tipo de operação do NoMe (compra/venda
+# definitiva, duplo comando). 'ARQ-POS'/'AGENDA-EV' = arquivos/feeds fora do catálogo RSFN.
+msg('SELIC', 'SEL1052', 1, 'OP-77123', f"Operação definitiva de compra — {tp1m['cod']} creditada na conta 6710.101-1 (DVP LBTR em tempo real)", round(max(1, int(tp1m['qtd'] * 0.05)) * tp1m['mam'], 2), 'Processada', '07:52:00', ADMIN)
+msg('SELIC', 'SEL1099', 1, 'OP-77123', 'SEL informa movimentação financeira — perna financeira da operação definitiva concluída', round(max(1, int(tp1m['qtd'] * 0.05)) * tp1m['mam'], 2), 'Processada', '07:53:00', 'Rotina automática')
+msg('B3 Balcão', '052', 2, 'LIQ-1', 'Duplo comando: ponta comandada no NoMe (tipo 052 — compra/venda definitiva) — DEB VALE29 aguarda comando da contraparte · Bruta (DVP via STR), liq. D+1', 412350.00, 'Recebida', '08:10:00')
+msg('B3 Depositária', 'LDL0001', 4, 'LIQ-2', 'Câmara B3 informa resultado líquido de negociações — venda ITUB4 na janela D+2 (saldo multilateral)', None, 'Recebida', '08:12:00')
+msg('B3 Depositária', 'AGENDA-EV', 4, 'EV-DIV', 'Agenda de eventos da Depositária — anúncio de dividendo ITUB4 (feed de eventos, fora da RSFN)', None, 'Processada', '08:30:00', 'Rotina automática')
+msg('SELIC', 'SEL1052', 6, 'OP-77488', 'Operação definitiva rejeitada — quantidade divergente do comando da contraparte; recomando necessário', None, 'Erro', '09:05:00')
+msg('SELIC', 'SEL1054', 6, 'OVER-D0', 'Operação compromissada (zeragem over) — caixa livre aplicado com lastro em LFT; retorno na abertura (SEL1056)', None, 'Processada', '17:55:00', 'Rotina automática')
+msg('STR', 'STR0008', 4, 'RESG-2201', 'IF requisita transferência entre contas de clientes (TED) — pagamento de resgate a cotista', 377203.23, 'Processada', '16:20:00', 'Rotina automática')
+msg('B3 Balcão', 'ARQ-POS', None, 'EOD-D1', 'Arquivo de posição de fechamento do balcão (NoMe) disponível para conciliação — feed fora da RSFN', None, 'Processada', '18:40:00', 'Rotina automática')
+msg('SELIC', 'SEL1081', None, 'EOD-D1', 'Consulta posição de custódia respondida — base do batimento diário (Res. CVM 32, art. 13, §1º, I)', None, 'Processada', '18:41:00', 'Rotina automática')
+msg('B3 Depositária', 'ARQ-POS', 7, 'EOD-D1', 'Arquivo de posição da Depositária — NORD3 diverge do interno (33.337 × 27.669); batimento acusou', None, 'Erro', '18:45:00')
 w("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por) VALUES")
 w(',\n'.join(linhas) + ';')
+w()
+
+w("-- ---------- posicao_custodiante (fonte INDEPENDENTE p/ conciliação e arquivo de posição) ----------")
+w("-- Snapshot do último dia espelha a carteira, exceto a divergência semeada do NORD3 (fundo 7).")
+w("INSERT INTO posicao_custodiante (fundo_id, data_ref, codigo, tipo, quantidade, central)")
+w("SELECT fundo_id, data_ref, codigo, tipo, quantidade,")
+w("       CASE WHEN tipo = 'Título Público' THEN 'SELIC'")
+w("            WHEN tipo IN ('Debênture','CDB','CRI/CRA') THEN 'B3 Balcão'")
+w("            ELSE 'B3 Depositária' END")
+w(f"FROM ativos_carteira WHERE data_ref = {s(LB.isoformat())};")
+w(f"UPDATE posicao_custodiante SET quantidade = {qtd_cust} WHERE fundo_id = 7 AND codigo = 'NORD3' AND data_ref = {s(LB.isoformat())};")
 w()
 
 print('\n'.join(out))

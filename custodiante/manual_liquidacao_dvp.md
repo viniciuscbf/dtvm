@@ -72,21 +72,23 @@ O aceite/rejeição com motivo constitui o **ponto de controle de integridade e 
 
 ## 4. Ciclos de liquidação por classe de ativo
 
-O prazo entre a data da operação e a data de liquidação (o ciclo **D+N**) varia conforme a classe do ativo, seguindo os padrões das infraestruturas de mercado. O piloto agenda automaticamente a [data_liquidacao] com base na classe do ativo da boleta aceita.
+O prazo entre a data da operação e a data de liquidação (o ciclo **D+N**) varia conforme a classe do ativo e o **modelo de liquidação** da infraestrutura. A boleta registra a data pactuada; a plataforma valida contra o padrão do mercado.
 
-| Classe de ativo | Central depositária / infraestrutura | Ciclo | Forma de liquidação financeira |
+| Classe de ativo | Infraestrutura | Ciclo | Modelo de liquidação |
 |---|---|---|---|
-| Título público federal | SELIC | **D+1** | STR / Reservas Bancárias (LBTR, DVP) |
-| Renda fixa privada (registrada) | B3 / central de registro | **D+1** | STR / Reservas Bancárias (DVP) |
-| Ação (renda variável) | B3 | **D+2** | Liquidação B3, financeiro via STR/Reservas |
-| Cota de fundo | B3 / administrador | **D+2** | Liquidação B3, financeiro via STR/Reservas |
+| Título público federal | SELIC | **D+0** (tempo real; D+1 por convenção comercial) | **LBTR/DVP modelo 1** — operação por operação, bruta, em tempo real (grade 6h30–18h30) |
+| Renda fixa privada (registrada) | B3 Balcão (NoMe/ex-Cetip) | **D+0 a D+1** (data pactuada bilateralmente) | **Duplo comando** (matching bilateral); modalidades: Bruta (DVP via STR), Bilateral ou Sem modalidade |
+| Ação (renda variável) | Câmara B3 (CCP) | **D+2** (travado pela câmara) | **Netting multilateral** — saldo líquido em janela única diária (pagamentos 14h10–14h50; DVP final ~15h50; mensagens LDL) |
+| Cota de fundo listada | Câmara B3 | **D+2** | Como ações (netting multilateral) |
+| Cota de fundo aberto (não listada) | Administrador/custodiante | Cotização do fundo | Fora de CCP — ordem → cotização → liquidação na conta do fundo |
 
-**Resumo dos ciclos:**
+**Pontos que distinguem os modelos (importante para não homogeneizar):**
 
-- **D+1** — títulos públicos e renda fixa;
-- **D+2** — renda variável (ação) e cotas (padrão B3).
+- No **Selic** não há "lote no fim do dia": cada operação liquida **individualmente, em tempo real**, com as duas pernas simultâneas (título e dinheiro) — é o clássico DVP modelo 1 do BIS.
+- Na **bolsa** o custodiante **não liquida operação por operação**: a Câmara B3 (contraparte central) compensa tudo **multilateralmente** e liquida o **saldo líquido** do liquidante na janela — a perna financeira usa as mensagens **LDL** (LDL0001 resultado líquido; LDL0004/LDL0005 pagamentos), não uma transferência STR por negócio.
+- No **balcão** a operação só existe quando **as duas pontas comandam** (duplo comando); a perna financeira da modalidade Bruta passa pelo STR via banco liquidante.
 
-A liquidação financeira é sempre realizada em **conta de Reservas Bancárias via STR**, diretamente (banco liquidante) ou por intermédio de um banco liquidante contratado (banco não-liquidante) — ver seção 6.
+A perna financeira transita pela **conta de Reservas Bancárias** do banco liquidante (diretamente, se o custodiante for banco; ou por banco liquidante contratado) — ver seção 6.
 
 ---
 
@@ -133,8 +135,8 @@ O ciclo completo, da boleta ao reflexo na posição, segue as etapas abaixo. O m
            ▼
  ┌────────────────────┐
  │ CONFIRMAÇÃO NA     │  gera mensagem em [mensagens_spb]
- │ MENSAGERIA (SPB)   │  (ex.: código estilo STR0008)
- └─────────┬──────────┘
+ │ MENSAGERIA (SPB)   │  (SEL1099 no Selic · LDL0005 na câmara ·
+ └─────────┬──────────┘   STR0004 na bruta de balcão)
            ▼
  ┌────────────────────┐
  │ REFLEXO NA POSIÇÃO │  atualiza a carteira do fundo
@@ -146,10 +148,10 @@ O ciclo completo, da boleta ao reflexo na posição, segue as etapas abaixo. O m
 
 1. **Boleta → aceite.** O gestor envia a boleta; a mesa de custódia valida integridade e origem e realiza aceite ou rejeição com motivo (art. 13, II).
 2. **Aceite → instrução.** A boleta aceita gera a instrução de liquidação em [liquidacoes] com [status] = **Pendente**, vinculando [boleta_id] e [contraparte].
-3. **Instrução → agenda D+N.** O sistema calcula e persiste a [data_liquidacao] conforme a classe do ativo (D+1 para título público/renda fixa; D+2 para ação/cota).
-4. **Agenda → liquidação DVP.** Na [data_liquidacao], executa-se a liquidação no padrão DVP: a perna do ativo e a perna financeira são condicionadas mutuamente.
-5. **Liquidação → movimentação de caixa.** Confirmada a liquidação, o **caixa da conta do fundo é movimentado** (debitado em compras, creditado em vendas).
-6. **Movimentação → confirmação na mensageria.** Gera-se a confirmação em [mensagens_spb] (código estilo **STR0008**, família STR), documentando a perna financeira.
+3. **Instrução → agenda.** A [data_liquidacao] é a **pactuada na boleta**, validada contra o padrão do segmento (TPF D+0 em tempo real; balcão D+0/D+1 bilateral; bolsa D+2 travado pela câmara).
+4. **Agenda → liquidação DVP.** Na [data_liquidacao], executa-se a liquidação no modelo do segmento: LBTR individual no Selic; saldo líquido multilateral na janela da Câmara B3; DVP bruta bilateral no balcão. A perna do ativo e a financeira são condicionadas mutuamente.
+5. **Liquidação → movimentação de caixa.** Confirmada a liquidação, o **caixa da conta do fundo é movimentado** (debitado em compras, creditado em vendas), com data contábil = data de liquidação.
+6. **Movimentação → confirmação na mensageria.** Gera-se a confirmação em [mensagens_spb] com o código real do Catálogo do SFN: **SEL1099** ("SEL informa movimentação financeira") no Selic; **LDL0005** (câmara paga credores) na bolsa; **STR0004** (transferência IF→IF do banco liquidante) na modalidade bruta de balcão. *(Nota: STR0008 é a transferência entre contas de clientes — a TED — e não uma mensagem de confirmação.)*
 7. **Confirmação → reflexo na posição.** A **posição na carteira do fundo é atualizada** e o [status] da liquidação passa a **Liquidada**.
 8. **Trilha de falha.** Se a liquidação não se completa, o [status] é marcado como **Falha**, disparando o tratamento da seção 7.
 
@@ -193,17 +195,20 @@ Uma **falha de liquidação** (*fail*) ocorre quando, na [data_liquidacao], a op
 
 ## 8. Mensageria e confirmações (padrão de catálogo SPB)
 
-As confirmações de liquidação são materializadas em mensagens no padrão do **catálogo de mensagens do SPB (Sistema de Pagamentos Brasileiro)**, persistidas na tabela [mensagens_spb]. O piloto reproduz as **famílias de mensagens** por infraestrutura:
+As confirmações de liquidação são materializadas em mensagens do **Catálogo de Serviços do SFN** (BCB/Deinf), persistidas na tabela [mensagens_spb]. Códigos empregados (todos reais, verificados no catálogo v5.12):
 
-| Família | Infraestrutura | Uso |
-|---|---|---|
-| **SEL** | SELIC | Liquidação de títulos públicos federais |
-| **STR** | STR / Reservas | Confirmação da perna financeira (ex.: código estilo **STR0008**) |
-| **B3** | B3 | Liquidação de renda variável e cotas |
+| Código | Grupo / infraestrutura | Significado oficial | Uso na plataforma |
+|---|---|---|---|
+| **SEL1052** | SEL / Selic | Participante requisita operação definitiva | Comando de compra/venda de título público |
+| **SEL1054 / SEL1056** | SEL / Selic | Operação compromissada / retorno | **Zeragem over** do caixa (contratação e retorno na abertura) |
+| **SEL1081** | SEL / Selic | Consulta posição de custódia | Base do batimento diário (art. 13, §1º, I) |
+| **SEL1099** | SEL / Selic | SEL informa movimentação financeira | Confirmação da perna financeira no Selic |
+| **LDL0001 / LDL0005** | LDL / Câmara B3 | Resultado líquido informado / câmara paga credores | Liquidação multilateral de bolsa (janela) |
+| **STR0004** | STR | IF requisita transferência para IF | Perna financeira bruta do balcão (banco liquidante) |
+| **STR0008** | STR | IF requisita transferência entre contas de **clientes** (a TED) | Pagamentos a cotistas (resgates) — **não** é mensagem de confirmação |
+| **"052"** | — (NoMe/Cetip21) | Tipo de operação: compra/venda definitiva | Comando da ponta no balcão (duplo comando) |
 
-Cada liquidação bem-sucedida gera a mensagem de confirmação correspondente (por exemplo, um código estilo **STR0008** para a perna financeira), constituindo o **comprovante documental** da movimentação (art. 13, III).
-
-> 🟩 **Homologação futura:** os catálogos e códigos aqui empregados **reproduzem o estilo** das mensagens oficiais das infraestruturas. A **homologação junto à RSFN** e a integração produtiva com SELIC, STR e B3 compõem o roadmap pós-deferimento. No piloto, a geração de mensagens em [mensagens_spb] é **simulada** e serve à comprovação de estrutura e à trilha de auditoria.
+> 🟩 **Homologação futura:** a **homologação junto à RSFN** e a integração produtiva com SELIC, STR e B3 compõem o roadmap pós-deferimento. No piloto, a geração de mensagens em [mensagens_spb] é **simulada** (tráfego e semântica fiéis ao catálogo; itens rotulados ARQ-POS/AGENDA-EV representam arquivos/feeds fora da RSFN) e serve à comprovação de estrutura e à trilha de auditoria.
 
 ---
 

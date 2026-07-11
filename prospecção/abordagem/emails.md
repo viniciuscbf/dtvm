@@ -1,59 +1,78 @@
-# Templates de e-mail — abordagem por tipo de instituição
+# E-mails de abordagem — v2 comercial, por tipo de instituição
 
-> Como usar: personalize sempre o **[Nome do decisor]** e a **[Instituição]** (nunca "Prezados").
-> Anexe o **one-pager do tipo certo** (Banco/CTVM, SCD/Fintech ou Financeira). **Não anexe o deck completo** —
-> ele é para a reunião. Um único pedido por e-mail: **20 minutos de conversa**. Envie de **domínio próprio**
-> (contato@argusdtvm.com.br), nunca de Gmail. Follow-up em **~5 dias úteis** se não responderem.
+> **Segmentação da onda 1** (alinhada ao `bancos_alvo.xlsx` e à `parceria_estrutura_juridica.md`):
+> **A — Banco pequeno** → anexa `Argus_OnePager_Banco.pdf` · **A2 — CTVM/corretora** → `Argus_OnePager_CTVM.pdf`
+> · **C — Financeira (SCFI)** → `Argus_OnePager_Financeira.pdf`. **SCD/IP/câmbio ficam FORA da onda 1**
+> (não podem administrar fundos — só entrariam constituindo DTVM; abordar apenas se procurarem).
 >
-> Antes de disparar: confirme que a caixa **contato@argusdtvm.com.br** existe e é monitorada.
+> Regras de ouro: personalize **[Nome]** e **[Instituição]** (nunca "Prezados"); **um** pedido só
+> (20 minutos); envie de **contato@argusdtvm.com.br** (confirmar caixa ativa + DKIM antes);
+> **não** anexe o deck (é da reunião); follow-up em ~5 dias úteis; 10–20 envios/dia no aquecimento.
 
 ---
 
-## A) Banco pequeno / CTVM (Alvo A — elegível direto)
+## A) Banco pequeno (Alvo A)
 
-**Assunto:** Nova receita recorrente para o [Instituição] — administração de fundos pequenos
+**Assunto:** Uma linha de receita nova sobre a licença que o [Instituição] já tem
 
-Prezado(a) [Nome / Sr(a). Sobrenome],
+[Nome], tudo bem?
 
-Meu nome é [Seu nome], da Argus. Escrevo porque o [Instituição] já tem o mais difícil — a licença e a estrutura de instituição autorizada — e existe uma linha de receita recorrente que costuma passar despercebida: a **administração fiduciária de fundos pequenos**, um mercado que os grandes administradores decidiram ignorar.
+Sou [Seu nome], da Argus. Vou direto: o [Instituição] já pagou a parte mais cara — a licença e a
+estrutura de instituição autorizada. Existe uma linha de receita recorrente que dá para ligar em cima
+disso **sem investir em tecnologia nem contratar equipe**: administração fiduciária de fundos, num
+segmento que os grandes administradores abandonaram (só 1.277 dos ~31 mil fundos do país passam de
+R$ 1 bilhão — a cauda é enorme e está sem dono).
 
-A proposta é direta: **vocês entram com a licença; nós entramos com a tecnologia e a operação**, já prontas e testadas num protótipo funcionando de ponta a ponta. Vocês **não investem em tecnologia nem montam equipe**, ganham uma receita nova sobre uma estrutura que já existe — e com o **risco reduzido, não aumentado** (operação documentada, monitoramento em 100% dos fundos, o compliance de vocês no controle).
+A proposta: vocês entram com a licença e o compliance; nós entramos com a plataforma e a operação —
+**já construídas e rodando** num protótipo de ponta a ponta (argusdtvm.com.br). O credenciamento na
+CVM leva ~60 dias e o dossiê nós entregamos pronto. Receita dividida 50/50.
 
-Poderíamos conversar **20 minutos**, sem compromisso, para eu abrir o modelo e a conta para o banco? Segue em anexo um **resumo de uma página**.
-
-Fico à disposição para agendar na próxima semana.
+Topa **20 minutos** na próxima semana para eu abrir o modelo e a conta? Segue um resumo de 1 página.
 
 [Assinatura]
 
 ---
 
-## B) SCD / Fintech (Alvo B — Sociedade de Crédito Direto / Pagamentos)
+## A2) CTVM / corretora (Alvo A)
 
-**Assunto:** Um novo vertical de fundos para a [Instituição]
+**Assunto:** Receita recorrente para a [Instituição] — além da corretagem
 
-Prezado(a) [Nome],
+[Nome], tudo bem?
 
-[Seu nome], da Argus. Vocês já têm **capital, tecnologia e base de clientes** — e há um vertical que combina naturalmente com isso: a **administração de fundos pequenos**, hoje mal atendida pelos grandes.
+Sou [Seu nome], da Argus. Corretagem é receita transacional — boa em ano bom, dura em ano ruim.
+A licença da [Instituição] permite ligar uma linha **recorrente** (% do PL, todo mês) que quase
+nenhuma corretora usa: administração fiduciária de fundos. E vocês têm o que ninguém tem — clientes
+gestores e a distribuição na mão. Hoje esses gestores executam com vocês e administram os fundos
+**fora**; dá para trazer isso para dentro.
 
-Nós trazemos a **plataforma e a operação de fundos prontas**; vocês entram como a instituição e focam no crescimento. É um **produto novo e receita recorrente, sem construir do zero** — e o mapa regulatório para chegar à licença de administrador/custódia já está levantado.
+Nós entramos com a plataforma e a operação completas (protótipo de ponta a ponta no ar:
+argusdtvm.com.br); vocês entram com a licença e o compliance. Credenciamento CVM em ~60 dias com
+dossiê pronto. Receita 50/50.
 
-Topam **20 minutos** para eu mostrar o modelo e o protótipo funcionando? Segue um **resumo de uma página** em anexo.
+**20 minutos** para eu mostrar o modelo? Resumo de 1 página em anexo.
 
 [Assinatura]
 
 ---
 
-## C) Financeira (Alvo B — Sociedade de Crédito, Financiamento e Investimento)
+## C) Financeira / SCFI (Alvo B — elegível direto)
 
-**Assunto:** Diversificação de receita: administração de fundos para a [Instituição]
+**Assunto:** A Res. 5.237 abriu uma porta para a [Instituição] — quase ninguém viu
 
-Prezado(a) [Nome],
+[Nome], tudo bem?
 
-[Seu nome], da Argus. A [Instituição] já é **instituição financeira com capital e estrutura** — e a **administração de fundos pequenos** é uma diversificação de receita **recorrente e de baixo custo**, que aproveita o que vocês já têm.
+Sou [Seu nome], da Argus. Desde **1º de setembro de 2025**, a Resolução CMN 5.237 passou a permitir
+que financeiras administrem carteiras de valores mobiliários (art. 6º, p.u., IV). Na prática: a
+[Instituição] pode ligar uma linha de receita recorrente de **administração de fundos** — e o mercado
+ainda não acordou para isso. Ser a primeira financeira da praça a monetizar essa janela é vantagem
+real de pioneiro.
 
-Vocês entram com a licença e a estrutura; **nós com a tecnologia e a operação**, já prontas. Sem investir em tecnologia nem montar uma equipe de fundos.
+Nós tornamos isso plug-and-play: plataforma e operação prontas (protótipo de ponta a ponta no ar:
+argusdtvm.com.br), custódia estruturada com terceiro autorizado, dossiê de registro CVM pronto
+(~60 dias). Vocês entram com a instituição e o compliance; receita dividida 50/50, sem investir em
+tecnologia nem contratar equipe.
 
-Poderíamos conversar **20 minutos**? Anexo um **resumo de uma página**.
+**20 minutos** para eu abrir o modelo? Segue um resumo de 1 página.
 
 [Assinatura]
 
@@ -61,36 +80,46 @@ Poderíamos conversar **20 minutos**? Anexo um **resumo de uma página**.
 
 ## D) Prioritário — versão personalizada (para os 10–15 melhores alvos)
 
-> Vale o esforço extra: **1 linha de personalização real** dobra a taxa de resposta.
+> 1 linha de personalização REAL dobra a taxa de resposta. Use os dados da planilha:
+> "vi que vocês já gerem X fundos", "já custodiam Y classes", "atuam forte em [nicho/região]".
 
 **Assunto:** [gancho específico] — parceria de administração de fundos
 
-Prezado(a) [Nome], [cargo],
+[Nome], tudo bem?
 
-[1 frase de personalização REAL — ex.: "acompanho a atuação de vocês em [nicho/região]", ou "vi que vocês já **[gerem X fundos / custodiam Y]**, então o próximo passo que proponho vai fazer sentido"].
+[1 frase de personalização REAL — ex.: "vi que a [Instituição] já gere N fundos — vocês estão a um
+passo do que vou propor."] É por isso que escrevo: falta só a camada de **administração fiduciária**,
+e é exatamente ela que trazemos pronta — plataforma e operação testadas num protótipo de ponta a
+ponta (argusdtvm.com.br), dossiê de credenciamento CVM pronto (~60 dias), receita 50/50, sem vocês
+investirem em tecnologia ou equipe.
 
-É exatamente por isso que escrevo: [conecte o ponto acima à proposta — ex.: "vocês já estão a um passo do mundo de fundos; falta a camada de administração, e é ela que trazemos pronta"]. Vocês entram com a licença e a estrutura; a Argus entra com a tecnologia e a operação — testadas num protótipo funcionando de ponta a ponta —, sem que vocês invistam em tecnologia ou montem equipe.
-
-Vale **20 minutos** na próxima semana para eu abrir o modelo, a conta e o protótipo? Segue um resumo de uma página.
+Vale **20 minutos** na próxima semana? Resumo de 1 página em anexo.
 
 [Assinatura]
 
 ---
 
-## E) Follow-up (se não responderem em ~5 dias úteis)
+## E) Follow-up (~5 dias úteis — sempre AGREGANDO um dado, nunca só "retomando")
 
 **Assunto:** Re: [assunto original]
 
-Prezado(a) [Nome], só retomando meu e-mail — sei que a agenda é cheia. Se fizer sentido, fico feliz em enviar mais detalhes ou marcar **20 minutos** quando for melhor para vocês. Se não for o momento, é só me dizer, sem problema.
+[Nome], um dado que talvez ajude a dimensionar: um fundo pequeno paga hoje **R$ 50–70 mil/ano** de
+custo fixo nas administradoras tradicionais (o piso mensal de mercado chega a R$ 25 mil). Na nossa
+estrutura, o mesmo fundo custa ~**R$ 6 mil/ano** — é isso que destrava o segmento inteiro que os
+grandes ignoram, com a [Instituição] ficando com metade da receita de administração.
 
-Obrigado,
+Se fizer sentido, sigo à disposição para os 20 minutos. Se não for o momento, me diga sem cerimônia
+— não insisto.
+
 [Assinatura]
 
 ---
 
-## F) LinkedIn (toque paralelo ao decisor)
+## F) LinkedIn (toque paralelo ao decisor — curto)
 
-Olá [Nome], tudo bem? Sou [Seu nome], da Argus. Tenho uma proposta de parceria para o [Instituição] administrar fundos pequenos — **vocês com a licença, nós com a tecnologia e a operação**. Posso te enviar um resumo de 1 página? Abraço.
+Olá [Nome]! Sou [Seu nome], da Argus. Enviei um e-mail para a [Instituição] sobre uma parceria de
+administração de fundos — vocês com a licença, nós com a tecnologia e a operação prontas (temos um
+protótipo de ponta a ponta no ar). Posso te mandar um resumo de 1 página por aqui? Abraço.
 
 ---
 
@@ -103,13 +132,13 @@ contato@argusdtvm.com.br · argusdtvm.com.br
 
 ---
 
-## Boas práticas (checklist rápido)
+## Checklist antes de cada disparo
 
+- [ ] Segmento certo → e-mail certo → **one-pager certo** (Banco / CTVM / Financeira).
 - [ ] Personalizei **[Nome]** e **[Instituição]** (nada de "Prezados").
-- [ ] Anexei o **one-pager do tipo certo** (Banco/CTVM · SCD/Fintech · Financeira).
-- [ ] **Não** anexei o deck completo (é para a reunião).
-- [ ] **Um** pedido só: 20 minutos.
-- [ ] Enviei de **domínio próprio**, assinatura completa.
-- [ ] Agendei o **follow-up** para +5 dias úteis.
-- [ ] Toquei o decisor no **LinkedIn** em paralelo.
-- [ ] Para os prioritários: usei a versão **personalizada (D)**.
+- [ ] **Um** pedido só: 20 minutos. Sem deck anexado.
+- [ ] Enviado de **domínio próprio** com assinatura completa (DKIM ativo — ver `entregabilidade_email.md`).
+- [ ] Follow-up agendado para +5 d.u. (modelo E, com o dado de custo).
+- [ ] Toque no LinkedIn em paralelo (modelo F).
+- [ ] Prioritários (10–15): versão **D personalizada** com dado da planilha.
+- [ ] SCD/IP/câmbio: **não abordar** na onda 1.

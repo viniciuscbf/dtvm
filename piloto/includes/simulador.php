@@ -92,6 +92,7 @@ function sim_avancar_dia(PDO $pdo): array {
             $ult = ultima_data_carteira($pdo, $fid);
             if ($ult && $ult !== $prox) proc_marcar_carteira($pdo, $fid, $ult, $prox, $cdiDia, $ipcaDia);              // 1) preços/posição
             $f['provisao_despesas'] = (float)($f['provisao_despesas'] ?? 0) + provisionar_despesas_dia($pdo, $f, $prox); // 2) provisão de despesas
+            proc_zeragem_over($pdo, $f, $prox, $cdiDia);               // 2b) zeragem do caixa (compromissada over, SEL1054/1056)
             ajuste_diario_derivativos($pdo, $fid, $prox);              // 3) ajuste diário de derivativos (no caixa)
             liquidar_passivos_vencidos($pdo, $fid, $prox);            // 4) liquida passivos vencidos (cotistas/tributos)
             proc_persistir_cota($pdo, $f, $prox);                     // 5) recalcula e publica a cota/PL
@@ -128,6 +129,30 @@ function sim_gerar_posicao_e_conciliar(PDO $pdo, int $fid, string $data): int {
         }
     }
     return $divs;
+}
+
+/** Passo 2b — ZERAGEM DO CAIXA: o saldo livre rende compromissada over lastreada em LFT,
+ *  como um custodiante real faz (contratação = SEL1054; retorno na abertura = SEL1056).
+ *  Sem isso o caixa ficaria parado sem render — irreal para qualquer fundo. */
+function proc_zeragem_over(PDO $pdo, array &$f, string $prox, float $cdiDia): void {
+    $caixa = (float)$f['caixa_atual'];
+    $rend = round($caixa * ($cdiDia - 1), 2);
+    if ($caixa < 1000 || $rend <= 0) return;         // saldo residual não vai a over
+    $fid = (int)$f['id'];
+    $pdo->prepare("INSERT INTO movimentacoes (fundo_id, data_ref, tipo, descricao, valor) VALUES (?,?,?,?,?)")
+        ->execute([$fid, $prox, 'Zeragem over',
+                   'Retorno da compromissada over (lastro LFT) — rendimento de 1 dia sobre o caixa livre', $rend]);
+    $pdo->prepare('UPDATE fundos SET caixa_atual = caixa_atual + ? WHERE id = ?')->execute([$rend, $fid]);
+    $f['caixa_atual'] = $caixa + $rend;
+    $ref = 'OVER-' . str_replace('-', '', $prox);
+    $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por)
+                   VALUES ('SELIC','SEL1056',?,?,?,?,'Processada',?,?,'Rotina automática')")
+        ->execute([$fid, $ref, 'Retorno da compromissada over — principal + rendimento creditados na abertura (6h30–6h45)',
+                   round($caixa + $rend, 2), $prox . ' 06:40:00', $prox . ' 06:40:00']);
+    $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por)
+                   VALUES ('SELIC','SEL1054',?,?,?,?,'Processada',?,?,'Rotina automática')")
+        ->execute([$fid, $ref, 'Operação compromissada (zeragem over) — caixa livre aplicado com lastro em LFT, retorno na próxima abertura',
+                   round($caixa + $rend, 2), $prox . ' 17:55:00', $prox . ' 17:55:00']);
 }
 
 // ---------------- Passos do pipeline diário (proc_*) — cada um isolado e testável ----------------

@@ -118,12 +118,7 @@ def onepager(cfg):
 
     y = 3.05
     kicker(s, M, y, "A proposta")
-    txt(s, M, y + 0.32, PW - 2*M, 1.1,
-        "Você entra com a licença e a estrutura que já tem; a Argus entra com a tecnologia e a operação como "
-        "prestadora de serviço — você continua o administrador de verdade. Juntos, administramos fundos pequenos, "
-        "um mercado que os grandes ignoram. A receita de administração começa dividida 50/50 — metade para você — "
-        "e você não investe em tecnologia nem monta equipe.",
-        10.5, font=SANS, color=INK, spacing=1.22)
+    txt(s, M, y + 0.32, PW - 2*M, 1.1, cfg['proposta'], 10.5, font=SANS, color=INK, spacing=1.22)
 
     y = 4.45
     kicker(s, M, y, cfg['porque_titulo'])
@@ -137,8 +132,9 @@ def onepager(cfg):
     y = y + 1.15
     kicker(s, M, y, "A prova — não é ideia em guardanapo")
     txt(s, M, y + 0.34, PW - 2*M, 0.9,
-        "Protótipo operacional funcionando de ponta a ponta (argusdtvm.com.br, dados simulados), do checklist "
-        "de abertura ao informe diário à CVM. Mapa regulatório levantado e dossiês prontos para protocolar.",
+        "Protótipo operacional de ponta a ponta no ar (argusdtvm.com.br, dados simulados) — do checklist de "
+        "abertura ao informe diário à CVM. Dossiês de credenciamento prontos para protocolar: administração "
+        "fiduciária (prazo legal de 60 dias) e custódia (90 dias), com manuais e matrizes de conformidade.",
         10.5, font=SANS, color=INK, spacing=1.22)
 
     y = y + 1.32
@@ -148,42 +144,62 @@ def onepager(cfg):
     txt(s, PW - M - 2.7, y + 0.16, 2.4, 0.7, "Só 1.277 dos ~31 mil\nfundos passam de R$ 1 bi.\nA cauda pequena é enorme.",
         8.5, font=MONO, color=RGBColor(0xcf, 0xee, 0xfb), char=0.2, align=PP_ALIGN.RIGHT, spacing=1.12)
 
+    # CTA explícito — material comercial precisa pedir
+    y = y + 1.1
+    rect(s, M, y, PW - 2*M, 0.44, fill=SOFT, line=GOLD, lw=1.0, radius=0.12)
+    rich(s, M + 0.28, y + 0.12, PW - 2*M - 0.56, 0.3, [
+        ([("PRÓXIMO PASSO   ", {'size': 9, 'font': MONO, 'color': NAVY, 'bold': True, 'char': 1.2}),
+          ("20 minutos, sem compromisso — basta responder o e-mail.", {'size': 10.5, 'font': SANS, 'color': INK})], {'line': 1.0}),
+    ])
+
     # rodapé
-    hline(s, M, PH - 0.72, PW - 2*M, color=LINE)
-    txt(s, M, PH - 0.6, 4.2, 0.25, "contato@argusdtvm.com.br  ·  argusdtvm.com.br", 8.5, font=MONO, color=NAVY, char=0.2)
-    txt(s, PW - M - 2.9, PH - 0.6, 2.9, 0.25, "CONFIDENCIAL · DADOS SIMULADOS",
+    hline(s, M, PH - 0.62, PW - 2*M, color=LINE)
+    txt(s, M, PH - 0.5, 4.2, 0.25, "contato@argusdtvm.com.br  ·  argusdtvm.com.br", 8.5, font=MONO, color=NAVY, char=0.2)
+    txt(s, PW - M - 2.9, PH - 0.5, 2.9, 0.25, "CONFIDENCIAL · DADOS SIMULADOS",
         7, font=MONO, color=FAINT, char=0.5, align=PP_ALIGN.RIGHT)
 
     out = os.path.join(BASE, cfg['arquivo']); prs.save(out); return out
 
+PROPOSTA_PADRAO = (
+    "Vocês entram com a licença e a estrutura que já têm; a Argus entra com a tecnologia e a operação como "
+    "prestadora de serviço — vocês continuam o administrador de verdade, com o compliance de vocês no controle. "
+    "Atendemos juntos um mercado que os grandes decidiram ignorar: fundos de R$ 1–10 milhões. A receita de "
+    "administração começa dividida 50/50 — e vocês não investem em tecnologia nem contratam equipe.")
+
 CFGS = [
-    {"arquivo": "Argus_OnePager_Banco_CTVM.pptx",
+    {"arquivo": "Argus_OnePager_Banco.pptx",
      "titulo": "Uma nova linha de receita recorrente\npara o seu banco.",
      "sub": "Administração fiduciária e custódia de fundos — proposta de parceria.",
-     "porque_titulo": "Por que faz sentido para um banco / corretora",
-     "valor": ["Receita nova sobre uma estrutura que já existe e já custa.",
+     "proposta": PROPOSTA_PADRAO,
+     "porque_titulo": "Por que faz sentido para o seu banco",
+     "valor": ["Receita nova sobre uma estrutura que já existe e já custa — a licença já pagou a barreira de capital.",
                "Custo de entrada ~zero: sem investir em tecnologia nem contratar equipe.",
-               "Dispensa de capital mínimo — por já ser instituição autorizada pelo BCB.",
-               "Risco reduzido, não aumentado: operação documentada, monitoramento em 100% dos fundos, o seu compliance no controle."],
-     "partida": "Você já é elegível. Falta só o credenciamento de administrador fiduciário na CVM — prazo legal de 60 dias, com os documentos que entregamos prontos."},
-    {"arquivo": "Argus_OnePager_SCD_Fintech.pptx",
-     "titulo": "Um novo vertical de fundos — sobre\na estrutura que você já tem.",
+               "Custódia própria opcional na fase 2 — mais uma linha de receita sobre a mesma máquina.",
+               "Risco reduzido, não aumentado: operação documentada, monitoramento diário em 100% dos fundos, trilha de auditoria completa."],
+     "partida": "Vocês já são elegíveis (Res. CVM 21). Falta só o credenciamento de administrador fiduciário — prazo legal de 60 dias, com o dossiê que entregamos pronto para protocolar."},
+    {"arquivo": "Argus_OnePager_CTVM.pptx",
+     "titulo": "Da corretagem espremida à receita\nrecorrente — com a licença que você já tem.",
      "sub": "Administração fiduciária e custódia de fundos — proposta de parceria.",
-     "porque_titulo": "Por que faz sentido para uma fintech (SCD/pagamentos)",
-     "valor": ["Um produto novo e receita recorrente, sem construir do zero.",
-               "Sinergia com a sua base de clientes e com a sua stack tecnológica.",
-               "A plataforma e a operação já existem — você foca no crescimento.",
-               "Tech-first: falamos a sua língua — automação, API, escala."],
-     "partida": "Você já tem capital e tecnologia. Ajudamos a estruturar a licença de administrador fiduciário e o caminho até a custódia (DTVM) — o mapa regulatório já está levantado."},
+     "proposta": PROPOSTA_PADRAO,
+     "porque_titulo": "Por que faz sentido para a sua corretora",
+     "valor": ["Receita recorrente (% do PL, todo mês) para equilibrar a receita transacional de corretagem.",
+               "Vocês já são distribuidores natos — captação e base de clientes viram ativo da parceria.",
+               "Elegíveis às DUAS licenças CVM: administração fiduciária e custódia (Res. 21 e Res. 32).",
+               "Os gestores que hoje só executam com vocês passam a ter os fundos deles DENTRO de casa."],
+     "partida": "Vocês já são elegíveis. Credenciamento de administrador fiduciário na CVM em ~60 dias, com o dossiê pronto — e a custódia (90 dias) quando a escala justificar."},
     {"arquivo": "Argus_OnePager_Financeira.pptx",
-     "titulo": "Administração de fundos: uma nova\nreceita para a sua financeira.",
-     "sub": "Administração fiduciária e custódia de fundos — proposta de parceria.",
-     "porque_titulo": "Por que faz sentido para uma financeira (SCFI)",
-     "valor": ["Diversificação de receita — recorrente e de baixo custo.",
-               "Sobre a estrutura de instituição financeira que você já tem.",
-               "Sem investir em tecnologia nem montar uma equipe de fundos.",
-               "Operação documentada e risco controlado, com o seu compliance no controle."],
-     "partida": "Você já é instituição financeira com capital. Estruturamos com você a habilitação para administração de fundos e o caminho regulatório — dossiês prontos."},
+     "titulo": "A porta que abriu em 2025 — e quase\nninguém percebeu.",
+     "sub": "Administração fiduciária de fundos — proposta de parceria para a sua financeira.",
+     "proposta": ("Desde 1º/9/2025, a Resolução CMN 5.237 permite às financeiras (SCFI) administrar carteiras de "
+                  "valores mobiliários (art. 6º, p.u., IV) — uma linha de receita nova que o mercado ainda não explorou. "
+                  "Vocês entram com a instituição; a Argus entra com a tecnologia e a operação como prestadora de serviço. "
+                  "Receita dividida 50/50, sem investir em tecnologia nem contratar equipe."),
+     "porque_titulo": "Por que faz sentido para a sua financeira",
+     "valor": ["Ser a PRIMEIRA financeira da sua praça a monetizar a Res. 5.237 — vantagem de pioneiro real.",
+               "Diversificação recorrente (% do PL) descorrelacionada do ciclo de crédito.",
+               "Custódia dos fundos terceirizada com custodiante autorizado — nós estruturamos, vocês não montam nada.",
+               "Por ser instituição BCB, vocês podem contratar assessores de investimento para distribuir — canal de captação pronto."],
+     "partida": "O objeto já comporta (Res. 5.237); falta o registro de administrador fiduciário na CVM — ~60 dias, com o dossiê que entregamos pronto para protocolar."},
 ]
 
 if __name__ == "__main__":
