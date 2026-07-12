@@ -6,7 +6,7 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS passivos, fip_distribuicoes, fip_avaliacoes, fip_participacoes, fip_chamada_lp, fip_chamadas, fip_lps,
-  derivativos_ajustes, derivativos, subclasses, precos_mercado, posicao_custodiante, ordens_passivo, cotista_contas, ticket_mensagens, tickets, solicitacoes_cadastro_ativo, ativos_catalogo, sim_estado,
+  derivativos_ajustes, derivativos, subclasses, precos_mercado, posicao_custodiante, ordens_passivo, cotista_contas_bancarias, cotista_contas, ticket_mensagens, tickets, solicitacoes_cadastro_ativo, ativos_catalogo, sim_estado,
   eventos_fiscais, auditoria, onboarding_etapas, comentarios, documentos, chamados, comunicados,
   enquadramento_eventos, enquadramento_regras, repasses, partes_relacionadas, alertas_fraude,
   conciliacao, log_processamento, processamento, previsao_caixa, movimentacoes, mov_cotistas,
@@ -375,6 +375,20 @@ CREATE TABLE cotista_contas (
   INDEX idx_cc_doc (documento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Contas bancárias da CONTA de acesso (pode haver várias, todas da MESMA titularidade);
+-- a PRINCIPAL é espelhada em cotistas.banco/agencia/conta (compat admin/custódia).
+CREATE TABLE cotista_contas_bancarias (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  conta_id INT NOT NULL,              -- cotista_contas.id
+  banco VARCHAR(60) NOT NULL,
+  agencia VARCHAR(10) NULL,
+  conta VARCHAR(20) NOT NULL,
+  pix_chave VARCHAR(80) NULL,
+  principal TINYINT DEFAULT 0,
+  criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_ccb (conta_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Ordens do PORTAL do cotista (porta de entrada do dinheiro): aplicação por TED/Pix de conta
 -- própria (Pix com txid dinâmico) e resgate para a conta cadastrada. Espelha ensure_ordens_passivo.
 CREATE TABLE ordens_passivo (
@@ -391,6 +405,7 @@ CREATE TABLE ordens_passivo (
                                       -- Resgate:   Solicitado → Pago | Cancelada
   motivo VARCHAR(300) NULL,
   mov_ref VARCHAR(60) NULL,
+  conta_destino VARCHAR(160) NULL,    -- resgate: snapshot da conta de destino escolhida
   criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
   confirmado_por VARCHAR(100) NULL,
   confirmado_em DATETIME NULL,

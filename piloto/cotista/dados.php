@@ -7,30 +7,53 @@ require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
 $conta = exigir_conta_cotista($pdo);
+ensure_ordens_passivo($pdo);   // DDL fora de transação (tabela de contas bancárias)
 $vinculos = fundos_da_conta($pdo, (int)$conta['id']);
+$cid = (int)$conta['id'];
 
 $msg = ''; $msgTipo = 'success';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
     $_POST = []; $msg = 'Requisição inválida (proteção CSRF). Recarregue a página.'; $msgTipo = 'danger';
 }
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['salvar_banco'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['add_conta'])) {
     $banco = trim($_POST['banco'] ?? ''); $ag = trim($_POST['agencia'] ?? '');
     $cc = trim($_POST['conta'] ?? ''); $pix = trim($_POST['pix_chave'] ?? '');
     if ($banco === '' || $cc === '') {
         $msg = 'Informe ao menos o banco e a conta.'; $msgTipo = 'warning';
-    } elseif (!$vinculos) {
-        $msg = 'Sua conta ainda não tem posições vinculadas.'; $msgTipo = 'warning';
     } else {
-        // grava em TODOS os vínculos da conta (uma conta bancária por CPF, como na prática)
-        $pdo->prepare('UPDATE cotistas SET banco=?, agencia=?, conta=?, pix_chave=? WHERE conta_id=?')
-            ->execute([$banco, $ag, $cc, $pix, (int)$conta['id']]);
-        registrar_auditoria($pdo, 'cotista_conta_bancaria_alterada', ['entidade' => 'cotista_conta',
-            'entidade_id' => (int)$conta['id'],
-            'detalhe' => "Conta bancária alterada pelo portal: $banco ag. $ag c/c $cc" . ($pix ? " · Pix $pix" : '')]);
-        $msg = 'Conta bancária atualizada. Na prática, a alteração passa por validação da administradora ' .
-               '(a titularidade é conferida no primeiro resgate).';
-        $vinculos = fundos_da_conta($pdo, (int)$conta['id']);   // recarrega
+        $temAlguma = (bool)contas_bancarias_da_conta($pdo, $cid);
+        $principal = (!$temAlguma || !empty($_POST['principal'])) ? 1 : 0;
+        if ($principal) $pdo->prepare('UPDATE cotista_contas_bancarias SET principal=0 WHERE conta_id=?')->execute([$cid]);
+        $pdo->prepare('INSERT INTO cotista_contas_bancarias (conta_id, banco, agencia, conta, pix_chave, principal)
+                       VALUES (?,?,?,?,?,?)')
+            ->execute([$cid, $banco, $ag, $cc, $pix, $principal]);
+        espelhar_conta_principal($pdo, $cid);
+        registrar_auditoria($pdo, 'cotista_conta_bancaria_incluida', ['entidade' => 'cotista_conta', 'entidade_id' => $cid,
+            'detalhe' => "Conta bancária incluída pelo portal: $banco ag. $ag c/c $cc" . ($principal ? ' (principal)' : '')]);
+        $msg = 'Conta bancária incluída. Na prática, novas contas passam por validação da administradora ' .
+               '(a titularidade é conferida antes do primeiro pagamento).';
     }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['tornar_principal'])) {
+    $id = (int)$_POST['tornar_principal'];
+    $pdo->prepare('UPDATE cotista_contas_bancarias SET principal=0 WHERE conta_id=?')->execute([$cid]);
+    $pdo->prepare('UPDATE cotista_contas_bancarias SET principal=1 WHERE id=? AND conta_id=?')->execute([$id, $cid]);
+    espelhar_conta_principal($pdo, $cid);
+    registrar_auditoria($pdo, 'cotista_conta_bancaria_principal', ['entidade' => 'cotista_conta', 'entidade_id' => $cid,
+        'detalhe' => "Conta bancária #$id definida como principal pelo portal"]);
+    $msg = 'Conta principal atualizada.';
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['excluir_conta'])) {
+    $id = (int)$_POST['excluir_conta'];
+    $pdo->prepare('DELETE FROM cotista_contas_bancarias WHERE id=? AND conta_id=?')->execute([$id, $cid]);
+    // se a principal saiu, promove a mais antiga restante
+    $st = $pdo->prepare('SELECT id FROM cotista_contas_bancarias WHERE conta_id=? AND principal=1');
+    $st->execute([$cid]);
+    if (!$st->fetch()) {
+        $pdo->prepare('UPDATE cotista_contas_bancarias SET principal=1 WHERE conta_id=? ORDER BY id LIMIT 1')->execute([$cid]);
+    }
+    espelhar_conta_principal($pdo, $cid);
+    registrar_auditoria($pdo, 'cotista_conta_bancaria_excluida', ['entidade' => 'cotista_conta', 'entidade_id' => $cid,
+        'detalhe' => "Conta bancária #$id excluída pelo portal"]);
+    $msg = 'Conta bancária excluída.'; $msgTipo = 'secondary';
 } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['trocar_senha'])) {
     $atual = $_POST['senha_atual'] ?? ''; $s1 = $_POST['senha_nova'] ?? ''; $s2 = $_POST['senha_nova2'] ?? '';
     [$senhaOk, $senhaMsg] = senha_valida($s1);
@@ -49,8 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['salvar_banco'])) {
     }
 }
 
-// dados bancários atuais (iguais em todos os vínculos; pega do primeiro)
-$bk = $vinculos[0] ?? null;
+// contas bancárias cadastradas (a principal é o destino padrão dos resgates)
+$contasBanc = contas_bancarias_da_conta($pdo, $cid);
 ?><!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -99,26 +122,63 @@ $bk = $vinculos[0] ?? null;
       </div>
 
       <div class="card">
-        <div class="card-header"><i class="bi bi-bank me-1"></i> Conta bancária cadastrada</div>
+        <div class="card-header"><i class="bi bi-bank me-1"></i> Contas bancárias cadastradas</div>
         <div class="card-body">
-          <p class="text-muted" style="font-size:.74rem">Conta <b>da sua titularidade</b> (mesmo CPF): é o destino
-            obrigatório dos resgates e a origem esperada das aplicações. Vale para todos os seus fundos.</p>
-          <form method="post">
-            <?= csrf_campo() ?><input type="hidden" name="salvar_banco" value="1">
+          <p class="text-muted" style="font-size:.74rem">Você pode manter <b>mais de uma conta</b>, todas
+            <b>da sua titularidade</b> (mesmo CPF). A <b>principal</b> é o destino padrão dos resgates e a origem
+            esperada das aplicações; na hora do resgate dá para escolher qualquer uma delas.</p>
+
+          <?php if ($contasBanc): ?>
+          <table class="table table-sm align-middle mb-3" style="font-size:.78rem">
+            <tbody>
+            <?php foreach ($contasBanc as $cb): ?>
+              <tr>
+                <td>
+                  <b><?= e_html($cb['banco']) ?></b> · ag. <?= e_html($cb['agencia']) ?> · c/c <?= e_html($cb['conta']) ?>
+                  <?= $cb['pix_chave'] ? '<br><span class="text-muted" style="font-size:.7rem">Pix: ' . e_html($cb['pix_chave']) . '</span>' : '' ?>
+                </td>
+                <td class="text-end" style="min-width:170px;white-space:nowrap">
+                  <?php if ($cb['principal']): ?>
+                    <?= badge('Principal', 'success') ?>
+                  <?php else: ?>
+                    <form method="post" class="d-inline"><?= csrf_campo() ?>
+                      <input type="hidden" name="tornar_principal" value="<?= (int)$cb['id'] ?>">
+                      <button class="btn btn-sm btn-outline-secondary" style="font-size:.7rem">Tornar principal</button>
+                    </form>
+                  <?php endif; ?>
+                  <form method="post" class="d-inline" onsubmit="return confirm('Excluir esta conta bancária?')"><?= csrf_campo() ?>
+                    <input type="hidden" name="excluir_conta" value="<?= (int)$cb['id'] ?>">
+                    <button class="btn btn-sm btn-outline-danger" style="font-size:.7rem"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+            </tbody>
+          </table>
+          <?php else: ?>
+            <p class="text-muted" style="font-size:.8rem">Nenhuma conta cadastrada ainda.</p>
+          <?php endif; ?>
+
+          <form method="post" class="border-top pt-2">
+            <?= csrf_campo() ?><input type="hidden" name="add_conta" value="1">
             <div class="row g-2">
               <div class="col-7"><label class="form-label" style="font-size:.76rem">Banco</label>
-                <input class="form-control form-control-sm" name="banco" value="<?= e_html($bk['banco'] ?? '') ?>" placeholder="Banco Exemplo S.A. (000)"></div>
+                <input class="form-control form-control-sm" name="banco" placeholder="Banco Exemplo S.A. (000)"></div>
               <div class="col-5"><label class="form-label" style="font-size:.76rem">Agência</label>
-                <input class="form-control form-control-sm" name="agencia" value="<?= e_html($bk['agencia'] ?? '') ?>" placeholder="0001"></div>
+                <input class="form-control form-control-sm" name="agencia" placeholder="0001"></div>
               <div class="col-6"><label class="form-label" style="font-size:.76rem">Conta</label>
-                <input class="form-control form-control-sm" name="conta" value="<?= e_html($bk['conta'] ?? '') ?>" placeholder="12345-6"></div>
+                <input class="form-control form-control-sm" name="conta" placeholder="12345-6"></div>
               <div class="col-6"><label class="form-label" style="font-size:.76rem">Chave Pix (opcional)</label>
-                <input class="form-control form-control-sm" name="pix_chave" value="<?= e_html($bk['pix_chave'] ?? '') ?>" placeholder="CPF, e-mail ou aleatória"></div>
+                <input class="form-control form-control-sm" name="pix_chave" placeholder="CPF, e-mail ou aleatória"></div>
             </div>
-            <button class="btn btn-dark btn-sm w-100 mt-3" <?= $vinculos ? '' : 'disabled' ?>><i class="bi bi-check2 me-1"></i>Salvar conta bancária</button>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" name="principal" id="ccb-principal" value="1">
+              <label class="form-check-label" for="ccb-principal" style="font-size:.74rem">Definir como principal</label>
+            </div>
+            <button class="btn btn-dark btn-sm w-100 mt-2"><i class="bi bi-plus-circle me-1"></i>Adicionar conta bancária</button>
           </form>
-          <p class="text-muted mb-0 mt-2" style="font-size:.7rem">A alteração fica sujeita à validação da administradora
-            (prevenção à lavagem — o resgate nunca vai para conta de terceiro). Tudo registrado em auditoria.</p>
+          <p class="text-muted mb-0 mt-2" style="font-size:.7rem">Inclusões e alterações ficam sujeitas à validação da
+            administradora (prevenção à lavagem — o resgate nunca vai para conta de terceiro). Tudo registrado em auditoria.</p>
         </div>
       </div>
     </div>

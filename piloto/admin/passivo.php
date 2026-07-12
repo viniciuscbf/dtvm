@@ -121,7 +121,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $fundo) {
                                  WHERE o.id = ? AND o.fundo_id = ? AND o.status = 'Solicitado' AND o.tipo = 'Resgate'");
             $st->execute([(int)$_POST['ordem_pagar_resgate'], $fid]);
             if ($o = $st->fetch()) {
-                if (empty($o['banco']) || empty($o['conta'])) {
+                // destino: snapshot escolhido na ordem; fallback = conta cadastrada (principal)
+                $destino = $o['conta_destino'] ?? null;
+                if (!$destino && !empty($o['banco']) && !empty($o['conta'])) {
+                    $destino = "{$o['banco']} ag. {$o['agencia']} c/c {$o['conta']}";
+                }
+                if (!$destino) {
                     $msg = 'Cotista sem conta cadastrada — o resgate só pode ser pago em conta de mesma titularidade.'; $msgTipo = 'danger';
                 } else {
                     $r = passivo_resgatar($pdo, $fid, (int)$o['cotista_id'], (float)$o['valor'], $dataRef);
@@ -131,13 +136,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $fundo) {
                     $pdo->prepare("INSERT INTO mensagens_spb (central, codigo, fundo_id, referencia, descricao, valor, status, recebida_em, processada_em, processada_por)
                                    VALUES ('STR','STR0008',?,?,?,?,'Processada',NOW(),NOW(),'Rotina automática')")
                         ->execute([$fid, 'RESG-' . $o['id'],
-                                   "IF requisita transferência entre contas de clientes (TED) — resgate líquido p/ conta cadastrada de {$o['nome']} ({$o['banco']} ag. {$o['agencia']} c/c {$o['conta']})",
+                                   "IF requisita transferência entre contas de clientes (TED) — resgate líquido p/ conta de titularidade de {$o['nome']} ($destino)",
                                    (float)$r['liquido']]);
                     registrar_auditoria($pdo, 'ordem_resgate_pago', ['entidade' => 'ordem_passivo', 'entidade_id' => $o['id'], 'fundo_id' => $fid,
-                        'detalhe' => 'Resgate bruto ' . moeda($r['bruto']) . ' → líquido ' . moeda($r['liquido']) . " pago na conta cadastrada ({$o['nome']})"]);
+                        'detalhe' => 'Resgate bruto ' . moeda($r['bruto']) . ' → líquido ' . moeda($r['liquido']) . " pago p/ $destino ({$o['nome']})"]);
                     $msg = 'Resgate processado: bruto ' . moeda($r['bruto']) . ' − IR ' . moeda($r['ir']) .
                            ($r['iof'] > 0 ? ' − IOF ' . moeda($r['iof']) : '') . ' → ' . moeda($r['liquido']) .
-                           ' pago via TED na conta cadastrada.';
+                           " pago via TED ($destino).";
                 }
             }
         } elseif (!empty($_POST['come_cotas'])) {

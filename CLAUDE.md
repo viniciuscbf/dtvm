@@ -61,7 +61,7 @@ dtvm/
 - `marcacao.php` — marcação de RF por **indexador** (% CDI, CDI+spread, IPCA+, pré), cota de fundo pelo master, RV; fontes ANBIMA/B3/Comitê.
 - `derivativos.php` — DI1/DAP com **ajuste diário** liquidado no caixa.
 - `fip.php` — Private Equity: LPs, chamadas de capital, participações, laudo (valor justo nível 3), waterfall, distribuições.
-- `passivo.php` — passivo do cotista, come-cotas/IR/IOF (Lei 14.754).
+- `passivo.php` — passivo do cotista, come-cotas/IR/IOF (Lei 14.754). Ordens do portal (`ordens_passivo`, com `conta_destino` snapshot), **múltiplas contas bancárias** (`cotista_contas_bancarias`, principal espelhada em `cotistas.banco/*` via `espelhar_conta_principal`), `resgates_pendentes` (bloqueia saldo de resgates 'Solicitado'), `minimos_do_fundo` (lê `fundos.reg_dados`: aplicacao_minima/movimentacao_minima/saldo_minimo; 0 = sem mínimo — o portal aplica os mínimos DO REGULAMENTO, nada hardcoded).
 - `contabilidade.php` — partidas dobradas, diário/razão, **balancete (Ativo = Passivo + PL)**.
 - `equipe.php` — **modelo de time do gestor**: `fundo_membros` (papel principal/membro, status, `permissoes` JSON), `account_id`, convites (aceitar/recusar), `transferir_principal`, permissões (`perms_no_fundo`/`eh_principal`/`pode`/`exigir_permissao`), **reset de senha simulado** (`criar_reset_senha`/`redefinir_senha`). `membership()` **materializa `ensure_equipe` uma vez por request** (migra vínculos legados → funciona logo após reset).
 - `batch.php` — **fechamento resiliente por fundo**: `processar_fundos()` (isolado por fundo, idempotente, trava de validação), catálogo de erros explicados, **consolidação de erros iguais**; grava em `processamento_batch`. Página: `admin/batch.php`.

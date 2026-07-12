@@ -126,3 +126,20 @@ O acesso por token foi aposentado. O portal agora funciona como uma plataforma r
   Dúvidas (chamados presos à conta) · Meus dados (conta bancária auditada + troca de senha).
 - No piloto tudo é simulado (pagamentos, validações); em produção entrariam confirmação de e-mail,
   2FA e validação de conta bancária por micro-depósito/callback.
+
+## Ajustes (11/07/2026, tarde) — bloqueio de saldo, múltiplas contas e mínimos do regulamento
+
+- **Bug corrigido (apontado pelo usuário)**: era possível solicitar vários resgates do mesmo saldo —
+  o portal validava cada ordem isoladamente. Agora o valor de resgates **'Solicitado' fica bloqueado**
+  (`resgates_pendentes`) e o portal mostra "saldo disponível = cotas × cota − bloqueado". Cancelar
+  libera. A baixa efetiva das cotas continua acontecendo só no pagamento pela administradora
+  (cotização real — é assim na prática; o que faltava era o bloqueio da fila).
+- **Múltiplas contas bancárias**: tabela `cotista_contas_bancarias` (N por conta de acesso, todas da
+  mesma titularidade). Gestão em Meus dados (adicionar/principal/excluir, auditado); a PRINCIPAL é
+  espelhada em `cotistas.banco/*` (admin/custódia); no resgate o cotista **escolhe a conta** e a ordem
+  grava o snapshot (`conta_destino`) — o admin paga nela.
+- **Mínimos**: nada de mínimo fixo no portal. Valem os do REGULAMENTO do fundo (`reg_dados`:
+  `aplicacao_minima`, `movimentacao_minima`, `saldo_minimo` — campos que o gerador já tinha, default
+  R$ 0 = sem mínimo, como o usuário prefere). Regras: 1ª aplicação usa a inicial mínima; demais usam a
+  movimentação mínima; resgate abaixo da movimentação mínima só se for TOTAL; resgate que deixaria o
+  saldo abaixo do mínimo de permanência é barrado com sugestão de resgate total.

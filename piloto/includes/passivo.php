@@ -254,6 +254,69 @@ function ensure_ordens_passivo(PDO $pdo): void {
     ddl_portavel($pdo, "ALTER TABLE cotistas ADD COLUMN IF NOT EXISTS pix_chave VARCHAR(80) NULL");
     // token do portal pode ser vinculado a UM cotista (habilita movimentação self-service)
     ddl_portavel($pdo, "ALTER TABLE tokens_acesso ADD COLUMN IF NOT EXISTS cotista_id INT NULL");
+    // múltiplas contas bancárias por CONTA de acesso (todas da MESMA titularidade — o CPF é o da
+    // conta); a PRINCIPAL é espelhada em cotistas.banco/agencia/conta (admin/custódia leem de lá)
+    $pdo->exec("CREATE TABLE IF NOT EXISTS cotista_contas_bancarias (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        conta_id INT NOT NULL,              -- cotista_contas.id
+        banco VARCHAR(60) NOT NULL,
+        agencia VARCHAR(10) NULL,
+        conta VARCHAR(20) NOT NULL,
+        pix_chave VARCHAR(80) NULL,
+        principal TINYINT DEFAULT 0,
+        criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_ccb (conta_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    // resgate grava o SNAPSHOT da conta de destino escolhida (imutável mesmo se o cadastro mudar)
+    ddl_portavel($pdo, "ALTER TABLE ordens_passivo ADD COLUMN IF NOT EXISTS conta_destino VARCHAR(160) NULL");
+}
+
+/** Contas bancárias da CONTA de acesso; na 1ª chamada importa a conta única da era anterior (cotistas.banco). */
+function contas_bancarias_da_conta(PDO $pdo, int $contaId): array {
+    $st = $pdo->prepare('SELECT * FROM cotista_contas_bancarias WHERE conta_id = ? ORDER BY principal DESC, id');
+    $st->execute([$contaId]);
+    $rows = $st->fetchAll();
+    if (!$rows) {
+        $st = $pdo->prepare("SELECT banco, agencia, conta, pix_chave FROM cotistas
+                             WHERE conta_id = ? AND banco IS NOT NULL AND banco <> '' LIMIT 1");
+        $st->execute([$contaId]);
+        if ($v = $st->fetch()) {
+            $pdo->prepare('INSERT INTO cotista_contas_bancarias (conta_id, banco, agencia, conta, pix_chave, principal)
+                           VALUES (?,?,?,?,?,1)')
+                ->execute([$contaId, $v['banco'], $v['agencia'], $v['conta'], $v['pix_chave']]);
+            return contas_bancarias_da_conta($pdo, $contaId);
+        }
+    }
+    return $rows;
+}
+
+/** Espelha a conta PRINCIPAL nos vínculos (cotistas.*) — compatibilidade com admin/custódia. */
+function espelhar_conta_principal(PDO $pdo, int $contaId): void {
+    $st = $pdo->prepare('SELECT * FROM cotista_contas_bancarias WHERE conta_id = ? AND principal = 1 LIMIT 1');
+    $st->execute([$contaId]);
+    $p = $st->fetch() ?: null;
+    $pdo->prepare('UPDATE cotistas SET banco=?, agencia=?, conta=?, pix_chave=? WHERE conta_id=?')
+        ->execute([$p['banco'] ?? null, $p['agencia'] ?? null, $p['conta'] ?? null, $p['pix_chave'] ?? null, $contaId]);
+}
+
+/** Valor bruto BLOQUEADO em resgates ainda não pagos ('Solicitado') — desconta do saldo disponível. */
+function resgates_pendentes(PDO $pdo, int $cotistaId): float {
+    $st = $pdo->prepare("SELECT COALESCE(SUM(valor),0) FROM ordens_passivo
+                         WHERE cotista_id = ? AND tipo = 'Resgate' AND status = 'Solicitado'");
+    $st->execute([$cotistaId]);
+    return (float)$st->fetchColumn();
+}
+
+/** Mínimos definidos no REGULAMENTO do fundo (reg_dados); 0 = o regulamento não fixa mínimo. */
+function minimos_do_fundo(array $fundo): array {
+    $d = [];
+    if (!empty($fundo['reg_dados'])) {
+        $j = json_decode((string)$fundo['reg_dados'], true);
+        if (is_array($j)) $d = $j;
+    }
+    return ['aplicacao'    => (float)($d['aplicacao_minima']    ?? 0),
+            'movimentacao' => (float)($d['movimentacao_minima'] ?? 0),
+            'saldo'        => (float)($d['saldo_minimo']        ?? 0)];
 }
 
 /** Cria a ordem de APLICAÇÃO (status 'Aguardando pagamento'; Pix ganha txid). */
@@ -266,10 +329,10 @@ function ordem_criar_aplicacao(PDO $pdo, int $fundoId, int $cotistaId, float $va
     return ['id' => (int)$pdo->lastInsertId(), 'txid' => $txid, 'metodo' => $metodo];
 }
 
-/** Cria a ordem de RESGATE (status 'Solicitado'; destino = conta cadastrada). */
-function ordem_criar_resgate(PDO $pdo, int $fundoId, int $cotistaId, float $valorBruto): int {
-    $pdo->prepare("INSERT INTO ordens_passivo (fundo_id, cotista_id, tipo, valor, status)
-                   VALUES (?,?,?,?, 'Solicitado')")
-        ->execute([$fundoId, $cotistaId, 'Resgate', $valorBruto]);
+/** Cria a ordem de RESGATE (status 'Solicitado'; conta_destino = snapshot da conta escolhida). */
+function ordem_criar_resgate(PDO $pdo, int $fundoId, int $cotistaId, float $valorBruto, ?string $contaDestino = null): int {
+    $pdo->prepare("INSERT INTO ordens_passivo (fundo_id, cotista_id, tipo, valor, status, conta_destino)
+                   VALUES (?,?,?,?, 'Solicitado', ?)")
+        ->execute([$fundoId, $cotistaId, 'Resgate', $valorBruto, $contaDestino]);
     return (int)$pdo->lastInsertId();
 }

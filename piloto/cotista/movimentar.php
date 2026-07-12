@@ -27,6 +27,14 @@ if ($cotista) {
     $fundo = $st->fetch();
 }
 
+// mínimos do REGULAMENTO do fundo (0 = sem mínimo), contas bancárias e saldo disponível
+$minimos = $fundo ? minimos_do_fundo($fundo) : ['aplicacao' => 0.0, 'movimentacao' => 0.0, 'saldo' => 0.0];
+$contasBanc = $cotista ? contas_bancarias_da_conta($pdo, (int)$conta['id']) : [];
+$cotaAtual = $fundo ? (float)($fundo['cota_atual'] ?: 1) : 1.0;
+$saldoEstimado = $cotista ? (float)$cotista['cotas'] * $cotaAtual : 0.0;
+$pendente = $cotista ? resgates_pendentes($pdo, (int)$cotista['id']) : 0.0;
+$disponivel = max(0.0, $saldoEstimado - $pendente);
+
 $msg = ''; $msgTipo = 'success'; $ordemNova = null;
 
 if ($cotista && $_SERVER['REQUEST_METHOD'] === 'POST' && !csrf_validar()) {
@@ -37,8 +45,12 @@ if ($cotista && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['aplicar'])) {
         $valor = (float)str_replace(['.', ','], ['', '.'], $_POST['valor'] ?? '0');
         $metodo = ($_POST['metodo'] ?? 'Pix') === 'TED' ? 'TED' : 'Pix';
-        if ($valor < 100) {
-            $msg = 'Valor mínimo de aplicação: R$ 100,00.'; $msgTipo = 'warning';
+        // 1ª aplicação usa a aplicação inicial mínima do regulamento; as demais, a movimentação mínima
+        $minAplic = (float)$cotista['cotas'] > 0 ? $minimos['movimentacao'] : $minimos['aplicacao'];
+        if ($valor <= 0) {
+            $msg = 'Informe um valor de aplicação válido.'; $msgTipo = 'warning';
+        } elseif ($valor < $minAplic) {
+            $msg = 'O regulamento deste fundo fixa mínimo de ' . moeda($minAplic) . ' para esta operação.'; $msgTipo = 'warning';
         } else {
             $r = ordem_criar_aplicacao($pdo, $fid, $cid, $valor, $metodo);
             $ordemNova = $r['id'];
@@ -58,24 +70,41 @@ if ($cotista && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $msgTipo = !empty($_POST['terceiro']) ? 'warning' : 'success';
     } elseif (!empty($_POST['resgatar'])) {
         $valor = (float)str_replace(['.', ','], ['', '.'], $_POST['valor_resgate'] ?? '0');
-        $cotaAtual = (float)($fundo['cota_atual'] ?: 1);
-        $saldoEstimado = (float)$cotista['cotas'] * $cotaAtual;
-        if (empty($cotista['banco']) || empty($cotista['conta'])) {
-            $msg = 'Cadastre uma conta bancária de sua titularidade antes de resgatar (fale com a administradora).'; $msgTipo = 'warning';
-        } elseif ($valor < 100) {
-            $msg = 'Valor mínimo de resgate: R$ 100,00.'; $msgTipo = 'warning';
-        } elseif ($valor > $saldoEstimado) {
-            $msg = 'Resgate maior que o saldo estimado (' . moeda($saldoEstimado) . ').'; $msgTipo = 'warning';
+        // conta de destino escolhida (entre as cadastradas — todas da mesma titularidade)
+        $ccb = null;
+        foreach ($contasBanc as $cb) if ((int)$cb['id'] === (int)($_POST['conta_banc_id'] ?? 0)) $ccb = $cb;
+        if (!$ccb && $contasBanc) $ccb = $contasBanc[0];   // default: principal
+        $resgateTotal = abs($valor - $disponivel) < 0.005;
+        $saldoRestante = $disponivel - $valor;
+        if (!$ccb) {
+            $msg = 'Cadastre uma conta bancária de sua titularidade em "Meus dados" antes de resgatar.'; $msgTipo = 'warning';
+        } elseif ($valor <= 0) {
+            $msg = 'Informe um valor de resgate válido.'; $msgTipo = 'warning';
+        } elseif ($valor > $disponivel + 0.005) {
+            $msg = 'Resgate maior que o saldo disponível (' . moeda($disponivel) . ')' .
+                   ($pendente > 0 ? ' — ' . moeda($pendente) . ' já estão bloqueados em resgates pendentes.' : '.');
+            $msgTipo = 'warning';
+        } elseif (!$resgateTotal && $valor < $minimos['movimentacao']) {
+            $msg = 'O regulamento fixa movimentação mínima de ' . moeda($minimos['movimentacao']) . ' (exceto resgate total).'; $msgTipo = 'warning';
+        } elseif (!$resgateTotal && $minimos['saldo'] > 0 && $saldoRestante < $minimos['saldo']) {
+            $msg = 'Este resgate deixaria o saldo abaixo do mínimo de permanência do regulamento (' . moeda($minimos['saldo']) .
+                   ') — reduza o valor ou solicite o resgate total (' . moeda($disponivel) . ').'; $msgTipo = 'warning';
         } else {
-            $oid = ordem_criar_resgate($pdo, $fid, (int)$cotista['id'], $valor);
+            $destino = $ccb['banco'] . ' · ag. ' . $ccb['agencia'] . ' · c/c ' . $ccb['conta'];
+            $oid = ordem_criar_resgate($pdo, $fid, (int)$cotista['id'], $valor, $destino);
             registrar_auditoria($pdo, 'ordem_resgate_criada', ['entidade' => 'ordem_passivo', 'entidade_id' => $oid,
-                'fundo_id' => $fid, 'detalhe' => 'Resgate de ' . moeda($valor) . ' solicitado pelo portal']);
-            $msg = 'Resgate solicitado — será pago líquido de IR/IOF na sua conta cadastrada após a cotização.';
+                'fundo_id' => $fid, 'detalhe' => 'Resgate de ' . moeda($valor) . " solicitado pelo portal → $destino"]);
+            $msg = 'Resgate solicitado — o valor foi bloqueado do seu saldo disponível e será pago líquido de IR/IOF em ' . $destino . '.';
+            $pendente = resgates_pendentes($pdo, (int)$cotista['id']);
+            $disponivel = max(0.0, $saldoEstimado - $pendente);
         }
     } elseif (!empty($_POST['cancelar'])) {
         $pdo->prepare("UPDATE ordens_passivo SET status='Cancelada' WHERE id=? AND cotista_id=? AND status IN ('Aguardando pagamento','Solicitado')")
             ->execute([(int)$_POST['cancelar'], $cid]);
         $msg = 'Ordem cancelada.'; $msgTipo = 'secondary';
+        // cancelamento de resgate libera o valor bloqueado
+        $pendente = resgates_pendentes($pdo, $cid);
+        $disponivel = max(0.0, $saldoEstimado - $pendente);
     }
 }
 
@@ -85,7 +114,6 @@ if ($cotista) {
     $st->execute([(int)$cotista['id']]);
     $ordens = $st->fetchAll();
 }
-$cotaAtual = $fundo ? (float)($fundo['cota_atual'] ?: 1) : 1.0;
 ?><!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -143,8 +171,10 @@ $cotaAtual = $fundo ? (float)($fundo['cota_atual'] ?: 1) : 1.0;
         <div class="card-header"><i class="bi bi-plus-circle me-1"></i> Aplicar</div>
         <div class="card-body">
           <form method="post">
+            <?php $minAplicUi = (float)$cotista['cotas'] > 0 ? $minimos['movimentacao'] : $minimos['aplicacao']; ?>
             <?= csrf_campo() ?><input type="hidden" name="aplicar" value="1"><input type="hidden" name="fundo_id" value="<?= (int)$fid ?>">
-            <label class="form-label" style="font-size:.78rem">Valor (R$) — mínimo R$ 100</label>
+            <label class="form-label" style="font-size:.78rem">Valor (R$)<?= $minAplicUi > 0
+                ? ' — mínimo do regulamento: ' . moeda($minAplicUi) : ' — este fundo não fixa aplicação mínima' ?></label>
             <input class="form-control form-control-sm mb-2" name="valor" placeholder="100.000,00" required>
             <label class="form-label" style="font-size:.78rem">Forma de pagamento</label>
             <div class="d-flex gap-3 mb-2" style="font-size:.85rem">
@@ -167,28 +197,34 @@ $cotaAtual = $fundo ? (float)($fundo['cota_atual'] ?: 1) : 1.0;
         <div class="card-header"><i class="bi bi-dash-circle me-1"></i> Resgatar</div>
         <div class="card-body">
           <div class="mb-2" style="font-size:.82rem">
-            Saldo estimado: <b><?= moeda((float)$cotista['cotas'] * $cotaAtual) ?></b>
-            <span class="text-muted">(<?= number_format((float)$cotista['cotas'], 2, ',', '.') ?> cotas × cota atual)</span>
+            Saldo disponível: <b><?= moeda($disponivel) ?></b>
+            <span class="text-muted">(<?= number_format((float)$cotista['cotas'], 2, ',', '.') ?> cotas × cota atual<?=
+              $pendente > 0 ? ' − ' . moeda($pendente) . ' bloqueados em resgates pendentes' : '' ?>)</span>
           </div>
           <form method="post">
             <?= csrf_campo() ?><input type="hidden" name="resgatar" value="1"><input type="hidden" name="fundo_id" value="<?= (int)$fid ?>">
-            <label class="form-label" style="font-size:.78rem">Valor bruto (R$)</label>
+            <label class="form-label" style="font-size:.78rem">Valor bruto (R$)<?= $minimos['movimentacao'] > 0
+                ? ' — mínimo ' . moeda($minimos['movimentacao']) . ' (exceto resgate total)' : '' ?></label>
             <input class="form-control form-control-sm mb-2" name="valor_resgate" placeholder="15.000,00" required>
-            <div class="border rounded p-2 mb-2" style="font-size:.76rem;background:var(--bs-light)">
-              <b>Conta de destino (cadastrada, mesma titularidade):</b><br>
-              <?php if (!empty($cotista['banco'])): ?>
-                <?= e_html($cotista['banco']) ?> · ag. <?= e_html($cotista['agencia']) ?> · c/c <?= e_html($cotista['conta']) ?>
-                <?= $cotista['pix_chave'] ? '<br>Pix: ' . e_html($cotista['pix_chave']) : '' ?>
-              <?php else: ?>
-                <span class="text-danger">nenhuma conta cadastrada — fale com a administradora</span>
-              <?php endif; ?>
-            </div>
+            <label class="form-label" style="font-size:.78rem">Conta de destino (mesma titularidade)</label>
+            <?php if ($contasBanc): ?>
+              <select name="conta_banc_id" class="form-select form-select-sm mb-2">
+                <?php foreach ($contasBanc as $cb): ?>
+                  <option value="<?= (int)$cb['id'] ?>"><?= e_html($cb['banco'] . ' · ag. ' . $cb['agencia'] . ' · c/c ' . $cb['conta']) ?><?= $cb['principal'] ? ' (principal)' : '' ?></option>
+                <?php endforeach; ?>
+              </select>
+            <?php else: ?>
+              <div class="border rounded p-2 mb-2" style="font-size:.76rem;background:var(--bs-light)">
+                <span class="text-danger">nenhuma conta cadastrada — cadastre em <a href="dados.php">Meus dados</a></span>
+              </div>
+            <?php endif; ?>
             <button class="btn btn-outline-dark btn-sm w-100"><i class="bi bi-send me-1"></i>Solicitar resgate</button>
           </form>
           <p class="text-muted mb-0 mt-2" style="font-size:.7rem">
-            O resgate é pago <b>exclusivamente</b> na conta cadastrada da sua titularidade, líquido de
-            <b>IOF</b> (aplicações com menos de 30 dias) e <b>IR</b> retidos na fonte. Trocar a conta cadastrada
-            exige validação com a administradora.</p>
+            O resgate é pago <b>exclusivamente</b> em conta cadastrada da sua titularidade, líquido de
+            <b>IOF</b> (aplicações com menos de 30 dias) e <b>IR</b> retidos na fonte. Ao solicitar, o valor
+            fica <b>bloqueado</b> do saldo disponível até o pagamento (ou cancelamento). Você pode manter
+            mais de uma conta em <a href="dados.php">Meus dados</a>.</p>
         </div>
       </div>
     </div>
@@ -226,7 +262,8 @@ $cotaAtual = $fundo ? (float)($fundo['cota_atual'] ?: 1) : 1.0;
                 <?php endif; ?>
                 <?= $o['pagador_doc'] ? '<br><span class="text-muted">pagador: ' . e_html($o['pagador_doc']) . '</span>' : '' ?>
               <?php else: ?>
-                p/ conta cadastrada<?= !empty($cotista['banco']) ? ' (' . e_html($cotista['banco']) . ')' : '' ?>
+                <?= !empty($o['conta_destino']) ? 'p/ ' . e_html($o['conta_destino'])
+                    : 'p/ conta cadastrada' . (!empty($cotista['banco']) ? ' (' . e_html($cotista['banco']) . ')' : '') ?>
               <?php endif; ?>
             </td>
             <td><?= badge($o['status'], ['Aguardando pagamento' => 'warning', 'Recebida' => 'info', 'Cotizada' => 'success',
