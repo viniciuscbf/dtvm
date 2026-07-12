@@ -2171,7 +2171,7 @@ INSERT INTO enquadramento_eventos (fundo_id, data_evento, regra, causa, situacao
 
 -- ---------- comunicados ----------
 INSERT INTO comunicados (fundo_id, titulo, mensagem, data_pub) VALUES
-(NULL, 'Portal do cotista por token no ar', 'O acesso do cotista agora é feito por token gerado pelo gestor, com nível de visão configurável (tempo real, 1 mês ou 3 meses de defasagem). Gere os acessos na aba Acessos de cotistas.', '2026-06-24'),
+(NULL, 'Novo portal do cotista no ar', 'O cotista agora tem conta própria (e-mail e senha) com posição consolidada de todos os fundos, aplicação e resgate pelo portal. A transparência da carteira é definida por fundo na aba Acessos & transparência.', '2026-06-24'),
 (NULL, 'Calendário de feriados de julho', 'Não haverá fechamento de cota no dia 09/07 (feriado estadual em SP). O batch do dia 10/07 consolidará os dois dias, como previsto no regulamento.', '2026-07-01'),
 (1, 'Reabertura para captação', 'O fundo Aurora RF Crédito Privado FI está reaberto para novas aplicações a partir de hoje. O limite de captação desta janela é de R$ 10 milhões.', '2026-06-29'),
 (1, 'Relatório mensal disponível', 'O relatório gerencial de junho/2026 já está disponível na área de documentos, com a carta do gestor e o detalhamento da carteira de crédito.', '2026-07-02');

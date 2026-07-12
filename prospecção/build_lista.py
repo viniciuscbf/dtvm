@@ -224,10 +224,14 @@ def elegibilidade(seg, adm_fiduc):
     is_cambio = "Câmbio" in seg or "Cambio" in seg
     is_banco = seg.startswith("Banco") or "Caixa" in seg
     if adm_fiduc: return "Já adm. fiduciário (excluir)"
-    # DTVM: excluída por DECISÃO ESTRATÉGICA (não jurídica) — já tem retaguarda/estrutura própria
-    # de mercado de capitais; agregamos pouco e o risco de ela absorver a ideia e dispensar a
-    # parceria é alto. (Juridicamente seria elegível às duas licenças — não importa: fora.)
-    if is_dtvm: return "DTVM (excluir — estrutura própria)"
+    # DTVM (revisão 2026-07-12, decisão do usuário): a exclusão em bloco valia para a DTVM que JÁ
+    # administra fundos (retaguarda própria -> absorve a ideia e dispensa). Mas DTVM que NÃO é
+    # administradora fiduciária (vive de distribuição/câmbio) é juridicamente o parceiro mais rico:
+    # elegível às DUAS licenças (Res. 21 adm + Res. 32 custódia — DTVM está no rol), pode contratar
+    # AAI, e não tem retaguarda de fundos para nos dispensar. Entra como elegível direto, com rótulo
+    # próprio — abordagem SEMPRE com NDA e divulgação em camadas (entende o produto rápido demais).
+    # As administradoras continuam excluídas pelo check adm_fiduc acima e pelo filtro de grupo.
+    if is_dtvm: return "Elegível direto (DTVM não-adm.)"
     if (is_banco and not is_cambio) or is_ctvm: return "Elegível direto (banco/CTVM)"
     # SCFI: Res. CMN 5.237/2025, art. 6º, p.u., IV — financeiras podem administrar carteiras
     # de valores mobiliários desde 1º/9/2025 (custódia continua fora — Res. CVM 32, art. 4º).
@@ -280,7 +284,7 @@ def escrever(master, alvoA, alvoB, path):
     ms = wb.create_sheet("Metodologia")
     for row in [
         ["Argus — Prospecção (build_lista.py)"], [""],
-        ["FILTRO INEGOCIÁVEL: não é administrador fiduciário. Excluídos do alvo: adm. fiduciário e DTVM."],
+        ["FILTRO INEGOCIÁVEL: não é administrador fiduciário (nem no grupo). DTVM só entra se NÃO administrar fundos."],
         ["CTVM entra; custodiante entra (coluna). Nada mais é filtrado — use os filtros do Excel."], [""],
         ["Coluna PERFIL rotula: Estatal/público, Estrangeiro, Captivo (montadora), Grande/varejo,"],
         ["  Câmbio, Fintech (SCD), Fintech (pagamentos), Financeira, Hipotecária, Independente nacional."],
@@ -288,7 +292,7 @@ def escrever(master, alvoA, alvoB, path):
         ["Coluna ELEGIBILIDADE (validada em fontes primárias — ver parceria_estrutura_juridica.md):"],
         ["  Elegível direto (banco/CTVM) = parceiro completo: adm. fiduciário (Res. 21 art. 1º §2º I) +"],
         ["    custódia própria possível (Res. 32 art. 4º) + distribuição (art. 33)."],
-        ["  DTVM (excluir — estrutura própria) = decisão ESTRATÉGICA: DTVM já tem retaguarda de mercado de"],
+        ["  DTVM não-adm. = elegível DIRETO às duas licenças (Res. 21 e 32); abordar com NDA — não tem retaguarda de mercado de"],
         ["    capitais; agregamos pouco e o risco de absorver a ideia e dispensar a parceria é alto."],
         ["  Elegível adm. fiduciário (SCFI, Res. 5.237) = financeiras PODEM administrar carteiras desde"],
         ["    1º/9/2025 (art. 6º p.u. IV) — custódia sempre terceirizada (fora do rol da Res. 32)."],
@@ -300,7 +304,7 @@ def escrever(master, alvoA, alvoB, path):
         ["  Exigível, Patrimônio Líquido, Captações, Carteira de Crédito e TVM. Lucro Líquido é informativo."],
         ["FILTRO DE PORTE nos Alvos: nenhuma métrica de ESCALA (todas, menos o Lucro) pode passar de R$ 400 mi;"],
         ["  qualquer valor acima disso EXCLUI a instituição do alvo. A coluna 'Maior escala' mostra a que manda."],
-        ["  Escala em branco (não reporta) = mantida, EXCETO se o Perfil já é grande (Estrangeiro/Grande/"],
+        ["  Escala em branco (não reporta solo ao IFDATA) = EXCLUÍDA: porte não confirmável; na prática"],
         ["  Estatal/Captivo) — aí o branco é lacuna de dado e a instituição sai (pega JP Morgan/BB/XP sem porte)."],
         ["  O Master (aba 1) mantém TODOS, sem teto, para referência."],
         ["Alvo A ordenado por Ativo Total (menor primeiro); em branco vai para o fim."], [""],
@@ -358,7 +362,11 @@ def main():
     def por_ativo(r): return (0, r["_at"]) if r["_at"] else (1, 0)   # com ativo primeiro, menor->maior
     def pequeno(r):
         if r["_esc"] > TETO: return False
-        if r["_esc"] == 0 and r["Perfil"] in BIG_PERFIS: return False
+        # Escala TODA em branco no IFDATA = instituição que não reporta solo. Na prática é quase
+        # sempre membro de conglomerado grande que o filtro por nome não pega (auditoria 12/07/2026:
+        # Bradescard, Kirton, Losango, Bandepe, Investcred, ABN Amro, Caixa Geral, Sofisa...).
+        # Porte não confirmável -> FORA do alvo; quem reporta solo — o alvo real — tem escala no IFDATA.
+        if r["_esc"] == 0: return False
         return True
     alvoA = sorted([r for r in master if r["_el"].startswith("Elegível direto") and not r["_grp"] and pequeno(r)], key=por_ativo)
     # Alvo B: financeiras (SCFI, elegíveis diretas à adm. desde a Res. 5.237/25) vêm PRIMEIRO;

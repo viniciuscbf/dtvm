@@ -15,7 +15,7 @@
 
 ## Slide 2 — O problema · "A regulação permite. O custo, não." (2 min)
 
-"A regulação permite abrir um fundo com R$ 1 milhão. O mercado, na prática, não. Um fundo pequeno carrega hoje algo entre R$ 50 e 70 mil por ano de custo fixo — gestão, administração, custódia, auditoria e taxa da CVM — quase todo independente do tamanho do fundo. Num fundo de R$ 1 milhão, isso é 5 a 7% do patrimônio por ano. Nenhum fundo sobrevive a isso. Por isso, na prática, só se abre um fundo a partir de uns R$ 10 milhões." *(fonte do custo: reportagem InfoMoney, 2023.)*
+"A regulação permite abrir um fundo com R$ 1 milhão. O mercado, na prática, não. Nos pisos das administradoras tradicionais, um fundo carrega de R$ 150 a 300 mil por ano de custo fixo — administração, custódia, controladoria, auditoria e taxa da CVM — quase todo independente do tamanho do fundo. Num fundo de R$ 1 milhão, isso passa de 15% do patrimônio por ano; mesmo nas casas mais enxutas, que saem por R$ 50 a 70 mil, ainda são 5 a 7%. Nenhum fundo sobrevive a isso. Por isso, na prática, só se abre um fundo a partir de uns R$ 20 milhões." *(pisos: regulamentos reais no benchmark; casas enxutas: InfoMoney, 2023.)*
 
 ## Slide 3 — Por que a lacuna existe (1,5 min)
 

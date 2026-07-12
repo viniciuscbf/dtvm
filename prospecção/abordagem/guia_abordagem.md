@@ -14,7 +14,8 @@ passar imagem amadora. A conversão vem de falar com a **pessoa certa**, com uma
 - Use `alvos_prioritarios.xlsx` (já filtrado: Alvo A, Perfil "Independente nacional", priorizando quem já é
   gestor/custodiante = mais perto do mundo de fundos).
 - Para cada um, ache o **decisor** (LinkedIn, site, o campo "Diretor" do cadastro CVM) e preencha a planilha.
-- E-mail **personalizado** (template D) + **one-pager** + toque no **LinkedIn**. Alto toque.
+- E-mail **personalizado** (template D) + tour do piloto + **one-pager**. Alto toque — mas tudo por e-mail
+  (a abordagem é 100% pelo canal profissional do projeto; sem contato por redes pessoais).
 
 **Camada 2 — o resto da lista.**
 - Campanha por e-mail **segmentada por tipo** (templates A/B/C), nunca um texto único.
@@ -31,11 +32,10 @@ passar imagem amadora. A conversão vem de falar com a **pessoa certa**, com uma
 
 ## Cadência
 
-1. **E-mail 1** (personalizado, pedido de 20 min) + one-pager.
-2. **LinkedIn** ao decisor, em paralelo (template F).
-3. Sem resposta em **~5 dias úteis** → **follow-up** (template E).
-4. Interesse → **reunião** (deck + protótipo). Meta: sair com a **reunião técnica** marcada.
-5. Registre tudo na planilha (Status / Última ação / Próximo passo).
+1. **E-mail 1** (personalizado, pedido de 20 min) + tour do piloto + one-pager.
+2. Sem resposta em **~5 dias úteis** → **follow-up** (template E).
+3. Interesse → **reunião** (deck + protótipo). Meta: sair com a **reunião técnica** marcada.
+4. Registre tudo na planilha (Status / Última ação / Próximo passo).
 
 ## Tom e credibilidade (público conservador)
 

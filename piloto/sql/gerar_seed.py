@@ -570,7 +570,7 @@ w()
 # ------------------------------------------------------------------
 w('-- ---------- comunicados ----------')
 w("INSERT INTO comunicados (fundo_id, titulo, mensagem, data_pub) VALUES")
-w(f"(NULL, 'Portal do cotista por token no ar', 'O acesso do cotista agora é feito por token gerado pelo gestor, com nível de visão configurável (tempo real, 1 mês ou 3 meses de defasagem). Gere os acessos na aba Acessos de cotistas.', {s(DIAS[-8].isoformat())}),")
+w(f"(NULL, 'Novo portal do cotista no ar', 'O cotista agora tem conta própria (e-mail e senha) com posição consolidada de todos os fundos, aplicação e resgate pelo portal. A transparência da carteira é definida por fundo na aba Acessos & transparência.', {s(DIAS[-8].isoformat())}),")
 w(f"(NULL, 'Calendário de feriados de julho', 'Não haverá fechamento de cota no dia 09/07 (feriado estadual em SP). O batch do dia 10/07 consolidará os dois dias, como previsto no regulamento.', {s(DIAS[-3].isoformat())}),")
 w(f"(1, 'Reabertura para captação', 'O fundo Aurora RF Crédito Privado FI está reaberto para novas aplicações a partir de hoje. O limite de captação desta janela é de R$ 10 milhões.', {s(DIAS[-5].isoformat())}),")
 w(f"(1, 'Relatório mensal disponível', 'O relatório gerencial de junho/2026 já está disponível na área de documentos, com a carta do gestor e o detalhamento da carteira de crédito.', {s(DIAS[-2].isoformat())});")

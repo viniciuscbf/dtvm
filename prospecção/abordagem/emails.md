@@ -2,12 +2,18 @@
 
 > **Segmentação da onda 1** (alinhada ao `bancos_alvo.xlsx` e à `parceria_estrutura_juridica.md`):
 > **A — Banco pequeno** → anexa `Argus_OnePager_Banco.pdf` · **A2 — CTVM/corretora** → `Argus_OnePager_CTVM.pdf`
+> · **A3 — DTVM que NÃO administra fundos** → template A2 trocando "corretora" por "distribuidora"
+> (a licença é equivalente: Res. 21 + Res. 32; as 7 que já custodiam são os melhores alvos da lista).
+> **REGRA DA A3: NDA antes do deck e divulgação em camadas** — DTVM entende o produto rápido demais;
+> a demo mostra o piloto funcionando, nunca a arquitetura nem os dossiês (só com contrato).
 > · **C — Financeira (SCFI)** → `Argus_OnePager_Financeira.pdf`. **SCD/IP/câmbio ficam FORA da onda 1**
 > (não podem administrar fundos — só entrariam constituindo DTVM; abordar apenas se procurarem).
 >
 > Regras de ouro: personalize **[Nome]** e **[Instituição]** (nunca "Prezados"); **um** pedido só
-> (20 minutos); envie de **contato@argusdtvm.com.br** (confirmar caixa ativa + DKIM antes);
-> **não** anexe o deck (é da reunião); follow-up em ~5 dias úteis; 10–20 envios/dia no aquecimento.
+> (20 minutos); envie de **vinicius.fernandes@argusdtvm.com.br** (nominal — nome de exibição
+> "Vinicius Fernandes (Argus)"; autenticação SPF/DKIM/DMARC validada em 12/07/2026; `contato@` fica
+> como caixa institucional do site); **não** anexe o deck (é da reunião); follow-up em ~5 dias úteis;
+> 10–20 envios/dia no aquecimento; **nunca trocar o remetente no meio da campanha**.
 
 ---
 
@@ -17,17 +23,21 @@
 
 [Nome], tudo bem?
 
-Sou [Seu nome], da Argus. Vou direto: o [Instituição] já pagou a parte mais cara — a licença e a
-estrutura de instituição autorizada. Existe uma linha de receita recorrente que dá para ligar em cima
-disso **sem investir em tecnologia nem contratar equipe**: administração fiduciária de fundos, num
-segmento que os grandes administradores abandonaram (só 1.277 dos ~31 mil fundos do país passam de
-R$ 1 bilhão — a cauda é enorme e está sem dono).
+Sou Vinicius Fernandes, CGA, CGE — CTO da Argus.
 
-A proposta: vocês entram com a licença e o compliance; nós entramos com a plataforma e a operação —
-**já construídas e rodando** num protótipo de ponta a ponta (argusdtvm.com.br). O credenciamento na
-CVM leva ~60 dias e o dossiê nós entregamos pronto. Receita dividida 50/50.
+Sendo direto: eu e minha equipe estamos estruturando uma operação de DTVM com um diferencial claro — viabilizar fundos de investimento de menor patrimônio, com constituição muito mais rápida e barata do que o mercado pratica hoje. É um segmento enorme que os grandes administradores abandonaram.
 
-Topa **20 minutos** na próxima semana para eu abrir o modelo e a conta? Segue um resumo de 1 página.
+O gargalo do projeto é regulatório: administração fiduciária e custódia exigem uma instituição autorizada pelo Banco Central — uma empresa de tecnologia não pode rodar essa estrutura sozinha. É exatamente aí que enxergamos o [Instituição].
+
+Importante: **não buscamos investimento**. A equipe de desenvolvimento, a arquitetura dos sistemas e o capital para construir e manter tudo em produção já são nossos.
+
+A parceria consiste no [Instituição] entrar com a licença e a estrutura jurídica para constituir a administradora fiduciária e a casa de custódia — e com a supervisão de compliance que já exerce. A contrapartida: **participação nos lucros da operação, sem absorver nenhum custo** (os custos são integralmente nossos).
+
+Para mostrar que não é ideia em slide, construímos um piloto funcional que replica a operação de ponta a ponta em 4 portais (gestor, administradora, custódia e cotista): https://argusdtvm.com.br/piloto/
+
+Em anexo, um documento com o tour completo do piloto e um one-pager com o desenho da parceria para o caso do [Instituição].
+
+Podemos marcar uma conversa de **20 minutos** (Zoom ou Meet) nesta ou na próxima semana para eu apresentar a ideia e discutirmos o projeto?
 
 [Assinatura]
 
@@ -39,17 +49,21 @@ Topa **20 minutos** na próxima semana para eu abrir o modelo e a conta? Segue u
 
 [Nome], tudo bem?
 
-Sou [Seu nome], da Argus. Corretagem é receita transacional — boa em ano bom, dura em ano ruim.
-A licença da [Instituição] permite ligar uma linha **recorrente** (% do PL, todo mês) que quase
-nenhuma corretora usa: administração fiduciária de fundos. E vocês têm o que ninguém tem — clientes
-gestores e a distribuição na mão. Hoje esses gestores executam com vocês e administram os fundos
-**fora**; dá para trazer isso para dentro.
+Sou Vinicius Fernandes, CGA, CGE — CTO da Argus.
 
-Nós entramos com a plataforma e a operação completas (protótipo de ponta a ponta no ar:
-argusdtvm.com.br); vocês entram com a licença e o compliance. Credenciamento CVM em ~60 dias com
-dossiê pronto. Receita 50/50.
+Sendo direto: eu e minha equipe estamos estruturando uma operação de administração fiduciária focada em viabilizar fundos de menor patrimônio, com constituição muito mais rápida e barata do que o mercado pratica — o segmento que os grandes administradores abandonaram. Corretagem é receita transacional; administração de fundos é **% do PL, todo mês** — e a [Instituição] tem o que ninguém tem: gestores como clientes e a distribuição na mão. Hoje esses gestores executam com vocês e a administração dos fundos deles fica **fora de casa**.
 
-**20 minutos** para eu mostrar o modelo? Resumo de 1 página em anexo.
+O gargalo do projeto é regulatório: essa operação exige uma instituição autorizada pelo Banco Central — uma empresa de tecnologia não pode rodá-la sozinha. A vantagem no caso de vocês: **a licença de CTVM já habilita a corretora a administrar fundos** — não é preciso constituir nada novo, só o credenciamento na CVM (~60 dias, e o dossiê nós entregamos pronto).
+
+Importante: **não buscamos investimento**. Equipe de desenvolvimento, arquitetura dos sistemas e o capital para construir e manter tudo em produção já são nossos.
+
+A parceria: a [Instituição] entra com a licença e a supervisão de compliance que já exerce; nós entramos com toda a tecnologia e a operação. Contrapartida: **participação nos lucros, sem absorver nenhum custo**.
+
+Para mostrar que não é ideia em slide, construímos um piloto funcional que replica a operação de ponta a ponta em 4 portais (gestor, administradora, custódia e cotista): https://argusdtvm.com.br/piloto/
+
+Em anexo, o tour completo do piloto e um one-pager com o desenho da parceria para o caso de uma corretora.
+
+Podemos marcar uma conversa de **20 minutos** (Zoom ou Meet) nesta ou na próxima semana?
 
 [Assinatura]
 
@@ -61,18 +75,21 @@ dossiê pronto. Receita 50/50.
 
 [Nome], tudo bem?
 
-Sou [Seu nome], da Argus. Desde **1º de setembro de 2025**, a Resolução CMN 5.237 passou a permitir
-que financeiras administrem carteiras de valores mobiliários (art. 6º, p.u., IV). Na prática: a
-[Instituição] pode ligar uma linha de receita recorrente de **administração de fundos** — e o mercado
-ainda não acordou para isso. Ser a primeira financeira da praça a monetizar essa janela é vantagem
-real de pioneiro.
+Sou Vinicius Fernandes, CGA, CGE — CTO da Argus.
 
-Nós tornamos isso plug-and-play: plataforma e operação prontas (protótipo de ponta a ponta no ar:
-argusdtvm.com.br), custódia estruturada com terceiro autorizado, dossiê de registro CVM pronto
-(~60 dias). Vocês entram com a instituição e o compliance; receita dividida 50/50, sem investir em
-tecnologia nem contratar equipe.
+Sendo direto: desde **1º de setembro de 2025**, a Resolução CMN 5.237 passou a permitir que financeiras administrem carteiras de valores mobiliários (art. 6º, p.u., IV) — e o mercado ainda não acordou para isso. Eu e minha equipe estamos estruturando uma operação de administração fiduciária focada em viabilizar fundos de menor patrimônio, com constituição muito mais rápida e barata do que o mercado pratica; a [Instituição] pode ser a primeira financeira da praça a monetizar essa janela.
 
-**20 minutos** para eu abrir o modelo? Segue um resumo de 1 página.
+O gargalo do projeto é regulatório: essa operação exige uma instituição autorizada pelo Banco Central — uma empresa de tecnologia não pode rodá-la sozinha. Com a Res. 5.237, a licença da [Instituição] passou a servir exatamente para isso (a custódia estruturamos com terceiro autorizado; o credenciamento CVM leva ~60 dias e o dossiê nós entregamos pronto).
+
+Importante: **não buscamos investimento**. Equipe de desenvolvimento, arquitetura dos sistemas e o capital para construir e manter tudo em produção já são nossos.
+
+A parceria: a [Instituição] entra com a licença e a supervisão de compliance; nós entramos com toda a tecnologia e a operação. Contrapartida: **participação nos lucros, sem absorver nenhum custo**.
+
+Para mostrar que não é ideia em slide, construímos um piloto funcional que replica a operação de ponta a ponta em 4 portais (gestor, administradora, custódia e cotista): https://argusdtvm.com.br/piloto/
+
+Em anexo, o tour completo do piloto e um one-pager com o desenho da parceria para o caso de uma financeira.
+
+Podemos marcar uma conversa de **20 minutos** (Zoom ou Meet) nesta ou na próxima semana?
 
 [Assinatura]
 
@@ -87,13 +104,13 @@ tecnologia nem contratar equipe.
 
 [Nome], tudo bem?
 
-[1 frase de personalização REAL — ex.: "vi que a [Instituição] já gere N fundos — vocês estão a um
-passo do que vou propor."] É por isso que escrevo: falta só a camada de **administração fiduciária**,
-e é exatamente ela que trazemos pronta — plataforma e operação testadas num protótipo de ponta a
-ponta (argusdtvm.com.br), dossiê de credenciamento CVM pronto (~60 dias), receita 50/50, sem vocês
-investirem em tecnologia ou equipe.
+Sou Vinicius Fernandes, CGA, CGE — CTO da Argus.
 
-Vale **20 minutos** na próxima semana? Resumo de 1 página em anexo.
+[1 frase de personalização REAL — ex.: "vi que a [Instituição] já gere N fundos — vocês estão a um passo do que vou propor."] É por isso que escrevo: estamos estruturando uma operação de administração fiduciária para fundos de menor patrimônio — o segmento que os grandes abandonaram — e o que falta no nosso projeto é exatamente o que a [Instituição] já tem: a licença de instituição autorizada.
+
+Não buscamos investimento: tecnologia, equipe e capital já são nossos. A parceria é a [Instituição] entrar com a licença e o compliance, e participar dos lucros **sem absorver nenhum custo**. Construímos um piloto funcional de ponta a ponta em 4 portais para provar a tese: https://argusdtvm.com.br/piloto/
+
+Em anexo, o tour completo do piloto e um one-pager com o desenho da parceria para o caso de vocês. Vale uma conversa de **20 minutos** (Zoom ou Meet) nesta ou na próxima semana?
 
 [Assinatura]
 
@@ -103,10 +120,12 @@ Vale **20 minutos** na próxima semana? Resumo de 1 página em anexo.
 
 **Assunto:** Re: [assunto original]
 
-[Nome], um dado que talvez ajude a dimensionar: um fundo pequeno paga hoje **R$ 50–70 mil/ano** de
-custo fixo nas administradoras tradicionais (o piso mensal de mercado chega a R$ 25 mil). Na nossa
-estrutura, o mesmo fundo custa ~**R$ 6 mil/ano** — é isso que destrava o segmento inteiro que os
-grandes ignoram, com a [Instituição] ficando com metade da receita de administração.
+[Nome], um dado que talvez ajude a dimensionar: nas administradoras tradicionais, um fundo carrega
+**R$ 150–300 mil/ano** de custo fixo (os pisos de mercado somam R$ 12–25 mil/mês entre administração,
+custódia e controladoria) — é por isso que fundo abaixo de ~R$ 20 milhões de PL não fecha a conta.
+Na nossa estrutura, o mesmo fundo roda por **menos de R$ 10 mil/ano** all-in — é isso que viabiliza
+fundos a partir de R$ 1 milhão e destrava o segmento inteiro que os grandes ignoram, com a
+[Instituição] participando da receita.
 
 Se fizer sentido, sigo à disposição para os 20 minutos. Se não for o momento, me diga sem cerimônia
 — não insisto.
@@ -115,20 +134,15 @@ Se fizer sentido, sigo à disposição para os 20 minutos. Se não for o momento
 
 ---
 
-## F) LinkedIn (toque paralelo ao decisor — curto)
-
-Olá [Nome]! Sou [Seu nome], da Argus. Enviei um e-mail para a [Instituição] sobre uma parceria de
-administração de fundos — vocês com a licença, nós com a tecnologia e a operação prontas (temos um
-protótipo de ponta a ponta no ar). Posso te mandar um resumo de 1 página por aqui? Abraço.
-
----
-
 ## Assinatura padrão
 
-[Seu nome]
-Argus — administração fiduciária e custódia de fundos
-contato@argusdtvm.com.br · argusdtvm.com.br
+Vinicius Fernandes, CGA, CGE
+CTO · Argus — administração fiduciária e custódia de fundos
+vinicius.fernandes@argusdtvm.com.br · argusdtvm.com.br
 [telefone, se quiser]
+
+> Versão HTML (com a logo, pronta para o Roundcube): `assinatura_email.html` nesta pasta —
+> abrir no navegador, selecionar a versão escolhida, copiar e colar no campo de assinatura.
 
 ---
 
@@ -136,9 +150,9 @@ contato@argusdtvm.com.br · argusdtvm.com.br
 
 - [ ] Segmento certo → e-mail certo → **one-pager certo** (Banco / CTVM / Financeira).
 - [ ] Personalizei **[Nome]** e **[Instituição]** (nada de "Prezados").
-- [ ] **Um** pedido só: 20 minutos. Sem deck anexado.
-- [ ] Enviado de **domínio próprio** com assinatura completa (DKIM ativo — ver `entregabilidade_email.md`).
+- [ ] **Um** pedido só: 20 minutos. **Dois anexos, sempre os mesmos**: `Argus_Piloto_Tour.pdf` (tour do piloto) + one-pager do segmento. Sem deck (é da reunião).
+- [ ] Enviado de **vinicius.fernandes@argusdtvm.com.br** com a assinatura padrão (autenticação já validada — ver `entregabilidade_email.md`).
 - [ ] Follow-up agendado para +5 d.u. (modelo E, com o dado de custo).
-- [ ] Toque no LinkedIn em paralelo (modelo F).
 - [ ] Prioritários (10–15): versão **D personalizada** com dado da planilha.
+- [ ] Canal único: **e-mail do projeto** — nada de abordagem por redes/perfis pessoais.
 - [ ] SCD/IP/câmbio: **não abordar** na onda 1.

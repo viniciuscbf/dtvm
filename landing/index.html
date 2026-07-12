@@ -275,7 +275,7 @@ footer{padding:3rem 0;border-top:1px solid var(--c-line);color:var(--c-muted);fo
         <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:2px;background:#1fc0ef;display:inline-block"></i>Argus</span>
         <span style="display:inline-flex;align-items:center;gap:.35rem"><i style="width:14px;height:0;border-top:2px dashed #9b86d6;display:inline-block"></i>Tradicional</span>
       </div>
-      <canvas id="cotaChart" width="520" height="182"></canvas>
+      <canvas id="cotaChart" width="520" height="209"></canvas>
       <div class="mock-kpis">
         <div class="mock-kpi"><div class="v"><span data-count="0.08" data-dec="2">0</span>%</div><div class="l">a.a. adm.</div></div>
         <div class="mock-kpi"><div class="v up">10–40×</div><div class="l">mais barato</div></div>
@@ -491,7 +491,7 @@ document.querySelectorAll('.card').forEach(c=>{
     ctx.fillText('PL do fundo (R$ milhões)',padL+pw/2,H-14);
     ctx.save();ctx.translate(11,padT+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle='rgba(255,255,255,.72)';ctx.font='8.5px system-ui,Arial,sans-serif';
-    ctx.fillText('Custo da administração e custódia ao ano (% do PL)',0,0);ctx.restore();
+    ctx.fillText('Administração + custódia anual (% PL)',0,0);ctx.restore();
     const c=Math.max(2,Math.floor(prog*N));
     const g=ctx.createLinearGradient(0,padT,0,H-padB);g.addColorStop(0,'rgba(31,192,239,.30)');g.addColorStop(1,'rgba(31,192,239,0)');
     ctx.beginPath();ctx.moveTo(X(R.min),H-padB);

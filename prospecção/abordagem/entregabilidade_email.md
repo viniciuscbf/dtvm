@@ -66,3 +66,18 @@ Se os três estão certos, o Gmail/Outlook/servidor do banco confia no remetente
 - Verificadores: mail-tester.com (nota), mxtoolbox.com (checar SPF/DKIM/DMARC), Google Postmaster Tools (reputação, se usar Gmail/Workspace no futuro).
 
 > **Resumo:** DNS já está ~90% pronto (SPF ✅, DMARC ✅ fraco, MX ✅). Falta **confirmar o DKIM** e disparar com **aquecimento + personalização + sem BCC**. Feito isso, você chega na caixa de entrada.
+
+---
+
+## Atualização (12/07/2026) — VALIDADO, liberado para disparo
+
+Teste real (envio de `contato@argusdtvm.com.br` → Gmail, "Mostrar original"):
+- **SPF: PASS** (alinhado ao domínio) · **DKIM: PASS** (mas `d=email.locaweb.com.br`, seletor `lw` —
+  a Locaweb assina em nome do domínio DELA, por isso não há `_domainkey` no nosso DNS) ·
+  **DMARC: PASS** (via alinhamento do SPF).
+- Conclusão: **aprovado para a onda 1**. Limitação conhecida: o DKIM não é alinhado ao nosso domínio,
+  então o DMARC depende só do SPF (quebra em encaminhamentos) e a reputação DKIM credita a Locaweb.
+  Se surgirem sinais de spam ao escalar, migrar o envio para Google Workspace/Zoho (DKIM `d=argusdtvm.com.br`).
+- **Remetente oficial da campanha:** `vinicius.fernandes@argusdtvm.com.br` (nominal converte melhor que
+  caixa de função e é menos penalizado por filtro; `contato@` segue como institucional do site).
+  Assinatura HTML pronta em `assinatura_email.html`.

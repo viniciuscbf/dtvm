@@ -421,18 +421,20 @@ def s_problema():
     s = slide(PAPER)
     head(s, "O problema", "A lacuna de mercado", "A regulação permite o fundo de R$ 1 milhão. O custo, não.")
     txt(s, MARGIN, 2.62, 4.75, 3.2,
-        "Um fundo pequeno carrega hoje R$ 50–70 mil por ano de custo fixo — gestão, administração, "
-        "custódia, auditoria e taxa CVM — quase todo independente do tamanho do fundo.\n\n"
-        "Num fundo de R$ 1 milhão, isso é 5–7% do patrimônio ao ano. Nenhum fundo sobrevive a isso. "
-        "Por isso, na prática, só se abre um fundo a partir de ~R$ 10 milhões.", 13, font=SANS, color=INK, spacing=1.34)
-    txt(s, 6.35, 2.6, 6.2, 0.3, "CUSTO FIXO ANUAL (~R$ 60 MIL) COMO % DO PL DO FUNDO", 9,
+        "Nos pisos das administradoras tradicionais, um fundo carrega R$ 150–300 mil por ano de custo "
+        "fixo — administração, custódia, controladoria, auditoria e taxa CVM — quase todo independente "
+        "do tamanho do fundo.\n\n"
+        "Num fundo de R$ 1 milhão, isso passa de 15% do patrimônio ao ano; mesmo nas casas mais enxutas "
+        "(R$ 50–70 mil/ano), ainda são 5–7%. Na prática, só se abre um fundo a partir de ~R$ 20 milhões.",
+        13, font=SANS, color=INK, spacing=1.3)
+    txt(s, 6.35, 2.6, 6.2, 0.3, "CUSTO FIXO ANUAL (~R$ 200 MIL) COMO % DO PL DO FUNDO", 9,
         font=MONO, color=MUTED, char=1.0)
     ch = bar_chart(s, 6.2, 2.95, PW - MARGIN - 6.2, 3.35,
                    ["R$ 1 mi", "R$ 2 mi", "R$ 5 mi", "R$ 10 mi", "R$ 20 mi"],
-                   [("% do PL", [6.0, 3.0, 1.2, 0.6, 0.3])],
+                   [("% do PL", [20.0, 10.0, 4.0, 2.0, 1.0])],
                    colors=[NAVY], col=True, show_val=True, val_fmt='0.0"%"', grid=False, gap=55, val_color=NAVY)
-    color_points(ch, [NEG, NEG, NAVY, NAVY, NAVY])
-    source(s, "Custo fixo de um fundo pequeno: R$ 50–70 mil/ano (InfoMoney, 2023). % calculado sobre R$ 60 mil.")
+    color_points(ch, [NEG, NEG, NEG, NEG, NAVY])
+    source(s, "Pisos de mercado (adm + custódia + controladoria): R$ 12–25 mil/mês → R$ 150–300 mil/ano; % sobre R$ 200 mil. Casas enxutas: R$ 50–70 mil/ano (InfoMoney, 2023).")
 
 def s_lacuna():
     s = slide(PAPER)
@@ -640,10 +642,10 @@ def s_preco():
     txt(s, 6.5, 2.6, 6.2, 0.3, "CUSTO TOTAL ANUAL DE UM FUNDO DE R$ 1 MILHÃO", 9, font=MONO, color=D_MUT, char=1.0)
     bar_chart(s, 6.35, 3.0, PW - MARGIN - 6.35, 3.15,
               ["Tradicional", "Com a Argus"],
-              [("R$ mil/ano", [60, 13])],
+              [("R$ mil/ano", [225, 13])],
               colors=[NAVY], col=False, show_val=True, val_fmt='"R$ "0" mil"', grid=False, gap=80, val_color=D_TXT, axis_color=D_MUT)
-    txt(s, 6.35, 6.3, 6.2, 0.4, "Tradicional: R$ 50–70 mil/ano (InfoMoney). Argus: 1,29% de R$ 1 mi (custo "
-        "total do modelo, planilha de custos).", 8.5, font=MONO, color=D_FAINT, char=0.2, spacing=1.15)
+    txt(s, 6.35, 6.3, 6.2, 0.4, "Tradicional: pisos de mercado, R$ 150–300 mil/ano (mediana R$ 225 mil). "
+        "Argus: 1,29% de R$ 1 mi (custo total do modelo, planilha de custos).", 8.5, font=MONO, color=D_FAINT, char=0.2, spacing=1.15)
 
 def s_barateamento():
     s = slide(PAPER)
@@ -658,7 +660,7 @@ def s_barateamento():
            SEG['custodia_row'],
            ["Auditoria", "~R$ 11 mil/ano", "~R$ 1,5 mil/ano", "mesmo auditor em lote, carteiras padronizadas"],
            ["Taxa CVM", "~R$ 3 mil/ano", "~R$ 3 mil/ano", "igual — é tributo, não dá para baratear"],
-           ["Total ex-gestão", "~R$ 50–70 mil/ano", "~R$ 6 mil/ano", "≈ 10× mais barato no fundo pequeno"]],
+           ["Total ex-gestão", "~R$ 150–300 mil/ano", "~R$ 6 mil/ano", "25–50× mais barato no fundo pequeno"]],
           rh=0.48, accent_col=2, csize=9.5, dsize=11)
     source(s, "Regulamentos reais (CVM/Fundos.NET): BRL Trust, Vórtx, Oliveira Trust, Singulare, Reag; auditoria XP. Ver benchmark_precos_concorrencia.md.")
 
@@ -1212,7 +1214,7 @@ def s_ax_fontes():
     groups = [
         ("Modelo e economia", "Documentos internos do projeto (auditados): plano_dtvm_fundos_pequenos.md, guia_potencial_financeiro.md, planilha_custos.md — taxa 0,08%+R$100, viabilidade do cotista, custos."),
         ("Regulatório", "CVM — Resoluções 21 (administração), 32 (custódia), 50 (PLD) e 175 (estrutura); Lei 14.317 (taxa CVM). Pacotes em custodiante/ e administrador_fiduciario/."),
-        ("Mercado e nicho", "ANBIMA (~31 mil fundos, 976 gestoras, 51% <R$400mi); ANCORD (27.515 assessores); InfoMoney (custo de fundo pequeno R$ 50–70 mil/ano)."),
+        ("Mercado e nicho", "ANBIMA (~31 mil fundos, 976 gestoras, 51% <R$400mi); ANCORD (27.515 assessores); pisos de mercado R$ 150–300 mil/ano (regulamentos reais; casas enxutas R$ 50–70 mil — InfoMoney)."),
         ("Concorrência e juros", "Sites e imprensa sobre Kanastra, QI Tech, Vórtx, BRLTrust, Singulare (foco FIDC); BCB/Copom (Selic 14,25%, jun/2026)."),
     ]
     y = 2.7
