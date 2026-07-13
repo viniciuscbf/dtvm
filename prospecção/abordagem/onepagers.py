@@ -216,22 +216,21 @@ CFGS = [
                   "corretora → custódia própria (Res. 32). Piloto no ar: argusdtvm.com.br/piloto — tour anexo."),
      "cta": "Queremos abrir essa conta com os números da sua corretora — 20 minutos com quem construiu a plataforma. É só responder o e-mail."},
 
-    {"arquivo": "Argus_OnePager_Financeira.pptx",
-     "titulo": "Fundos viáveis a partir de R$ 1 milhão —\ne a janela da Res. 5.237 para a financeira.",
-     "sub": "Onde nasce o custo que mata o fundo pequeno, como ele desaparece, e o que propomos à financeira.",
-     "alav1_titulo": "Custódia estruturada para não pesar no fundo.",
-     "alav1": ("A custódia nasce contratada em bloco com custodiante autorizado — negociada em escala e operada pela "
-               "nossa plataforma, o custo por fundo cai a uma fração do avulso. E a arquitetura já nasce pronta para "
-               "internalizar a custódia num parceiro habilitado quando a escala justificar, eliminando o repasse por "
-               "completo."),
-     "parceria_titulo": "O que propomos à sua financeira",
-     "parceria": ("Administração fiduciária é privativa de instituição autorizada — e desde 1º/9/2025 a Res. CMN 5.237 "
-                  "(art. 6º, p.u., IV) habilitou as financeiras: a sua licença passou a servir exatamente para isso, e o "
-                  "mercado ainda não acordou. Vocês entram com a instituição e o compliance; nós, com tecnologia, equipe, "
-                  "operação e todos os custos (não buscamos investimento) — contrapartida em participação nos lucros, sem "
-                  "absorver despesa. Caminho: carta de intenções → registro na CVM pela 5.237 (dossiê pronto, ~60 dias) → "
-                  "produção sob a marca da financeira. Piloto no ar: argusdtvm.com.br/piloto — tour anexo."),
-     "cta": "Queremos mostrar a Res. 5.237 aplicada aos números da sua financeira — 20 minutos com quem construiu a plataforma. É só responder o e-mail."},
+    {"arquivo": "Argus_OnePager_DTVM.pptx",
+     "titulo": "Fundos viáveis a partir de R$ 1 milhão —\ne o papel da sua distribuidora nisso.",
+     "sub": "Onde nasce o custo que mata o fundo pequeno, como ele desaparece, e o que propomos à DTVM.",
+     "alav1_titulo": "Custódia dentro de casa — a distribuidora como agente custodiante.",
+     "alav1": ("A licença de DTVM é elegível às DUAS licenças CVM (administração, Res. 21; custódia, Res. 32): em vez "
+               "de pagar custódia de terceiro — que sozinha já carrega piso de mercado —, ela nasce dentro da própria "
+               "distribuidora e o custo vira receita interna. Se a casa já é custodiante, essa etapa já veio de fábrica."),
+     "parceria_titulo": "O que propomos à sua distribuidora",
+     "parceria": ("Administração fiduciária é privativa de instituição autorizada — e a licença de DTVM já habilita as "
+                  "duas pontas: administração e custódia. Nada novo a constituir, só o credenciamento na CVM. Vocês "
+                  "entram com a licença e o compliance que já exercem; nós, com tecnologia, equipe, operação e todos os "
+                  "custos (não buscamos investimento) — contrapartida em participação nos lucros, sem absorver despesa. "
+                  "Caminho: acordo de confidencialidade + carta de intenções → credenciamento (dossiê pronto, ~60 dias) → "
+                  "produção sob a marca da casa → custódia própria (Res. 32). Piloto no ar: argusdtvm.com.br/piloto — tour anexo."),
+     "cta": "Queremos abrir essa conta com os números da sua distribuidora — 20 minutos com quem construiu a plataforma. É só responder o e-mail."},
 ]
 
 if __name__ == "__main__":

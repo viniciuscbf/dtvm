@@ -5,13 +5,16 @@ Materiais para prospectar os alvos de `../bancos_alvo.xlsx`.
 | Arquivo | O que é |
 |---|---|
 | `guia_abordagem.md` | **Comece aqui.** Estratégia, camadas, cadência, tom, do/don't. |
-| `emails.md` | Templates de e-mail por tipo (Banco · CTVM · Financeira) + personalizado + follow-up. |
+| `emails.md` | Templates de e-mail por tipo (Banco · CTVM · DTVM não-adm) + personalizado + follow-up. |
 | `Argus_Piloto_Tour.pdf` | **Anexo 1 de todo e-mail** — tour do piloto com telas reais (40 págs.): 4 portais, funcionalidades e mapa de conformidade por norma. |
 | `Argus_OnePager_Banco.pdf` | **Anexo 2** — one-pager (a ideia + como a parceria se constrói) para bancos. |
 | `Argus_OnePager_CTVM.pdf` | One-pager — corretoras (CTVM). |
-| `Argus_OnePager_Financeira.pdf` | One-pager — financeiras (SCFI, janela da Res. 5.237). |
+| `Argus_OnePager_DTVM.pdf` | One-pager — distribuidoras (DTVM) que não administram fundos: as duas licenças na mesma casa. |
 | `assinatura_email.html` | Assinatura HTML (com logo) pronta para colar no Roundcube. |
-| `alvos_prioritarios.xlsx` | **CRM starter** — 73 alvos prioritários (banco/CTVM independente nacional), por Ativo Total, com colunas para preencher (Decisor, Status…). |
+| `cartas/` | **Campanha física**: 3 templates .docx (campos amarelos) + **`cartas/prontas/` — as 43 cartas 100% PREENCHIDAS** (nome, cargo, instituição, endereço, WhatsApp, data 14/07), uma por alvo do CRM: imprimir, assinar à mão e enviar registrada com AR (~R$ 700–1.000 no total). Se enviar em outro dia, ajustar a data no Word (Ctrl+H: "14 de julho" → nova data). |
+| `contatos_prospeccao.xlsx` | **O CRM da campanha** — Alvos com as DUAS licenças ao alcance, em abas por tipo (Bancos · Corretoras · DTVMs não-adm · Auditores-canal) + Consolidado + Legenda com o critério e as exclusões. Coluna **E-mail** = melhor contato p/ proposta (pesquisa 13/07; vários separados por `;`, melhor primeiro; fonte e confiança em Notas); **E-mail 2 (regulatório)** = a caixa compliance@ original, último recurso. Colunas amarelas = suas; follow-up calcula sozinho. |
+| `contatos_segunda_opcao.xlsx` | **Reserva estratégica** — só abrir depois de esgotar o CRM principal: bancos/CTVMs médios (R$ 0,4–20 bi, sem gigantes/estrangeiros) + DTVMs administradoras (último recurso, NDA reforçado). Sem sobreposição com o CRM principal. |
+| `alvos_prioritarios.xlsx` | Recorte dos prioritários (Alvo A independente nacional, menor primeiro) — subconjunto do CRM principal. |
 | `onepagers.py` · `prioritarios.py` | Geradores (regeneram os PDFs / a planilha). |
 | `*.pptx` | Fontes editáveis dos one-pagers (edite no PowerPoint se quiser). |
 | `entregabilidade_email.md` | **Antes de disparar:** SPF/DKIM/DMARC (como validar o DKIM) + boas práticas para não cair no spam. |

@@ -1,0 +1,19 @@
+Chave,E-mails (melhor primeiro),Fonte,Confiança
+SOCIAL BANK,atendimentosac@socialbank.com.br,"Site oficial socialbank.com.br (rodapé/atendimento); nenhum e-mail nominal ou comercial público",média
+BANCO VR,marcio.delnero@vr.com.br; sac.bancovr@vr.com.br,"Inferido do padrão first.last@vr.com.br do grupo (RocketReach/LeadIQ; sac.bancovr@ e ouvidoriabancovr@ confirmam o domínio no site oficial)",baixa
+BANCO CEDULA,aron@bancocedula.com.br,"Inferido do padrão nome@ (ZoomInfo: f***@bancocedula.com.br p/ Franklin); site só publica clienteinternet@/ouvidoria@ — se voltar, usar o genérico atual",baixa
+EUROINVEST,administrativo@eurocctvm.com.br,"ATENÇÃO: o domínio real é eurocctvm.com.br — grupoeuroinvest.com.br está estacionado desde ~2008 e o e-mail do CRM pode nem funcionar; fonte: cadastro Receita/CNPJá + site eurocctvm.com.br",média
+LEVYCAM,joao@levycam.com.br; contato@levycam.com.br,"Inferido do padrão nome@ confirmado por eduardo@levycam.com.br (DPO, página /contato do site); João Kneese é o presidente",baixa
+SIMPAUL,joao.silveira@simpaul.com.br; contato@simpaul.com.br,"CEO João Silveira (ZoomInfo j***@); padrão first.last confirmado por fernando.cruz@simpaul.com.br (cadastro Receita/Econodata)",média
+EQI INVESTIMENTOS,juliano.custodio@eqi.com.br,"Padrão first.last@eqi.com.br confirmado por mauricio.daoud@eqi.com.br (diretor, documento regulatório público); Juliano Custodio é o CEO",média
+PACIFIC INVEST,pacific@pacificinvest.com.br,"Caixa principal da matriz (listagem ABRACAM + guias); nenhum nominal público",média
+CODEPE,fernando@codepe.com.br; renata@codepe.com.br,"VERIFICADO em PDF público da B3 (Administração de Limites) — fernando@ existe; Fernando Bastos de Aguiar é o presidente; renata@ é o fale-conosco do site",alta
+GLOBAL INVESTMENT,atendimento@globaldtvm.com,"Site oficial globaldtvm.com — a operação roda como Global DTVM (parceira da Nomad); mognodtvm.com está vazio",média
+TRINUS,atendimento@trinusinvestimentos.com.br; administrativo@trinusco.com.br,"FAQ/central de atendimento oficial da Trinus + listagem pública (Diário Cidade)",média
+NIKOS,contato@nikos.com.br,"Cadastro BCB (via qualobanco.com.br) + domínio do site oficial nikos.com.br",alta
+COLUNA,marcelle.nardino@colunadtvm.com.br,"Inferido do padrão nome.sobrenome do domínio (RocketReach; ZoomInfo confirma m***@ p/ Marcelle Nardino, diretora); site não publica e-mail",baixa
+UNIDA DISTRIBUIDORA,julio.beranger@unidadtvm.com.br; clientes@unidadtvm.com.br,"Inferido do padrão first.last (RocketReach: 100% do domínio) + fallback oficial do site",média
+OM DISTRIBUIDORA,elson@ourominas.com,"Inferido do padrão {primeiro-nome}@ (ContactOut: ~70% do domínio); site só publica app@",baixa
+RB INVESTIMENTOS,adalbero.cavalcanti@rbinvestimentos.com,"CONFIRMADO no site oficial (página Governança & Compliance) — e-mail nominal do diretor responsável",alta
+GALAPAGOS,acurvello@galapagoscapital.com; atendimento@galapagoscapital.com,"Inferido do padrão {inicial}{sobrenome} (ContactOut/LeadIQ: ~75% do domínio) + fallback oficial do site",baixa
+VIS DISTRIBUIDORA,contato@fenixdtvm.com.br,"Perfil Brasil Mineral da Fênix DTVM; domínio confirmado pelo site oficial fenixdtvm.com.br",média

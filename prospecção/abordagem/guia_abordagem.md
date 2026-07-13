@@ -18,15 +18,15 @@ passar imagem amadora. A conversão vem de falar com a **pessoa certa**, com uma
   (a abordagem é 100% pelo canal profissional do projeto; sem contato por redes pessoais).
 
 **Camada 2 — o resto da lista.**
-- Campanha por e-mail **segmentada por tipo** (templates A/B/C), nunca um texto único.
-- Alvo A (banco/CTVM) → template A. Alvo B: SCD/IP → template B; Financeira → template C.
+- Campanha por e-mail **segmentada por tipo** (templates A/A2/A3), nunca um texto único.
+- Banco → template A · Corretora (CTVM) → A2 · DTVM não-adm → A3 (com NDA). SCFI/SCD/IP estão FORA da campanha (critério: precisa poder custodiar — rol da Res. 32).
 
 ## O que enviar
 
 | Peça | Quando | Observação |
 |---|---|---|
 | **E-mail curto** (gancho + pedido) | 1º contato | é o gancho, não o pitch |
-| **One-pager (PDF do tipo)** | anexo do 1º e-mail | Banco/CTVM · SCD/Fintech · Financeira |
+| **One-pager (PDF do tipo)** | anexo do 1º e-mail | Banco · CTVM · DTVM |
 | **Deck completo** (`../../apresentacao/`) | só na reunião | não anexar no e-mail frio |
 | **Protótipo** (argusdtvm.com.br) | reunião técnica | "mostro numa conversa" |
 
